@@ -5,6 +5,16 @@ here is implemented yet.** Each entry lists where the pattern appears in Replit 
 spec. Placement follows `ARCHITECTURE.md`: primitives in `src/components/ui/`, shared product
 components in `src/components/shared/` (or `layout/`), feature components inside their feature.
 
+## Implemented in the UI foundation stage (2026-09-28)
+
+| Area           | Components                                                                                                                                                                                                                      | Location                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| Primitives     | Button (+ `getButtonClassName` for links), IconButton, Input (leading icon / trailing slot), PasswordInput, Textarea, Select, Checkbox, FormField, Card, Badge, Tabs, Modal, ConfirmDialog, Spinner, ProgressBar, Alert, Avatar | `src/components/ui/*`     |
+| Shared product | PageHeader, PageBanner, StatCard, SearchField, EmptyState / ErrorState / LoadingState (restyled)                                                                                                                                | `src/components/shared/*` |
+| Layout         | DashboardLayout (sidebar, mobile header, RTL drawer, skip link), SidebarContent (brand, user badge, nav with count badge), BrandMark, AuthLayout, ChildActivityLayout (light assessment style)                                  | `src/components/layout/*` |
+
+Everything else below remains **planned**. Visual QA: `npm run dev` → `/ui-preview`.
+
 ## 1. Primitive / shared UI (`src/components/ui/`)
 
 | Component                              | Variants / props                                                                                                    | Replit source of pattern                           | Notes                                      |

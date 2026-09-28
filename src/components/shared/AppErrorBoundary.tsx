@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 import { ErrorState } from '@/components/shared/ErrorState';
+import { Button } from '@/components/ui/Button';
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -35,14 +36,13 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
             title="حدث خطأ غير متوقع"
             description="يرجى إعادة تحميل الصفحة."
             action={
-              <button
-                type="button"
+              <Button
                 onClick={() => {
                   window.location.reload();
                 }}
               >
                 إعادة التحميل
-              </button>
+              </Button>
             }
           />
         </main>

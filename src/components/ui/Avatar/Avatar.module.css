@@ -1,0 +1,30 @@
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: var(--avatar-size, 2.5rem);
+  block-size: var(--avatar-size, 2.5rem);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-soft-text);
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-black);
+  font-size: calc(var(--avatar-size, 2.5rem) * 0.42);
+  line-height: 1;
+}
+
+.circle {
+  border-radius: var(--radius-pill);
+}
+
+.sm {
+  --avatar-size: 2rem;
+}
+
+.lg {
+  --avatar-size: 3.5rem;
+}
+
+.xl {
+  --avatar-size: 5rem;
+}

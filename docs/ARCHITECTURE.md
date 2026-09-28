@@ -19,7 +19,7 @@ src/
 ├── components/
 │   ├── layout/              # RootLayout, AuthLayout, DashboardLayout, ChildActivityLayout
 │   ├── shared/              # Cross-feature components (AppErrorBoundary, states)
-│   └── ui/                  # (on demand) design-system primitives — after Replit inspection
+│   └── ui/                  # design-system primitives, one folder per component (Component.tsx + Component.module.css + index.ts)
 ├── config/                  # env.ts — typed, validated environment
 ├── constants/               # App-wide constants (ROLE_LABELS, ...)
 ├── features/                # One folder per domain (see features/README.md)
@@ -29,14 +29,25 @@ src/
 │   ├── http/                # httpClient, interceptors, AppError, HTTP status constants
 │   └── api/                 # (on demand) cross-feature API contracts, e.g. response envelope/pagination types once documented
 ├── styles/                  # tokens.css, base.css, layout.css
-├── test/                    # Test setup and (later) test utilities
+├── test/                    # Test setup (dialog stand-in) + renderWithRouter helpers
 ├── types/                   # Cross-feature domain types (UserRole, ...)
-└── utils/                   # (on demand) small pure functions, grouped by topic
+└── utils/                   # small pure functions, grouped by topic (classNames.ts)
 ```
 
 "(on demand)" folders do not exist yet; create them when the first real file needs them.
 
-### Feature folder
+#### Component conventions
+
+- One folder per component: `Name.tsx`, `Name.module.css`, `index.ts` (+ `Name.test.tsx` when it
+  has behaviour). Non-component helpers live in their own file (fast-refresh rule).
+- Styles use tokens only (`var(--…)`) and logical properties; no raw colours outside
+  `tokens.css`.
+- Icon-only buttons require an Arabic `label`; form controls are wrapped in `FormField`, which
+  guarantees `htmlFor`/`id`, `aria-describedby` and `aria-invalid`.
+- `src/app/dev/` holds development-only tooling (the `/ui-preview` gallery) — never imported by
+  features.
+
+## Feature folder
 
 ```text
 features/<name>/

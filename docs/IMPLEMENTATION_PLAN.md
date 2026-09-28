@@ -40,7 +40,7 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 - **Acceptance:** Stage 2–4 blockers resolved or explicitly escalated.
 - **Tests:** none (research). **Risk:** backend unavailable / unstable.
 
-## Stage 2 — Design system migration
+## Stage 2 — Design system migration — ✅ foundation done (tokens, fonts, layouts, core components; ADR-017)
 
 - **Objective:** apply the Replit visual language (`DESIGN_SYSTEM.md`) to tokens and primitives.
 - **Screens:** none (primitives + layouts), a temporary internal preview page is optional.

@@ -1,0 +1,147 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+}
+
+.userText {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.userName {
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userRole {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.onlineDot {
+  inline-size: 0.4rem;
+  block-size: 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-success);
+}
+
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  padding-inline: var(--space-4);
+}
+
+.navTitle {
+  margin-block: var(--space-2) var(--space-3);
+  padding-inline: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--control-height);
+  padding-block: var(--space-2);
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.navLink:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
+}
+
+.navLinkActive,
+.navLinkActive:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-soft-text);
+}
+
+.navIcon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.navIcon svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+/* Count badge anchored to the icon (Replit placed it detached from the icon). */
+.navBadge {
+  position: absolute;
+  inset-block-start: -0.55rem;
+  inset-inline-start: -0.7rem;
+  display: grid;
+  place-items: center;
+  min-inline-size: 1.25rem;
+  block-size: 1.25rem;
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-black);
+  line-height: 1;
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+
+.footer {
+  padding: var(--space-4);
+  border-block-start: 1px solid var(--color-border);
+}

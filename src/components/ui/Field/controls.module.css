@@ -1,0 +1,153 @@
+.control {
+  inline-size: 100%;
+  min-block-size: var(--control-height);
+  padding-block: var(--space-3);
+  padding-inline: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-snug);
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+/*
+ * Latin-only values (email, URL, phone) keep the field's RTL box (so icon padding stays on
+ * the correct side) while the text itself is laid out by its own direction.
+ */
+.control[type='email'],
+.control[type='url'],
+.control[type='tel'] {
+  unicode-bidi: plaintext;
+}
+
+.control::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+
+.control:focus-visible {
+  outline: none;
+  border-color: var(--color-primary-strong);
+  box-shadow: var(--focus-shadow);
+}
+
+.control:disabled {
+  background: var(--color-surface-muted);
+  cursor: not-allowed;
+}
+
+.control[aria-invalid='true'],
+.control[aria-invalid='true']:hover:not(:disabled) {
+  border-color: var(--color-danger-strong);
+}
+
+.control[aria-invalid='true']:focus-visible {
+  box-shadow: var(--focus-shadow-danger);
+}
+
+.large {
+  min-block-size: var(--control-height-lg);
+}
+
+.textarea {
+  min-block-size: 7rem;
+  border-radius: var(--radius-card);
+  resize: vertical;
+}
+
+.select {
+  appearance: none;
+  padding-inline-end: var(--space-12);
+  cursor: pointer;
+}
+
+.selectWrapper {
+  position: relative;
+}
+
+.selectArrow {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: var(--space-4);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.selectArrow svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+/* Input with a decorative icon at the inline-start edge */
+.withIcon {
+  position: relative;
+}
+
+.withIcon .control {
+  padding-inline-start: var(--space-12);
+}
+
+.leadingIcon {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--space-4);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.withIcon:focus-within .leadingIcon {
+  color: var(--color-primary-strong);
+}
+
+.leadingIcon svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.trailing {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: var(--space-1);
+  display: grid;
+  place-items: center;
+}
+
+.withTrailing {
+  position: relative;
+}
+
+.withTrailing .control {
+  padding-inline-end: var(--space-12);
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--tap-target-min);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.checkbox {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin: 0;
+  accent-color: var(--color-primary-strong);
+  cursor: pointer;
+}

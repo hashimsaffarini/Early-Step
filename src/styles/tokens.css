@@ -1,50 +1,157 @@
 /*
- * Design tokens — the ONLY place raw visual values are defined.
+ * Design tokens — the ONLY place raw visual values live.
  *
- * These are neutral PLACEHOLDERS. The real values (colors, fonts, radii,
- * shadows, spacing) will be copied from the Early Step Replit application.
- * See docs/DESIGN_SYSTEM.md. Components must use these variables, never
- * hardcoded colors or sizes.
+ * Source: Replit prototype audit (docs/DESIGN_SYSTEM.md) + approved decisions (ADR-016).
+ * Light theme only. Components consume these variables; never hardcode colors or sizes.
+ *
+ * Breakpoints (used literally in media queries — CSS variables cannot be used there):
+ *   sm 40rem (640px) · md 48rem (768px) · lg 64rem (1024px, sidebar appears) · xl 80rem (1280px)
  */
 :root {
-  /* Color — placeholder neutrals, TBD from Replit */
-  --color-primary: #3b5bdb;
-  --color-primary-contrast: #ffffff;
-  --color-secondary: #495057;
-  --color-background: #f8f9fa;
-  --color-surface: #ffffff;
-  --color-border: #dee2e6;
-  --color-text-primary: #212529;
-  --color-text-secondary: #495057;
-  --color-danger: #c92a2a;
-  --color-focus-ring: #3b5bdb;
+  /* ── Brand ─────────────────────────────────────────── */
+  --color-primary: #0da2e7; /* brand / decorative blue, icons, rings */
+  --color-primary-strong: #0a7aae; /* a11y: filled buttons, important text, links */
+  --color-primary-strong-hover: #096c9a;
+  --color-primary-soft: #e7f6fe; /* tinted surfaces (active nav, soft buttons) */
+  --color-primary-soft-hover: #d4eefc;
+  --color-primary-soft-text: #086591;
+  --color-on-primary: #ffffff;
 
-  /* Typography — Arabic-capable system stack, TBD from Replit */
-  --font-family-base:
-    system-ui, 'Segoe UI', Tahoma, 'Noto Sans Arabic', 'Geeza Pro', 'Arial', sans-serif;
+  --color-accent: #f59f0a; /* amber */
+  --color-accent-soft: #fef3c7;
+  --color-on-accent: #1f2937; /* a11y: dark text on amber */
+
+  /* ── Surfaces ──────────────────────────────────────── */
+  --color-background: #fcfaf8; /* warm cream canvas */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-border: #e1e7ef;
+  --color-border-strong: #cbd5e1;
+  --color-overlay: rgb(31 41 55 / 0.45);
+  --color-selection: rgb(13 162 231 / 0.2);
+  --color-primary-border-hover: rgb(13 162 231 / 0.35);
+  --color-glass: rgb(255 255 255 / 0.18);
+  --color-glass-subtle: rgb(255 255 255 / 0.15);
+  --color-glass-strong: rgb(255 255 255 / 0.85);
+  --color-danger-border: rgb(185 28 28 / 0.2);
+  --color-success-border: rgb(28 125 90 / 0.2);
+  --color-info-border: rgb(10 122 174 / 0.2);
+  --color-warning-border: rgb(146 64 14 / 0.2);
+
+  /* ── Text ──────────────────────────────────────────── */
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #5a687c; /* a11y-adjusted from Replit #65758B */
+  --color-text-on-dark: #ffffff;
+
+  /* ── Status ────────────────────────────────────────── */
+  --color-success: #36d399;
+  --color-success-strong: #1c7d5a;
+  --color-success-soft: #d1fae5;
+  --color-warning: #f59f0a;
+  --color-warning-strong: #92400e;
+  --color-warning-soft: #fef3c7;
+  --color-danger: #ef4343;
+  --color-danger-strong: #b91c1c;
+  --color-danger-soft: #fee2e2;
+  --color-info: #0da2e7;
+  --color-info-strong: #0a7aae;
+  --color-info-soft: #e7f6fe;
+
+  --color-focus-ring: #0a7aae;
+  --focus-shadow: 0 0 0 4px rgb(13 162 231 / 0.18);
+  --focus-shadow-danger: 0 0 0 4px rgb(239 67 67 / 0.18);
+
+  /* ── Gradients ─────────────────────────────────────── */
+  /* Banner gradients: every stop keeps white text ≥ 4.5:1 (ADR-016 contrast decision). */
+  --gradient-brand: linear-gradient(135deg, #0a7aae 0%, #2563eb 55%, #4f46e5 100%);
+  --gradient-banner-violet: linear-gradient(135deg, #7c3aed 0%, #4f46e5 55%, #0369a1 100%);
+  --gradient-banner-teal: linear-gradient(135deg, #0f766e 0%, #4f46e5 55%, #7c3aed 100%);
+  --gradient-banner-sunset: linear-gradient(135deg, #b45309 0%, #c2410c 50%, #be185d 100%);
+  --gradient-child-canvas: linear-gradient(160deg, #f0fdf4 0%, #eff6ff 50%, #faf5ff 100%);
+  --gradient-category-memory: linear-gradient(135deg, #a855f7, #4f46e5);
+  --gradient-category-reading: linear-gradient(135deg, #06b6d4, #2563eb);
+  --gradient-category-math: linear-gradient(135deg, #f59e0b, #ea580c);
+  --gradient-category-writing: linear-gradient(135deg, #10b981, #0d9488);
+  --gradient-category-logic: linear-gradient(135deg, #ec4899, #e11d48);
+  --gradient-category-listening: linear-gradient(135deg, #8b5cf6, #9333ea);
+
+  /* ── Typography ────────────────────────────────────── */
+  --font-family-base: 'Cairo Variable', 'Cairo', 'Noto Sans Arabic', system-ui, sans-serif;
+  --font-family-display:
+    'Tajawal', 'Cairo Variable', 'Cairo', 'Noto Sans Arabic', system-ui, sans-serif;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 900;
+
+  /* Minimum text size is 0.75rem (12px) — no smaller text anywhere (a11y). */
+  --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-md: 1rem;
-  --font-size-lg: 1.25rem;
-  --font-size-xl: 1.75rem;
-  --line-height-base: 1.7;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
 
-  /* Spacing */
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.4;
+  --line-height-base: 1.7;
+  --letter-spacing-display: -0.02em;
+
+  /* ── Spacing (0.25rem scale) ───────────────────────── */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
+  --space-5: 1.25rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
 
-  /* Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
+  /* ── Shape ─────────────────────────────────────────── */
+  --radius-xs: 0.5rem;
+  --radius-sm: 1rem; /* avatars, small tiles */
+  --radius-card: 1.5rem; /* cards, primary buttons */
+  --radius-control: 1.5rem; /* inputs, tabs, icon buttons (pill at 48px height) */
+  --radius-lg: 2rem; /* nav items, list items */
+  --radius-xl: 2.5rem; /* banners, modals, empty states */
+  --radius-pill: 9999px;
 
-  /* Shadow */
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.08);
+  /* ── Elevation ─────────────────────────────────────── */
+  --shadow-xs: 0 2px 4px 0 rgb(0 0 0 / 0.03);
+  --shadow-card: 0 4px 12px -2px rgb(0 0 0 / 0.04);
+  --shadow-card-hover: 0 16px 32px -6px rgb(0 0 0 / 0.06);
+  --shadow-raised: 0 24px 48px -8px rgb(0 0 0 / 0.08);
+  --shadow-overlay: 0 32px 64px -12px rgb(0 0 0 / 0.1);
+  --shadow-primary: 0 10px 20px -8px rgb(10 122 174 / 0.45);
 
-  /* Layout */
-  --layout-sidebar-width: 16rem;
-  --layout-content-max-width: 75rem;
+  /* ── Layout ────────────────────────────────────────── */
+  --layout-sidebar-width: 18rem;
+  --layout-content-max-width: 80rem;
+  --layout-reading-max-width: 48rem;
+  --layout-player-max-width: 42rem;
+  --layout-auth-max-width: 28rem;
+  --layout-header-height: 4.5rem;
+
+  --control-height-sm: 2.5rem;
+  --control-height: 3rem;
+  --control-height-lg: 3.5rem;
+  --tap-target-min: 2.75rem; /* 44px */
+  --tap-target-child: 3.5rem; /* 56px */
+
+  /* ── Motion ────────────────────────────────────────── */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 150ms;
+  --duration-base: 300ms;
+
+  /* ── Layers ────────────────────────────────────────── */
+  --z-header: 30;
+  --z-overlay: 50;
 }

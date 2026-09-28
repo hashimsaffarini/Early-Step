@@ -340,3 +340,38 @@ blue.
 ### Consequences
 
 One light visual dialect. The UI foundation stage applies these tokens; no theme toggle is built.
+
+## ADR-017 — UI foundation implementation choices
+
+### Status
+
+Accepted
+
+### Context
+
+The UI foundation stage applies the Replit-derived design system (ADR-016) to shared layouts and
+core components without building product features.
+
+### Decision
+
+- **Styling:** plain CSS with design tokens (`src/styles/tokens.css`) + **CSS Modules** per
+  component (built into Vite; no CSS framework, no UI kit). Only logical properties; no raw
+  colours outside the tokens file.
+- **Fonts:** self-hosted via Fontsource — `@fontsource-variable/cairo` (body) and
+  `@fontsource/tajawal` 700/800/900 (headings). No third-party font requests (children's
+  platform, privacy, offline reliability).
+- **Icons:** `lucide-react` (same icon family as Replit, tree-shaken).
+- **Dialogs / drawer:** native `<dialog>` + `showModal()` for focus trapping, inert background and
+  Escape handling — no dialog library.
+- **Animation:** CSS transitions/keyframes only (no framer-motion); the global
+  `prefers-reduced-motion` override disables them.
+- **Dev UI preview:** `/ui-preview` routes are lazy-loaded and registered only when
+  `import.meta.env.DEV` is true, so they never ship to production.
+- **Testing:** `@testing-library/user-event` added for interaction tests; jsdom lacks
+  `HTMLDialogElement.showModal`, so `src/test/setup.ts` provides a minimal stand-in.
+
+### Consequences
+
+Small dependency footprint; components are portable and token-driven. Breakpoints are written
+literally in media queries (CSS variables are not allowed there) and documented at the top of
+`tokens.css`.

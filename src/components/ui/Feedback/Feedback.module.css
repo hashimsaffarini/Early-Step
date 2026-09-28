@@ -1,0 +1,103 @@
+.spinner {
+  display: inline-block;
+  inline-size: var(--spinner-size, 2rem);
+  block-size: var(--spinner-size, 2rem);
+  border: 3px solid var(--color-primary-soft);
+  border-block-start-color: var(--color-primary-strong);
+  border-radius: var(--radius-pill);
+  animation: spin 0.8s linear infinite;
+}
+
+.spinnerSm {
+  --spinner-size: 1.25rem;
+}
+
+.spinnerLg {
+  --spinner-size: 2.75rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.progress {
+  inline-size: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.progressLabelRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+}
+
+.track {
+  block-size: 0.625rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+}
+
+.fill {
+  block-size: 100%;
+  inline-size: var(--progress-value);
+  border-radius: inherit;
+  background: var(--color-primary-strong);
+  transition: inline-size var(--duration-base) var(--ease-standard);
+}
+
+.fillSuccess {
+  background: var(--color-success-strong);
+}
+
+.fillAccent {
+  background: var(--color-accent);
+}
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.alert svg {
+  flex-shrink: 0;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.alertDanger {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-strong);
+}
+
+.alertSuccess {
+  background: var(--color-success-soft);
+  border-color: var(--color-success-border);
+  color: var(--color-success-strong);
+}
+
+.alertInfo {
+  background: var(--color-info-soft);
+  border-color: var(--color-info-border);
+  color: var(--color-info-strong);
+}
+
+.alertWarning {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-strong);
+}

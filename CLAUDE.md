@@ -114,7 +114,11 @@ Never rename or translate values sent to/received from the API.
   where avoidable; no nested ternaries.
 - No magic strings/numbers: use constants, `as const` objects, unions, `ROUTE_PATHS`.
 - Forms: React Hook Form + Zod, schemas colocated in `features/<x>/schemas/`.
-- Styling uses tokens from `src/styles/tokens.css` only — no hardcoded colors/sizes.
+- Styling: CSS Modules per component + tokens from `src/styles/tokens.css` only — no hardcoded
+  colors/sizes, logical properties only (ADR-017). Reuse `src/components/ui/*` primitives
+  (Button, FormField, Modal, …) before writing new markup; check `/ui-preview` (dev) visually.
+- Dialogs/drawers use the native `<dialog>` wrappers (`Modal`, `ConfirmDialog`); icons come from
+  `lucide-react`; icon-only buttons need an Arabic `label`.
 - Semantic HTML and accessibility by default (labels, roles, focus, keyboard, contrast).
 - No premature abstractions: extract on the second real use, not the first imagined one.
 

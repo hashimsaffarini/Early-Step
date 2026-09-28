@@ -55,5 +55,13 @@ exist — ADR required; credentials only via CI secrets.
 
 ## Current tests
 
-- `src/app/App.test.tsx` — smoke test: app boots with providers + router and renders the home
-  route.
+- `src/app/App.test.tsx` — smoke test: app boots with providers + router.
+- `Button.test.tsx` — click, loading disables + `aria-busy`, default `type="button"`.
+- `FormField.test.tsx` — label/hint/error associations, `aria-invalid`; PasswordInput toggle.
+- `Tabs.test.tsx` — selection + panel, RTL arrow-key order, wrap-around.
+- `ConfirmDialog.test.tsx` — confirm once, cancel/close, disabled while confirming.
+- `DashboardLayout.test.tsx` — nav + active link, capped/labelled badge, mobile drawer opens and
+  closes after navigation.
+
+Helpers: `src/test/renderWithRouter.tsx`. `src/test/setup.ts` stubs
+`HTMLDialogElement.showModal/close` (missing in jsdom).

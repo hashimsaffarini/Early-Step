@@ -1,0 +1,57 @@
+.stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border-radius: var(--radius-card);
+  transition: transform var(--duration-base) var(--ease-bounce);
+}
+
+.stat:hover .icon {
+  transform: scale(1.08) rotate(-4deg);
+}
+
+.icon svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.primary {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
+.success {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+}
+
+.warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+}
+
+.value {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-black);
+  line-height: var(--line-height-tight);
+}

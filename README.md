@@ -113,6 +113,6 @@ verify manually → update docs → commit.
 - [x] API documentation mapped (not yet verified against a live backend)
 - [x] Design reference (Replit) audited and extracted
 - [ ] Live API verification (needs base URL + demo accounts)
-- [ ] Design system migration
+- [x] UI foundation: design tokens, fonts, RTL shell, layouts, core components (`/ui-preview` in dev)
 - [ ] Authentication
 - [ ] Product features

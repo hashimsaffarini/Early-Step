@@ -9,8 +9,9 @@ reconstructed and run locally with its own prototype backend and local-only seed
 (2026-09-28), and every role's screens were inspected at 1440 / 820 / 500 px. Values marked
 _(inferred)_ are not directly in source.
 
-> **Status:** documented, **not yet applied**. `src/styles/tokens.css` still holds neutral
-> placeholders. The proposed token map (§10) is applied in the design-system migration stage.
+> **Status:** **applied** in the UI foundation stage (ADR-017). `src/styles/tokens.css` now holds
+> the Replit-based tokens; see `UI_COMPONENT_INVENTORY.md` for what is implemented. Visual QA
+> gallery: `/ui-preview` (development only).
 
 Related: [`REPLIT_AUDIT.md`](REPLIT_AUDIT.md) (per-screen audit),
 [`UI_COMPONENT_INVENTORY.md`](UI_COMPONENT_INVENTORY.md),
@@ -363,8 +364,10 @@ Replaces the neutral placeholders in `src/styles/tokens.css` during the design-s
 }
 ```
 
-Category/gradient tokens (`--gradient-category-memory`, `--gradient-banner-teacher`, …) follow the
-§1 gradient table.
+Category/gradient tokens (`--gradient-category-*`, `--gradient-banner-*`) follow the §1 gradient
+table, **darkened for contrast** in the implementation: every banner stop keeps white text ≥ 4.5:1
+(brand `#0A7AAE → #2563EB → #4F46E5`, violet `#7C3AED → #4F46E5 → #0369A1`, teal
+`#0F766E → #4F46E5 → #7C3AED`, sunset `#B45309 → #C2410C → #BE185D`).
 
 ## 11. Rules
 

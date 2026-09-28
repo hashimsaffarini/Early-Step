@@ -1,4 +1,4 @@
-/* Structural layout primitives only — visual styling is TBD (Replit). */
+/* Tiny structural utilities shared by app-level pages. Components use CSS Modules. */
 .stack {
   display: flex;
   flex-direction: column;
@@ -13,77 +13,4 @@
   min-block-size: 100dvh;
   padding: var(--space-4);
   text-align: center;
-}
-
-.status-message {
-  align-items: center;
-  max-inline-size: 32rem;
-}
-
-.status-message__title {
-  font-size: var(--font-size-lg);
-  font-weight: 700;
-}
-
-.status-message__description {
-  color: var(--color-text-secondary);
-}
-
-.auth-layout {
-  display: grid;
-  place-items: center;
-  min-block-size: 100dvh;
-  padding: var(--space-4);
-}
-
-.auth-layout__panel {
-  inline-size: 100%;
-  max-inline-size: 28rem;
-}
-
-/* Mobile first: single column; nav moves to the inline-start side on wide screens. */
-.dashboard-layout {
-  display: grid;
-  grid-template-areas:
-    'header'
-    'nav'
-    'main';
-  grid-template-columns: 1fr;
-  min-block-size: 100dvh;
-}
-
-.dashboard-layout__header {
-  grid-area: header;
-}
-
-.dashboard-layout__nav {
-  grid-area: nav;
-}
-
-.dashboard-layout__main {
-  grid-area: main;
-  padding: var(--space-4);
-  inline-size: 100%;
-  max-inline-size: var(--layout-content-max-width);
-  margin-inline: auto;
-}
-
-@media (min-width: 64rem) {
-  .dashboard-layout {
-    grid-template-areas:
-      'nav header'
-      'nav main';
-    grid-template-columns: var(--layout-sidebar-width) 1fr;
-    grid-template-rows: auto 1fr;
-  }
-
-  .dashboard-layout__main {
-    padding: var(--space-8);
-  }
-}
-
-.child-activity-layout {
-  display: grid;
-  min-block-size: 100dvh;
-  padding: var(--space-4);
 }

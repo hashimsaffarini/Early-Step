@@ -12,6 +12,15 @@ export const ROUTE_PATHS = {
   unauthorized: '/unauthorized',
 } as const;
 
+/** Development-only UI preview (not registered in production builds). */
+export const DEV_PREVIEW_PATHS = {
+  root: '/ui-preview',
+  components: '/ui-preview/components',
+  forms: '/ui-preview/forms',
+  auth: '/ui-preview/auth',
+  child: '/ui-preview/child',
+} as const;
+
 /** Planned URL namespace for each role's area (pages TBD). */
 export const ROLE_NAMESPACES = {
   Parent: '/parent',

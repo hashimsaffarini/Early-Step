@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router';
 
+import { devPreviewRoutes } from '@/app/dev/ui-preview/devRoutes';
 import { HomePage } from '@/app/pages/HomePage';
 import { NotFoundPage } from '@/app/pages/NotFoundPage';
 import { UnauthorizedPage } from '@/app/pages/UnauthorizedPage';
@@ -18,6 +19,7 @@ export const routes: RouteObject[] = [
     children: [
       { path: ROUTE_PATHS.home, element: <HomePage /> },
       { path: ROUTE_PATHS.unauthorized, element: <UnauthorizedPage /> },
+      ...(import.meta.env.DEV ? devPreviewRoutes : []),
       { path: '*', element: <NotFoundPage /> },
     ],
   },

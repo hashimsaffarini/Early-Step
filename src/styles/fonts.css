@@ -1,0 +1,8 @@
+/*
+ * Self-hosted fonts (no third-party font requests — ADR-017).
+ * Cairo (variable) for body text, Tajawal for headings.
+ */
+@import '@fontsource-variable/cairo/index.css';
+@import '@fontsource/tajawal/700.css';
+@import '@fontsource/tajawal/800.css';
+@import '@fontsource/tajawal/900.css';

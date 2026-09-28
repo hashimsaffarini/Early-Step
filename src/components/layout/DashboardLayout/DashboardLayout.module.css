@@ -1,0 +1,87 @@
+.shell {
+  min-block-size: 100dvh;
+}
+
+/* ── Desktop sidebar (≥ 64rem) — inline-start = right side in RTL ── */
+.sidebar {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .shell {
+    display: grid;
+    grid-template-columns: var(--layout-sidebar-width) minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: sticky;
+    inset-block-start: 0;
+    display: block;
+    block-size: 100dvh;
+    border-inline-end: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+}
+
+/* ── Mobile header (< 64rem) ── */
+.mobileHeader {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-header);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-block-size: var(--layout-header-height);
+  padding-inline: var(--space-4);
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.mobileHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@media (min-width: 64rem) {
+  .mobileHeader {
+    display: none;
+  }
+}
+
+/* ── Main content ── */
+.main {
+  min-inline-size: 0;
+  padding: var(--space-4);
+}
+
+.main:focus {
+  outline: none;
+}
+
+@media (min-width: 48rem) {
+  .main {
+    padding: var(--space-6);
+  }
+}
+
+@media (min-width: 64rem) {
+  .main {
+    padding: var(--space-8);
+  }
+}
+
+.content {
+  max-inline-size: var(--layout-content-max-width);
+  margin-inline: auto;
+  animation: page-in var(--duration-base) var(--ease-standard);
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

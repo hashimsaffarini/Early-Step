@@ -1,0 +1,102 @@
+.banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  color: var(--color-text-on-dark);
+  box-shadow: var(--shadow-raised);
+}
+
+@media (min-width: 48rem) {
+  .banner {
+    padding: var(--space-8) var(--space-10);
+  }
+}
+
+/* Decorative soft "bubbles" — absolutely positioned, never affect layout. */
+.banner::before,
+.banner::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  border-radius: var(--radius-pill);
+  background: var(--color-glass-subtle);
+  filter: blur(24px);
+  pointer-events: none;
+}
+
+.banner::before {
+  inset-block-start: -2.5rem;
+  inset-inline-end: -2.5rem;
+  inline-size: 10rem;
+  block-size: 10rem;
+}
+
+.banner::after {
+  inset-block-end: -3rem;
+  inset-inline-start: 20%;
+  inline-size: 8rem;
+  block-size: 8rem;
+}
+
+.brand {
+  background: var(--gradient-brand);
+}
+
+.violet {
+  background: var(--gradient-banner-violet);
+}
+
+.teal {
+  background: var(--gradient-banner-teal);
+}
+
+.sunset {
+  background: var(--gradient-banner-sunset);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.eyebrow {
+  align-self: flex-start;
+  padding-block: var(--space-1);
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.title {
+  font-size: var(--font-size-3xl);
+  color: inherit;
+}
+
+@media (min-width: 48rem) {
+  .title {
+    font-size: var(--font-size-5xl);
+  }
+}
+
+.subtitle {
+  font-size: var(--font-size-md);
+  opacity: 0.95;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+}
