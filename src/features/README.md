@@ -3,10 +3,10 @@
 One folder per business domain. Folders are created **only when a feature is
 actually implemented** — no empty scaffolding.
 
-Planned domains (from known requirements; details TBD):
+Planned domains (decided after discovery — see `docs/ARCHITECTURE.md`, ADR-014):
 
-`auth`, `children`, `assessments`, `activities`, `categories`, `games`,
-`training-plans`, `reports`, `progress`, `chat`, `feedback`, `users`, `dashboards`.
+`auth`, `children`, `users`, `content`, `assessments`, `training-plans`, `feedback`,
+`reports`, `chat`, `dashboards`.
 
 Each feature contains only the subfolders it needs:
 

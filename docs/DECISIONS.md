@@ -241,3 +241,74 @@ rules). Lint runs with `--max-warnings=0`.
 ### Consequences
 
 Strict baseline from day one. Occasionally verbose code to satisfy type-aware rules.
+
+## ADR-013 — Replit is a visual reference only; the Apidog API is the contract
+
+### Status
+
+Accepted
+
+### Context
+
+Discovery (2026-09-28) showed the Replit project is a full-stack prototype with its own Express +
+PostgreSQL backend (session cookies, integer ids, English enums, OpenAI evaluation) that never
+calls the real Early Step API. Its data model, permissions and several features (rewards, AI
+risk scoring, notifications, IEP, difficulty, dark mode, EN toggle) have no counterpart in the
+real API.
+
+### Decision
+
+Use Replit only for visual design, layout and UX patterns. Take all contracts, enums,
+permissions and capabilities from the Apidog API (verified live when possible). Replit-only
+features are out of scope unless the product owner requests them and the backend supports them.
+
+### Consequences
+
+No Replit data-layer code is migrated. Some Replit screens (AI report builder, rewards, IEP) will
+not exist in the new app. Conflicts are tracked in `GAP_ANALYSIS.md`.
+
+## ADR-014 — Feature boundaries after discovery
+
+### Status
+
+Accepted
+
+### Context
+
+The foundation listed provisional features (`categories`, `activities`, `games`, `progress`
+separately). The API groups categories, activities, questions, options and initial-assessment
+composition under admin content management, and exposes progress only as training-plan results.
+
+### Decision
+
+Features: `auth`, `children`, `users`, `content`, `assessments`, `training-plans`, `feedback`,
+`reports`, `chat`, `dashboards`. Question renderers shared by assessments and training plans
+live in `src/components/question-players/` (presentational, no API). Details in
+`ARCHITECTURE.md`.
+
+### Consequences
+
+Fewer, larger domains that mirror the API. Route path constants will move to
+`src/constants/routes.ts` when the first feature needs cross-area links (separate ADR).
+
+## ADR-015 — Role-namespaced routes
+
+### Status
+
+Accepted
+
+### Context
+
+The API is partitioned by role (`/Parent`, `/Teacher`, `/specialist`, `/Admin`, `/SuperAdmin`),
+each with its own dashboard/children endpoints. Replit's flat routes with in-page role branching
+caused redirect loops and hooks-order bugs.
+
+### Decision
+
+Use `/parent/*`, `/teacher/*`, `/specialist/*`, `/admin/*`, `/super-admin/*`, plus public auth
+routes and a full-screen `/play/*` area. Shared screens (chat, change password) reuse the same
+page component in each namespace. See `ROUTING.md`.
+
+### Consequences
+
+One `RoleGuard` per subtree; unambiguous URLs; some route-table repetition for shared pages.

@@ -1,7 +1,29 @@
 # API Integration
 
-> No endpoints are documented here yet. The backend API documentation (TBD) is the source of
-> truth. **Never invent endpoints, fields, or response formats.**
+> Backend documentation: <https://e3mockwfb7.apidog.io/> (Apidog). Endpoint catalogue:
+> [`API_ENDPOINTS.md`](API_ENDPOINTS.md). **Never invent endpoints, fields, or response
+> formats.** The Replit prototype has its own unrelated backend and is **not** a contract source.
+
+## Discovery findings (2026-09-28, documentation only — not yet verified live)
+
+| Topic                           | Finding                                                                                                      | Consequence for the frontend                                                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base URL                        | Not documented (`servers: []`); chat hub example is `wss://localhost:7256/chatHub`                           | `VITE_API_BASE_URL` stays empty until provided; a separate hub URL may be needed (TBD)                                                       |
+| `/api` prefix                   | Only on register, login and 4 chat routes                                                                    | Keep full paths per endpoint in request functions; verify live before assuming a typo                                                        |
+| Auth scheme                     | `bearer` (HTTP) on protected routes; format (JWT/opaque) undocumented                                        | Interceptor already supports bearer injection                                                                                                |
+| Login                           | `POST /api/Auth/login`, `multipart/form-data` (`email`, `password`, `rememberMe`); **response undocumented** | Token field, user/role payload, expiry: **TBD — blocking for Stage 2**                                                                       |
+| Register                        | `POST /api/Auth/register`, multipart, `role` is an Arabic string (e.g. `ولي أمر`)                            | Role values must be confirmed                                                                                                                |
+| Current user / logout / refresh | **Not documented**                                                                                           | Session restore strategy TBD (decode JWT? store user from login response?)                                                                   |
+| Password                        | change (bearer), forgot (email), reset (email + code)                                                        | JSON bodies                                                                                                                                  |
+| Content types                   | Mixed multipart (auth, child add/edit, activity, question, option, report edit) and JSON                     | Request functions must send `FormData` where documented; Axios sets the multipart boundary automatically — don't set `Content-Type` manually |
+| File uploads                    | Activity `Icon`, `QuestionImage`, `Options[i].OptionImage`                                                   | Indexed multipart keys (`Options[0].OptionText`) — ASP.NET model binding                                                                     |
+| Media URLs                      | Relative (`/uploads/...`)                                                                                    | Build absolute URLs from the API origin in one helper                                                                                        |
+| Response envelopes              | Inconsistent: bare string, `{ message }`, `string[]`, entity                                                 | Normalize per endpoint in the feature API layer                                                                                              |
+| Errors                          | No status codes documented; Arabic messages; some failures shown with 200                                    | `extractBackendDetails()` must handle string / `{message}` / `string[]` / ProblemDetails — **verify live**                                   |
+| Pagination                      | Only chat (`take`, `beforeId`, `afterId`)                                                                    | Infinite queries for chat only                                                                                                               |
+| Enum values                     | Arabic strings (role, gender, activity type) mixed with English (question types, `type=test`)                | Keep backend values as-is; map for display; single mapping module per enum                                                                   |
+| Real-time                       | SignalR-style hub `/chatHub`; methods/events undocumented                                                    | `@microsoft/signalr` may be needed (ADR at Stage "Chat")                                                                                     |
+| PDF                             | `GET /Reports/{id}/download` returns PDF bytes                                                               | `responseType: 'blob'`                                                                                                                       |
 
 ## Environment
 
@@ -99,5 +121,6 @@ export const childrenKeys = {
 
 ## Unknowns (TBD)
 
-Base URL · auth scheme · token lifetime/refresh · error body format · pagination format ·
-file upload format · real-time transport for chat · API versioning.
+Base URL/environments · CORS · login response & token format/lifetime · refresh/logout/me ·
+all role enum values · error body format & status codes · hub protocol & auth · initial
+assessment result endpoint · training-plan answer submission · game endpoints · API versioning.

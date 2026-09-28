@@ -91,13 +91,53 @@ lives in its feature. Moving it later is cheap; un-sharing a premature abstracti
 
 See `API_INTEGRATION.md`.
 
-## Domain boundaries (planned, TBD against API)
+## Feature boundaries (decided after discovery, 2026-09-28)
 
-`auth`, `users`, `children`, `assessments`, `activities`, `categories`, `games`,
-`training-plans`, `progress`, `reports`, `feedback`, `chat`, `dashboards`.
+Based on the real API partitioning (`API_ENDPOINTS.md`) and the Replit screens
+(`REPLIT_AUDIT.md`). Folders are still created **only when implemented**.
 
-Boundaries will be confirmed once the API documentation is available (e.g. whether tests and
-games are separate resources or both "activities").
+| Feature          | Owns                                                                                                                                                       | API areas                                                                                                                                                        |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth`           | login, register, forgot/reset/change password, session, `registerHttpAuthHooks`, guards' session source                                                    | Account                                                                                                                                                          |
+| `children`       | parent child CRUD, child lists/profiles per role (parent/teacher/specialist/super-admin views), specialist→teacher assignment, admin→specialist assignment | Parent, `/specialist/children`, `/Teacher/children`, `/SuperAdmin/children`, assign endpoints                                                                    |
+| `users`          | admin & super-admin user lists/details                                                                                                                     | `/Admin/users*`, `/SuperAdmin/users`                                                                                                                             |
+| `content`        | admin content management: categories, activities (tests/games), questions, options, **initial-assessment composition**                                     | `/Admin/categories*`, `/Admin/activities*`, `/Admin/questions*`, `/Admin/question-options*`, `/initial-assessment/categories*`, `/initial-assessment/questions*` |
+| `assessments`    | taking the initial assessment (start → answer → complete), results (when API exists)                                                                       | `/initial-assessment/{id}/start                                                                                                                                  | answer | complete` |
+| `training-plans` | specialist plan editor, plan views, child activity play/results, progress summary                                                                          | `/TrainingPlan/*`                                                                                                                                                |
+| `feedback`       | teacher notes CRUD                                                                                                                                         | `/Teacher/notes*`, `/Teacher/children/{id}/notes`                                                                                                                |
+| `reports`        | report CRUD, lists, PDF download                                                                                                                           | `/specialist/Reports`, `/specialist/CreateReport`, `/specialist/{id}`, `/Reports/*`                                                                              |
+| `chat`           | conversations, messages, unread, seen, hub connection                                                                                                      | `/api/Chats/*`, `/Chats*`, hub                                                                                                                                   |
+| `dashboards`     | per-role home/dashboard pages                                                                                                                              | `/Admin/dashboard`, `/specialist/dashboard`, `/Teacher/dashboard`, `/SuperAdmin/dashboard`                                                                       |
+
+Changes from the foundation plan: `categories`, `activities` and `games` are merged into
+**`content`** (one admin CRUD domain; "game" is an activity type — `ACTIVITY_ENGINE.md`);
+`progress` is part of **`training-plans`** (the API exposes progress only as plan results).
+
+### Shared product components needed by several features
+
+- **Question players** (choice / order / match renderers, answer feedback, result stars) are
+  used by `assessments` and `training-plans` → `src/components/question-players/` (presentational,
+  props-driven, **no API calls**).
+- Enum display maps (roles, gender, activity type) → `src/constants/` (one module per enum).
+- Media URL helper (`/uploads/...` → absolute) → `src/services/api/` or `src/lib/`.
+- Route path constants: features must link to other areas without importing `app/`. When the
+  first feature needs a path, **move `ROUTE_PATHS` / `ROLE_NAMESPACES` from `app/router/paths.ts`
+  to `src/constants/routes.ts`** (ADR required).
+
+### Feature dependency rules
+
+```text
+dashboards ─┐
+children ───┤
+reports ────┤  → shared layers only (components, services, constants, types, config)
+chat ───────┤
+...         ┘
+app/router  → every feature (composition root)
+```
+
+No feature imports another. Cross-feature screens (e.g. a teacher's child page showing the plan
+**and** notes) are composed in `app/router` from each feature's public components, or the owning
+feature renders a slot passed by the route.
 
 ## Routing
 
@@ -113,7 +153,10 @@ assembles them under the right layout and guards. Paths are constants. See `ROUT
 | `DashboardLayout`     | Role dashboards: skip link, header, nav (inline-start), main |
 | `ChildActivityLayout` | Distraction-free shell for child tests/games                 |
 
-Layouts are structural only; visual design is pending the Replit reference.
+Layouts are structural only; visual design follows `DESIGN_SYSTEM.md` (extracted from Replit)
+and is applied in Stage 1. `DashboardLayout` will take role-specific navigation config from
+`app/router`; the mobile drawer must open from the inline-start edge (right side in RTL) — Replit
+animates it from the wrong side.
 
 ## Preventing architecture degradation
 

@@ -14,7 +14,26 @@ High-level flow: Parent registers → adds children → child completes initial 
 plan → Specialist assigns Teacher → Teacher follows progress and gives feedback →
 Specialist monitors progress.
 
-Current status: **foundation only** — no product features are implemented yet.
+Current status: **foundation + discovery complete** — no product features are implemented yet.
+Next steps: `docs/IMPLEMENTATION_PLAN.md`.
+
+## External references
+
+| Reference        | Location                                                 | Role                                                                    |
+| ---------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- |
+| GitHub           | <https://github.com/hashimsaffarini/Early-Step> (`main`) | Official repo                                                           |
+| Backend API docs | <https://e3mockwfb7.apidog.io/> (index: `/llms.txt`)     | **Source of truth for contracts**                                       |
+| Replit prototype | <https://replit.com/@Zainmoneer04/Earlysteps> (private)  | **Visual/UX reference only** — it has its own unrelated Express backend |
+| Backend base URL | not yet provided (TBD)                                   | `VITE_API_BASE_URL`                                                     |
+
+## Source-of-truth hierarchy
+
+1. **Backend API** → contracts, data models, server-enforced permissions, capabilities.
+2. **Replit** → visual design, layout, UX patterns, existing screens.
+3. **Written requirements** → intended business workflow.
+
+If they disagree, **do not silently pick one** — document the conflict in
+`docs/GAP_ANALYSIS.md` and ask.
 
 ## 2. Product purpose
 
@@ -55,9 +74,14 @@ constants, types, utils, styles)`. Shared code **never** imports from `features/
 ## 6. No localization
 
 Arabic only. **No i18n library, no language switcher, no translation files.** UI text is
-written in Arabic directly. Backend enum values stay in English internally and are mapped to
-Arabic labels for display (e.g. `ROLE_LABELS` in `src/constants/roleLabels.ts`). Never
-rename or translate values sent to/received from the API.
+written in Arabic directly. Backend enum values are kept exactly as the API sends them and
+mapped to Arabic labels for display (e.g. `ROLE_LABELS` in `src/constants/roleLabels.ts`).
+Never rename or translate values sent to/received from the API.
+
+⚠️ The API docs show **Arabic enum values on the wire** for some fields (role `ولي أمر`, gender
+`بنت`/`ولد`, activity type `اختبارات`) and English for others (question types, `type=test`).
+`src/types/roles.ts` assumes English keys — **verify live before building auth** (see
+`docs/ROLES_AND_PERMISSIONS.md`).
 
 ## 7. API integration rules
 
@@ -68,7 +92,11 @@ rename or translate values sent to/received from the API.
 - Base URL comes only from `VITE_API_BASE_URL` via `src/config/env.ts`. Never hardcode URLs.
 - **Never invent endpoints, payloads, response shapes, or error formats.** If the API docs
   don't say it, it's TBD — ask.
-- Details: `docs/API_INTEGRATION.md`.
+- Known API traits: bearer auth; GUID ids; mixed `multipart/form-data` and JSON bodies (send
+  `FormData` where documented); inconsistent `/api` prefix and casing (use documented paths
+  verbatim); relative media URLs (`/uploads/...`); Arabic message strings; response schemas
+  mostly undocumented — verify live.
+- Details: `docs/API_INTEGRATION.md`, catalogue: `docs/API_ENDPOINTS.md`.
 
 ## 8. State management rules
 
@@ -115,17 +143,25 @@ rename or translate values sent to/received from the API.
 ## 13. Design source of truth
 
 The **existing Early Step Replit application** is the visual source of truth (colors,
-typography, spacing, radius, components, navigation, dashboards, child UI). Current tokens
-are neutral placeholders. **Do not invent a design system or branding.** Before building any
-significant UI, inspect the Replit reference and record findings in `docs/DESIGN_SYSTEM.md`.
+typography, spacing, radius, components, navigation, dashboards, child UI). Its extracted values
+are in `docs/DESIGN_SYSTEM.md` (sky-blue primary `#0DA2E7`, amber accent, warm cream background,
+Cairo/Tajawal fonts, large soft radii, sidebar 18rem). Tokens in `src/styles/tokens.css` are
+still placeholders until Stage 2. **Do not invent a design system or branding.** Deviate only for
+documented accessibility/RTL/responsive fixes (e.g. white-on-primary fails contrast).
 
 ## 14. Using the Replit project
 
 - Treat Replit as a **visual reference**, not a code base to copy wholesale.
+- Replit runs its **own prototype backend** (Express + Postgres, session cookies, integer ids,
+  English enums, OpenAI). Its data flows, permissions, and extra features (rewards, AI risk,
+  notifications, IEP, difficulty, dark mode, EN toggle) are **not** product requirements.
 - Reproduce its visual language with this repo's architecture and tokens.
 - Replit behavior does not override the backend API docs for data/contracts.
 - If Replit and the API docs disagree, flag it to the user — don't guess.
+- Do not carry over its known bugs or fabricated statistics (see `docs/REPLIT_AUDIT.md`).
 - Never copy credentials or secrets found in Replit into this repo.
+- Source can be read from the running dev server (Vite serves modules with source maps) — read
+  only; keep any local copies outside the repo.
 
 ## 15. Backend / API fidelity
 
@@ -155,10 +191,12 @@ fake data, mock backends, or speculative permissions.
 
 ## 18. Read the docs before each major feature
 
-Before starting a feature, read: `docs/PRODUCT_REQUIREMENTS.md`,
-`docs/ROLES_AND_PERMISSIONS.md`, `docs/API_INTEGRATION.md`, `docs/ARCHITECTURE.md`,
-`docs/DESIGN_SYSTEM.md`, and follow `docs/DEVELOPMENT_WORKFLOW.md`. Inspect the real API docs
-and Replit UI for that feature first.
+Before starting a feature, read: `docs/IMPLEMENTATION_PLAN.md` (the stage),
+`docs/PRODUCT_REQUIREMENTS.md`, `docs/ROLES_AND_PERMISSIONS.md`, `docs/API_ENDPOINTS.md`,
+`docs/API_INTEGRATION.md`, `docs/USER_FLOWS.md`, `docs/ARCHITECTURE.md`,
+`docs/DESIGN_SYSTEM.md`, `docs/GAP_ANALYSIS.md`, and (for assessments/activities/games)
+`docs/ACTIVITY_ENGINE.md`. Follow `docs/DEVELOPMENT_WORKFLOW.md`. Inspect the real API and
+Replit UI for that feature first. Don't start a stage marked BLOCKED.
 
 ## 19. Keep docs current
 

@@ -45,3 +45,23 @@ items without confirmation.
 - Is there media (audio/images) in tests/games? Where is it hosted?
 - Notifications?
 - Feature priority order.
+
+## Discovery update (2026-09-28)
+
+Answers found during discovery (see `GAP_ANALYSIS.md` for the full matrix):
+
+- **Chat:** API has REST + a SignalR-style hub (`/chatHub`), unread count and "seen".
+- **Games:** Replit implements games as hard-coded frontend components; the API models activities
+  as question/option content with no game-engine field. Scope decision pending
+  (`ACTIVITY_ENGINE.md` §4).
+- **Media:** API supports images on activities (icon), questions and options (`/uploads/...`).
+  No audio.
+- **Child login:** not supported by either system.
+- **Notifications:** Replit only; no API — out of scope unless requested.
+- **Reports:** manual, specialist-authored (`title`, `weaknesses`, `recommendations`), server PDF.
+- **Feedback:** teacher "notes" (free text) per child.
+- **Progress:** only training-plan activity results (`score`, `correctAnswers`, `wrongAnswers`,
+  `isCompleted`) and counts summary.
+
+Still open: which roles self-register; parent visibility of results/progress; Super Admin scope;
+timing/response-speed/focus metrics; feature priority order.

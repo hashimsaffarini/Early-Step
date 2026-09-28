@@ -94,6 +94,12 @@ verify manually → update docs → commit.
 | [`docs/TESTING.md`](docs/TESTING.md)                             | Testing strategy                  |
 | [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md)   | Per-feature workflow              |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md)                         | Architecture decision log         |
+| [`docs/API_ENDPOINTS.md`](docs/API_ENDPOINTS.md)                 | Backend endpoint catalogue        |
+| [`docs/USER_FLOWS.md`](docs/USER_FLOWS.md)                       | Mapped user journeys              |
+| [`docs/ACTIVITY_ENGINE.md`](docs/ACTIVITY_ENGINE.md)             | Tests / games / assessment model  |
+| [`docs/GAP_ANALYSIS.md`](docs/GAP_ANALYSIS.md)                   | Requirements vs Replit vs API     |
+| [`docs/REPLIT_AUDIT.md`](docs/REPLIT_AUDIT.md)                   | Replit prototype audit            |
+| [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)     | Staged implementation plan        |
 
 ## Current project status
 
@@ -102,7 +108,9 @@ verify manually → update docs → commit.
 - [x] Global RTL / Arabic setup
 - [x] HTTP layer, error normalization, query client, router, layouts
 - [x] Documentation
-- [ ] API documentation integrated (pending)
-- [ ] Design reference (Replit) inspected (pending)
+- [x] API documentation mapped (not yet verified against a live backend)
+- [x] Design reference (Replit) audited and extracted
+- [ ] Live API verification (needs base URL + demo accounts)
+- [ ] Design system migration
 - [ ] Authentication
 - [ ] Product features

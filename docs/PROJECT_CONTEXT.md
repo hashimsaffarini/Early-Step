@@ -50,13 +50,21 @@ Backend role values are TBD until confirmed from the API documentation.
 
 ## Pending external references
 
-| Reference                             | Status                |
-| ------------------------------------- | --------------------- |
-| GitHub repository                     | TBD                   |
-| Existing Replit project (design ref.) | TBD                   |
-| API documentation                     | TBD                   |
-| Backend base URL                      | TBD                   |
-| Demo accounts (one per role)          | TBD — never committed |
-| UI screenshots                        | TBD                   |
-| Feature priorities                    | TBD                   |
-| Deployment target                     | TBD                   |
+| Reference                             | Status                                                                      |
+| ------------------------------------- | --------------------------------------------------------------------------- |
+| GitHub repository                     | ✅ https://github.com/hashimsaffarini/Early-Step                            |
+| Existing Replit project (design ref.) | ✅ https://replit.com/@Zainmoneer04/Earlysteps (audited: `REPLIT_AUDIT.md`) |
+| API documentation                     | ✅ https://e3mockwfb7.apidog.io/ (mapped: `API_ENDPOINTS.md`)               |
+| Backend base URL                      | TBD                                                                         |
+| Demo accounts (one per role)          | TBD — never committed                                                       |
+| UI screenshots                        | TBD                                                                         |
+| Feature priorities                    | TBD                                                                         |
+| Deployment target                     | TBD                                                                         |
+
+## Discovery notes (2026-09-28)
+
+- The Replit prototype brands the product **مستكشف القدرات** ("Ability Explorer"). Which name
+  and logo the new UI shows is **TBD**.
+- Child login: neither the API nor Replit has a child account. Children play inside an adult's
+  session (operator role TBD).
+- Detailed findings: `REPLIT_AUDIT.md`, `API_ENDPOINTS.md`, `GAP_ANALYSIS.md`.
