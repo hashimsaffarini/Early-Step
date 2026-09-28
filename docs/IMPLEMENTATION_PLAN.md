@@ -49,7 +49,7 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
   Tabs, Modal, ConfirmDialog, Spinner, Skeleton, EmptyState/ErrorState/LoadingState restyle,
   PageHeader, PageBanner, StatCard, AppSidebar + MobileDrawer + NavItem, UserBadge.
 - **Decisions first:** icon library (lucide-react ADR), fonts (Google vs self-host), dark mode
-  (TBD), animation approach (CSS vs framer-motion ADR), product name/logo.
+  (**out of scope**, ADR-016), animation approach (CSS vs framer-motion ADR), logo (name = Early Step).
 - **Acceptance:** primitives match Replit screenshots; WCAG AA contrast; RTL; 400–1440 px.
 - **Tests:** component tests for interactive primitives (Modal focus trap/escape, ConfirmDialog,
   PasswordInput toggle, FormField label association).

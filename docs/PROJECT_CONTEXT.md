@@ -63,8 +63,8 @@ Backend role values are TBD until confirmed from the API documentation.
 
 ## Discovery notes (2026-09-28)
 
-- The Replit prototype brands the product **مستكشف القدرات** ("Ability Explorer"). Which name
-  and logo the new UI shows is **TBD**.
+- **Decided:** the product name is **Early Step** (ADR-016). The Replit prototype brands the product **مستكشف القدرات** ("Ability Explorer"). Logo design is still
+  **TBD**.
 - Child login: neither the API nor Replit has a child account. Children play inside an adult's
   session (operator role TBD).
 - Detailed findings: `REPLIT_AUDIT.md`, `API_ENDPOINTS.md`, `GAP_ANALYSIS.md`.

@@ -312,3 +312,31 @@ page component in each namespace. See `ROUTING.md`.
 ### Consequences
 
 One `RoleGuard` per subtree; unambiguous URLs; some route-table repetition for shared pages.
+
+## ADR-016 — Visual direction decisions
+
+### Status
+
+Accepted (product owner, 2026-09-28)
+
+### Context
+
+The Replit audit (`REPLIT_AUDIT.md`, `DESIGN_SYSTEM.md`) surfaced open visual questions: product
+name, dark mode, which of Replit's child-facing styles to follow, and failing contrast of the brand
+blue.
+
+### Decision
+
+- Product name: **Early Step**.
+- Dark mode: **not in scope** for now; light theme only (tokens stay dark-ready).
+- Child-facing UI: the **light assessment style**; the dark test-player style is not used.
+- Contrast: `#0DA2E7` stays the brand/decorative blue; `#0A7AAE` for filled buttons and important
+  text; dark text on amber backgrounds.
+- Preserve Cairo (body), Tajawal (headings), warm cream background, rounded cards, gradient
+  banners, playful feedback, stars/sounds/confetti where appropriate.
+- Fix Replit's RTL drawer, dropdown positioning, mobile chat, tiny text, labels, colour-only
+  feedback, reduced motion, broken decorative classes, fabricated statistics.
+
+### Consequences
+
+One light visual dialect. The UI foundation stage applies these tokens; no theme toggle is built.

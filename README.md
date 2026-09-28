@@ -79,27 +79,29 @@ verify manually → update docs → commit.
 
 ## Documentation
 
-| File                                                             | Purpose                           |
-| ---------------------------------------------------------------- | --------------------------------- |
-| [`CLAUDE.md`](CLAUDE.md)                                         | Rules for AI-assisted development |
-| [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md)             | What Early Step is                |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                   | Structure and dependency rules    |
-| [`docs/PRODUCT_REQUIREMENTS.md`](docs/PRODUCT_REQUIREMENTS.md)   | Known requirements                |
-| [`docs/ROLES_AND_PERMISSIONS.md`](docs/ROLES_AND_PERMISSIONS.md) | Role matrix (preliminary)         |
-| [`docs/API_INTEGRATION.md`](docs/API_INTEGRATION.md)             | HTTP + TanStack Query conventions |
-| [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)                 | Visual reference (Replit, TBD)    |
-| [`docs/ROUTING.md`](docs/ROUTING.md)                             | Routing strategy                  |
-| [`docs/STATE_MANAGEMENT.md`](docs/STATE_MANAGEMENT.md)           | State rules                       |
-| [`docs/SECURITY.md`](docs/SECURITY.md)                           | Security policy                   |
-| [`docs/TESTING.md`](docs/TESTING.md)                             | Testing strategy                  |
-| [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md)   | Per-feature workflow              |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md)                         | Architecture decision log         |
-| [`docs/API_ENDPOINTS.md`](docs/API_ENDPOINTS.md)                 | Backend endpoint catalogue        |
-| [`docs/USER_FLOWS.md`](docs/USER_FLOWS.md)                       | Mapped user journeys              |
-| [`docs/ACTIVITY_ENGINE.md`](docs/ACTIVITY_ENGINE.md)             | Tests / games / assessment model  |
-| [`docs/GAP_ANALYSIS.md`](docs/GAP_ANALYSIS.md)                   | Requirements vs Replit vs API     |
-| [`docs/REPLIT_AUDIT.md`](docs/REPLIT_AUDIT.md)                   | Replit prototype audit            |
-| [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)     | Staged implementation plan        |
+| File                                                               | Purpose                           |
+| ------------------------------------------------------------------ | --------------------------------- |
+| [`CLAUDE.md`](CLAUDE.md)                                           | Rules for AI-assisted development |
+| [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md)               | What Early Step is                |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                     | Structure and dependency rules    |
+| [`docs/PRODUCT_REQUIREMENTS.md`](docs/PRODUCT_REQUIREMENTS.md)     | Known requirements                |
+| [`docs/ROLES_AND_PERMISSIONS.md`](docs/ROLES_AND_PERMISSIONS.md)   | Role matrix (preliminary)         |
+| [`docs/API_INTEGRATION.md`](docs/API_INTEGRATION.md)               | HTTP + TanStack Query conventions |
+| [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)                   | Visual reference (Replit, TBD)    |
+| [`docs/ROUTING.md`](docs/ROUTING.md)                               | Routing strategy                  |
+| [`docs/STATE_MANAGEMENT.md`](docs/STATE_MANAGEMENT.md)             | State rules                       |
+| [`docs/SECURITY.md`](docs/SECURITY.md)                             | Security policy                   |
+| [`docs/TESTING.md`](docs/TESTING.md)                               | Testing strategy                  |
+| [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md)     | Per-feature workflow              |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md)                           | Architecture decision log         |
+| [`docs/API_ENDPOINTS.md`](docs/API_ENDPOINTS.md)                   | Backend endpoint catalogue        |
+| [`docs/USER_FLOWS.md`](docs/USER_FLOWS.md)                         | Mapped user journeys              |
+| [`docs/ACTIVITY_ENGINE.md`](docs/ACTIVITY_ENGINE.md)               | Tests / games / assessment model  |
+| [`docs/GAP_ANALYSIS.md`](docs/GAP_ANALYSIS.md)                     | Requirements vs Replit vs API     |
+| [`docs/REPLIT_AUDIT.md`](docs/REPLIT_AUDIT.md)                     | Replit prototype audit            |
+| [`docs/UI_COMPONENT_INVENTORY.md`](docs/UI_COMPONENT_INVENTORY.md) | Planned UI components             |
+| [`docs/UI_MIGRATION_MAP.md`](docs/UI_MIGRATION_MAP.md)             | Replit screen → new app mapping   |
+| [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)       | Staged implementation plan        |
 
 ## Current project status
 

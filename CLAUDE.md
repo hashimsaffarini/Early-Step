@@ -146,7 +146,9 @@ The **existing Early Step Replit application** is the visual source of truth (co
 typography, spacing, radius, components, navigation, dashboards, child UI). Its extracted values
 are in `docs/DESIGN_SYSTEM.md` (sky-blue primary `#0DA2E7`, amber accent, warm cream background,
 Cairo/Tajawal fonts, large soft radii, sidebar 18rem). Tokens in `src/styles/tokens.css` are
-still placeholders until Stage 2. **Do not invent a design system or branding.** Deviate only for
+still placeholders until Stage 2. **Do not invent a design system or branding.** Approved (ADR-016): product name **Early Step**;
+**light theme only** (no dark mode); child UI follows the **light assessment style** (not the dark
+test player); `#0DA2E7` brand/decorative, `#0A7AAE` for buttons and important text, dark text on amber. Deviate only for
 documented accessibility/RTL/responsive fixes (e.g. white-on-primary fails contrast).
 
 ## 14. Using the Replit project
@@ -194,7 +196,8 @@ fake data, mock backends, or speculative permissions.
 Before starting a feature, read: `docs/IMPLEMENTATION_PLAN.md` (the stage),
 `docs/PRODUCT_REQUIREMENTS.md`, `docs/ROLES_AND_PERMISSIONS.md`, `docs/API_ENDPOINTS.md`,
 `docs/API_INTEGRATION.md`, `docs/USER_FLOWS.md`, `docs/ARCHITECTURE.md`,
-`docs/DESIGN_SYSTEM.md`, `docs/GAP_ANALYSIS.md`, and (for assessments/activities/games)
+`docs/DESIGN_SYSTEM.md`, `docs/UI_COMPONENT_INVENTORY.md`, `docs/UI_MIGRATION_MAP.md`,
+`docs/REPLIT_AUDIT.md`, `docs/GAP_ANALYSIS.md`, and (for assessments/activities/games)
 `docs/ACTIVITY_ENGINE.md`. Follow `docs/DEVELOPMENT_WORKFLOW.md`. Inspect the real API and
 Replit UI for that feature first. Don't start a stage marked BLOCKED.
 

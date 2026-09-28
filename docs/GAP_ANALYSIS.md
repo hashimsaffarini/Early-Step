@@ -54,7 +54,7 @@ permissions and business rules are not evidence of real backend behaviour.
 | Skills analysis / radar charts                  | —                                       | Yes                                                        | None                                                               | Out of Scope                                  |
 | IEP plans                                       | —                                       | Yes                                                        | None (Training Plan instead)                                       | Out of Scope — superseded by Training Plan    |
 | Difficulty levels                               | —                                       | Dead code                                                  | None                                                               | Out of Scope                                  |
-| Dark mode                                       | —                                       | Yes (follows OS)                                           | n/a                                                                | TBD — design decision                         |
+| Dark mode                                       | —                                       | Yes (follows OS)                                           | n/a                                                                | Out of Scope (ADR-016)                        |
 | English language toggle                         | **Excluded** (Arabic only)              | Code exists, toggle never rendered                         | n/a                                                                | Out of Scope                                  |
 | Landing page                                    | —                                       | Yes (fabricated stats)                                     | n/a                                                                | TBD — keep design, drop claims                |
 | Timing / response speed / focus                 | Mentioned in product vision             | Only per-question countdown                                | None                                                               | TBD                                           |
@@ -65,8 +65,8 @@ permissions and business rules are not evidence of real backend behaviour.
 2. **Child age.** API `Age` (number as string) vs Replit/API responses `birthDate`.
 3. **Gender values.** Request `بنت`/`ولد` vs edit response `Female`.
 4. **Activity type value.** Arabic `اختبارات` in responses vs `type=test` query.
-5. **Product name.** Replit UI brand is **مستكشف القدرات** ("Ability Explorer"); project name is
-   **Early Step**. Which name/logo the new UI shows is **TBD**.
+5. **Product name.** _Resolved: **Early Step** (ADR-016)._ Replit UI brand is **مستكشف القدرات** ("Ability Explorer"); project name is
+   **Early Step**. Logo still TBD.
 6. **Games.** Requirements say admin creates games; Replit games are code; API has no game endpoints.
 7. **Training plan vs IEP.** Replit's IEP (free-text goals) vs API's activity-list plan.
 8. **Reports.** Replit: strengths + AI probability; API: title + weaknesses + recommendations.
