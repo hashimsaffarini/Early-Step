@@ -1,0 +1,50 @@
+/*
+ * Design tokens — the ONLY place raw visual values are defined.
+ *
+ * These are neutral PLACEHOLDERS. The real values (colors, fonts, radii,
+ * shadows, spacing) will be copied from the Early Step Replit application.
+ * See docs/DESIGN_SYSTEM.md. Components must use these variables, never
+ * hardcoded colors or sizes.
+ */
+:root {
+  /* Color — placeholder neutrals, TBD from Replit */
+  --color-primary: #3b5bdb;
+  --color-primary-contrast: #ffffff;
+  --color-secondary: #495057;
+  --color-background: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-border: #dee2e6;
+  --color-text-primary: #212529;
+  --color-text-secondary: #495057;
+  --color-danger: #c92a2a;
+  --color-focus-ring: #3b5bdb;
+
+  /* Typography — Arabic-capable system stack, TBD from Replit */
+  --font-family-base:
+    system-ui, 'Segoe UI', Tahoma, 'Noto Sans Arabic', 'Geeza Pro', 'Arial', sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.75rem;
+  --line-height-base: 1.7;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.08);
+
+  /* Layout */
+  --layout-sidebar-width: 16rem;
+  --layout-content-max-width: 75rem;
+}
