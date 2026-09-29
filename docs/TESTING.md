@@ -65,11 +65,20 @@ exist — ADR required; credentials only via CI secrets.
 - `ResetPasswordPage.test.tsx` — required/code-format errors, weak + mismatch, success → login.
 - `password.test.ts` — strength levels and criteria scoring.
 - `ParentDashboardPage.test.tsx` — banner heading, four summary cards, child cards per mock child,
-  recent activity items + dates, section headings, unfinished actions are disabled buttons (no
-  links), no percentages.
-- `format.test.ts` (dashboards) — Arabic age phrasing, time-of-day greeting.
+  recent activity items + dates, section headings, "عرض الكل" links to `/parent/children` and each
+  card links to its profile, no percentages.
+- `format.test.ts` (dashboards) — time-of-day greeting.
+- `age.test.ts` — Arabic age phrasing and whole-year age from a birth date.
+- `ParentChildrenPage.test.tsx` — one card per mock child with neutral statuses, "عرض الملف" links
+  to `/parent/children/:childId`, search filter, add-child dialog validation (required + future birth date), local
+  add closes the dialog and confirms, empty state + CTA opens the form.
 - `parentRoutes.test.tsx` — `/parent` → `/parent/dashboard` redirect (real route tree), active nav
-  item, unavailable nav items are not links.
+  item, `/parent/children` renders with "أطفالي" active, unavailable nav items are not links.
+- `ChildProfilePage.test.tsx` (real route tree) — known ID renders the profile, unknown ID renders
+  the not-found state, card link opens the profile; header (name, age, birth date, gender, neutral
+  status; no diagnosis/risk/%; edit disabled); four tabs, click switching, RTL arrow keys, plan
+  summary jumps to activities; overview summaries (assessment, plan progress "3 من 8 أنشطة",
+  reports, recent activity); pending-assessment state; no-plan and no-reports empty states.
 - `Button.test.tsx` — click, loading disables + `aria-busy`, default `type="button"`.
 - `FormField.test.tsx` — label/hint/error associations, `aria-invalid`; PasswordInput toggle.
 - `Tabs.test.tsx` — selection + panel, RTL arrow-key order, wrap-around.

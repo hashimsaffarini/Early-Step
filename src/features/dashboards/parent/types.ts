@@ -1,8 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 
-/** Neutral, non-diagnostic child status shown on the parent dashboard. */
-export type ChildJourneyStatus =
-  'assessment-pending' | 'assessment-completed' | 'training-plan-active';
+import type { ChildJourneyStatus } from '@/types/child';
 
 export interface ParentChildSummary {
   id: string;

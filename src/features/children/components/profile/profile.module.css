@@ -1,0 +1,163 @@
+/* Shared layout styles for the child-profile cards and tabs. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  block-size: 100%;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.meta svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--color-accent);
+}
+
+.lead {
+  font-weight: var(--font-weight-bold);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-block-start: auto;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+}
+
+.rowBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.rowTitle {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.iconTile {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.iconTile svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.toneViolet {
+  background: var(--color-violet-soft);
+  color: var(--color-violet-strong);
+}
+
+.toneSuccess {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+}
+
+.tonePrimary {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
+.toneWarning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.twoColumns {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (min-width: 64rem) {
+  .twoColumns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+}
+
+.tileValue {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+  line-height: 1;
+}
+
+.tileLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.fullSpan {
+  grid-column: 1 / -1;
+}

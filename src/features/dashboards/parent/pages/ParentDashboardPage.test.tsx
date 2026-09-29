@@ -54,13 +54,18 @@ describe('ParentDashboardPage', () => {
     }
   });
 
-  it('shows unfinished actions as disabled buttons, never as links', () => {
+  it('links "عرض الكل" to the children list and each card to its profile', () => {
     renderDashboard();
 
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
-    expect(screen.getByRole('button', { name: /عرض الكل/ })).toBeDisabled();
-    for (const button of screen.getAllByRole('button', { name: /عرض الملف/ })) {
-      expect(button).toBeDisabled();
+    expect(screen.getByRole('link', { name: /عرض الكل/ })).toHaveAttribute(
+      'href',
+      '/parent/children',
+    );
+    for (const child of MOCK_PARENT_CHILDREN) {
+      expect(screen.getByRole('link', { name: `عرض ملف ${child.name}` })).toHaveAttribute(
+        'href',
+        `/parent/children/${child.id}`,
+      );
     }
   });
 

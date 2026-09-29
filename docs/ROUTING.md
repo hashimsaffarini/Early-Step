@@ -23,24 +23,33 @@ carried over: it produced hooks-order bugs and redirect loops.)
 
 ## Current routes (implemented)
 
-| Path                | Element                                               | Layout / loading                     |
-| ------------------- | ----------------------------------------------------- | ------------------------------------ |
-| `/`                 | `features/landing` LandingPage                        | own page (navbar + footer), eager    |
-| `/login`            | `features/auth` LoginPage                             | `AuthLayout`, lazy                   |
-| `/register`         | `features/auth` RegisterPage (parents)                | `AuthLayout`, lazy                   |
-| `/forgot-password`  | `features/auth` ForgotPasswordPage                    | `AuthSplitShell` (in page), lazy     |
-| `/reset-password`   | `features/auth` ResetPasswordPage                     | `AuthSplitShell` (in page), lazy     |
-| `/unauthorized`     | UnauthorizedPage                                      | —                                    |
-| `/parent`           | redirect → `/parent/dashboard`                        | `ParentAreaLayout` (DashboardLayout) |
-| `/parent/dashboard` | `features/dashboards` ParentDashboardPage (mock data) | `ParentAreaLayout`, lazy             |
-| `/ui-preview/*`     | Dev-only gallery                                      | registered only in DEV, lazy         |
-| `*`                 | NotFoundPage                                          | —                                    |
+| Path                        | Element                                                        | Layout / loading                     |
+| --------------------------- | -------------------------------------------------------------- | ------------------------------------ |
+| `/`                         | `features/landing` LandingPage                                 | own page (navbar + footer), eager    |
+| `/login`                    | `features/auth` LoginPage                                      | `AuthLayout`, lazy                   |
+| `/register`                 | `features/auth` RegisterPage (parents)                         | `AuthLayout`, lazy                   |
+| `/forgot-password`          | `features/auth` ForgotPasswordPage                             | `AuthSplitShell` (in page), lazy     |
+| `/reset-password`           | `features/auth` ResetPasswordPage                              | `AuthSplitShell` (in page), lazy     |
+| `/unauthorized`             | UnauthorizedPage                                               | —                                    |
+| `/parent`                   | redirect → `/parent/dashboard`                                 | `ParentAreaLayout` (DashboardLayout) |
+| `/parent/dashboard`         | `features/dashboards` ParentDashboardPage (mock data)          | `ParentAreaLayout`, lazy             |
+| `/parent/children`          | `features/children` ParentChildrenPage (mock list + local add) | `ParentAreaLayout`, lazy             |
+| `/parent/children/:childId` | `features/children` ChildProfilePage (mock profile, view only) | `ParentAreaLayout`, lazy             |
+| `/ui-preview/*`             | Dev-only gallery                                               | registered only in DEV, lazy         |
+| `*`                         | NotFoundPage                                                   | —                                    |
 
 **Parent area (TEMPORARY UI-development access):** `/parent/*` has **no guard** — real
 authentication does not exist yet. It renders with a mock parent (`src/app/dev/mockParentSession.ts`)
-and mock dashboard data. The parent sidebar shows only "الرئيسية" as a link; أطفالي / التقييمات /
+and mock dashboard data. The parent sidebar links "الرئيسية" and "أطفالي"; التقييمات /
 الخطط التدريبية / التقارير / الرسائل are **unavailable items** ("قريباً"), not routes. Add
 `ProtectedRoute` + `RoleGuard(Parent)` when auth is implemented.
+
+**Child profile:** `/parent/children/:childId` resolves the child from the stable TEMPORARY mock
+IDs (`mock-child-1..4`); a locally added (unsaved) child opens via router state from its card. An
+unknown ID renders a "لم يتم العثور على الطفل" state with a link back to `/parent/children` — it
+never falls back to another child. Build paths with `buildParentChildProfilePath(id)`. Tabs
+(نظرة عامة / التقييمات / الأنشطة / التقارير) are local UI state, not sub-routes. Edit child, delete
+child, the assessment runner and report details have **no routes yet**.
 
 **Status:** landing + auth **UI implemented**. **No backend authentication** — forms validate
 locally and show a "UI only" notice; nothing is sent, no session exists, no guards, no role or

@@ -30,14 +30,31 @@ describe('parent area routing', () => {
     );
   });
 
+  it('renders /parent/children with "أطفالي" marked active', async () => {
+    renderAt(ROUTE_PATHS.parentChildren);
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'أطفالي' })).toBeInTheDocument();
+    const [desktopNav] = screen.getAllByRole('navigation', { name: 'القائمة الرئيسية' });
+    if (!desktopNav) throw new Error('navigation not found');
+    expect(within(desktopNav).getByRole('link', { name: 'أطفالي' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(desktopNav).getByRole('link', { name: 'الرئيسية' })).not.toHaveAttribute(
+      'aria-current',
+    );
+  });
+
   it('shows unfinished parent areas as unavailable items, not links', async () => {
     renderAt(ROUTE_PATHS.parentDashboard);
     await screen.findByRole('heading', { level: 1, name: /محمد أحمد/ });
 
     const [desktopNav] = screen.getAllByRole('navigation', { name: 'القائمة الرئيسية' });
     if (!desktopNav) throw new Error('navigation not found');
-    expect(within(desktopNav).getAllByRole('link')).toHaveLength(1);
-    expect(within(desktopNav).getByText('أطفالي').closest('[aria-disabled="true"]')).not.toBeNull();
+    expect(within(desktopNav).getAllByRole('link')).toHaveLength(2);
+    expect(
+      within(desktopNav).getByText('التقييمات').closest('[aria-disabled="true"]'),
+    ).not.toBeNull();
     expect(within(desktopNav).getAllByText('قريباً').length).toBeGreaterThan(0);
   });
 });

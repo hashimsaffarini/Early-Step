@@ -6,7 +6,7 @@ export interface AvatarProps {
   name: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   shape?: 'rounded' | 'circle';
-  className?: string;
+  className?: string | undefined;
 }
 
 /** First letter of the name. Decorative: the name is always shown next to it. */

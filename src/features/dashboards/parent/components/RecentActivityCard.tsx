@@ -3,8 +3,8 @@ import { ClipboardCheck, Clock, FileText, Target, type LucideIcon } from 'lucide
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Card } from '@/components/ui/Card';
 import { cx } from '@/utils/classNames';
+import { formatDisplayDate } from '@/utils/dateFormat';
 
-import { formatDisplayDate } from '../format';
 import type { ActivityKind, ParentActivityItem } from '../types';
 
 import styles from './RecentActivityCard.module.css';

@@ -4,12 +4,12 @@ import type { NavItemConfig } from '@/components/layout/navigation';
 import { ROUTE_PATHS } from '@/constants/routes';
 
 /**
- * Parent sidebar. Only the dashboard exists; the other planned areas are shown as
+ * Parent sidebar. Dashboard and children exist; the other planned areas are shown as
  * unavailable ("قريباً") items — not links — until their screens are built.
  */
 export const PARENT_NAV_ITEMS: readonly NavItemConfig[] = [
   { to: ROUTE_PATHS.parentDashboard, label: 'الرئيسية', icon: House },
-  { label: 'أطفالي', icon: Users, unavailable: true },
+  { to: ROUTE_PATHS.parentChildren, label: 'أطفالي', icon: Users },
   { label: 'التقييمات', icon: ClipboardCheck, unavailable: true },
   { label: 'الخطط التدريبية', icon: Target, unavailable: true },
   { label: 'التقارير', icon: FileText, unavailable: true },

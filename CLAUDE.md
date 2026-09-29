@@ -17,9 +17,11 @@ Specialist monitors progress.
 Current status: foundation, discovery, UI foundation and the **public landing + auth UI** are
 implemented (`/`, `/login`, `/register`, `/forgot-password`, `/reset-password`). **Backend
 authentication is not implemented** (forms validate locally, nothing is sent). **The logged-in
-product has only started with the Parent Dashboard UI** (`/parent/dashboard`, mock data, no guard —
-temporary UI-development access). Parent children management, backend integration, real
-authentication, guards and other role dashboards have **not started**. Unfinished areas are shown
+product has started with the Parent Dashboard UI, Parent Children List + Add Child UI and Child
+Profile UI** (`/parent/dashboard`, `/parent/children`, `/parent/children/:childId`; mock data,
+local-only add, view-only profile, no guard — temporary UI-development access). Edit Child, Delete
+Child, the Assessment flow, backend integration, real authentication, guards and other role
+dashboards have **not started**. Unfinished areas are shown
 as disabled "قريباً" items — never as links to empty pages.
 Next steps: `docs/IMPLEMENTATION_PLAN.md`.
 

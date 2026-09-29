@@ -3,7 +3,9 @@ import { Zap } from 'lucide-react';
 import logo from '@/assets/images/logo.png';
 import { PageBanner } from '@/components/shared/PageBanner';
 
-import { formatTodayLong, getGreeting } from '../format';
+import { formatTodayLong } from '@/utils/dateFormat';
+
+import { getGreeting } from '../format';
 
 import styles from './ParentWelcomeBanner.module.css';
 

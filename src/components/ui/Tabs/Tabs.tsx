@@ -18,7 +18,7 @@ export interface TabsProps<TValue extends string> {
   onChange: (value: TValue) => void;
   /** Content of the selected tab's panel. */
   children: ReactNode;
-  className?: string;
+  className?: string | undefined;
 }
 
 /**

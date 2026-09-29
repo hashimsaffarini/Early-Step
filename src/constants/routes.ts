@@ -15,8 +15,15 @@ export const ROUTE_PATHS = {
   resetPassword: '/reset-password',
   parentRoot: '/parent',
   parentDashboard: '/parent/dashboard',
+  parentChildren: '/parent/children',
+  parentChildProfile: '/parent/children/:childId',
   unauthorized: '/unauthorized',
 } as const;
+
+/** `/parent/children/<id>` for a child profile link. */
+export function buildParentChildProfilePath(childId: string): string {
+  return ROUTE_PATHS.parentChildProfile.replace(':childId', encodeURIComponent(childId));
+}
 
 /** Development-only UI preview (not registered in production builds). */
 export const DEV_PREVIEW_PATHS = {

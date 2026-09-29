@@ -83,6 +83,12 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 
 ## Stage 5 — Parent + Children
 
+> **Progress (2026-09-29):** **Parent Children List UI implemented** (`/parent/children`), **Add
+> Child UI implemented** (dialog, validation, local add) and **Child Profile UI implemented**
+> (`/parent/children/:childId`; header, tabs, overview summaries, empty states, not-found; mock
+> data, view only). Edit Child, Delete Child and the Assessment flow **not started**; backend
+> integration **not started**.
+
 - **Screens:** parent home, children list, add/edit child, child profile (info + reports list +
   plan summary if allowed), delete confirm.
 - **Endpoints:** `/Parent` (POST/PATCH/DELETE/GET), `/Parent/GetMyChildren`,
@@ -145,8 +151,8 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 ## Stage 12 — Dashboards
 
 > **Progress (2026-09-29):** **Parent Dashboard UI implemented** (`/parent/dashboard`, mock data,
-> parent sidebar with unavailable future items). Parent children management **not started**;
-> backend integration **not started**; real authentication **not started**. Other role dashboards
+> parent sidebar with unavailable future items; "عرض الكل" and child cards now link to the children
+> list and child profiles). Backend integration **not started**; real authentication **not started**. Other role dashboards
 > not started.
 
 - **Screens:** Admin, Specialist, Teacher, SuperAdmin dashboards; Parent home.

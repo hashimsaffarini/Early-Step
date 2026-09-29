@@ -56,6 +56,18 @@ export const routes: RouteObject[] = [
               Component: (await import('@/app/pages/ParentDashboardRoute')).ParentDashboardRoute,
             }),
           },
+          {
+            path: ROUTE_PATHS.parentChildren,
+            lazy: async () => ({
+              Component: (await import('@/features/children')).ParentChildrenPage,
+            }),
+          },
+          {
+            path: ROUTE_PATHS.parentChildProfile,
+            lazy: async () => ({
+              Component: (await import('@/features/children')).ChildProfilePage,
+            }),
+          },
         ],
       },
       { path: ROUTE_PATHS.unauthorized, element: <UnauthorizedPage /> },

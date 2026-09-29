@@ -53,20 +53,33 @@ sent"); reset's 15-minute code claim removed.
 
 ## 4. Children
 
-| Replit                                                           | New route → feature/component                                                                                | Reuse                               |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
-| Children list                                                    | `/parent/children`, `/teacher/children`, `/specialist/children` → `features/children/pages/ChildrenListPage` | V L C                               |
-| Child card (list)                                                | `components/shared/ChildCard`                                                                                | V                                   |
-| Child card (teacher/specialist variant with risk pill + actions) | `ChildCard` variant                                                                                          | V                                   |
-| Add child dialog                                                 | `features/children/components/ChildForm` (modal)                                                             | V L C                               |
-| Edit / delete child                                              | `ChildForm` (edit) + `ConfirmDialog`                                                                         | new (no Replit UI)                  |
-| Child profile header banner                                      | `features/children/components/ChildProfileHeader`                                                            | V L                                 |
-| Profile tabs                                                     | `components/ui/Tabs`                                                                                         | V I                                 |
-| Profile overview (pastel tiles)                                  | `components/shared/PastelStatTile`                                                                           | V                                   |
-| Activities tab (grouped list)                                    | `features/training-plans/components/PlanActivityList`                                                        | V L                                 |
-| Reports tab                                                      | `components/shared/ReportCard`                                                                               | V                                   |
-| Assign activity modal                                            | `features/training-plans/components/PlanActivityPicker`                                                      | V I                                 |
-| IEP page                                                         | `/specialist/children/:childId/plan` → `features/training-plans`                                             | V (plan card style) — model differs |
+| Replit                                                           | New route → feature/component                                                                                                     | Reuse                               |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Children list                                                    | ✅ `/parent/children` → `features/children/pages/ParentChildrenPage` (header, search, grid, empty + no-results states; mock data) | V L C                               |
+| Child card (list)                                                | ✅ shared `ChildCard` via `ParentChildCard` (status badge, age, birth date, gender; "عرض الملف" links to the profile)             | V                                   |
+| Child card (teacher/specialist variant with risk pill + actions) | `ChildCard` variant                                                                                                               | V                                   |
+| Add child dialog                                                 | ✅ `features/children/components/AddChildDialog` (`Modal`, RHF + Zod: name, birth date, gender; local add only)                   | V L C                               |
+| Edit / delete child                                              | `ChildForm` (edit) + `ConfirmDialog`                                                                                              | new (no Replit UI)                  |
+| Child profile header banner                                      | ✅ `/parent/children/:childId` → `features/children/pages/ChildProfilePage` + `components/profile/ChildProfileHeader`             | V L                                 |
+| Profile tabs                                                     | ✅ `components/ui/Tabs` (نظرة عامة / التقييمات / الأنشطة / التقارير)                                                              | V I                                 |
+| Profile overview (pastel tiles)                                  | ✅ `components/profile/OverviewTab` + `ProfileSummaryTiles` (feature-local until a second use)                                    | V                                   |
+| Activities tab (grouped list)                                    | ✅ parent view: `components/profile/ActivitiesTab` (view only); editor later in `features/training-plans`                         | V L                                 |
+| Reports tab                                                      | ✅ `components/profile/ReportsTab` (cards; "عرض التقرير" قريباً)                                                                  | V                                   |
+| Assign activity modal                                            | `features/training-plans/components/PlanActivityPicker`                                                                           | V I                                 |
+| IEP page                                                         | `/specialist/children/:childId/plan` → `features/training-plans`                                                                  | V (plan card style) — model differs |
+
+Children-screen deviations from Replit: title "أطفالي" (parent-scoped) instead of "الأطفال";
+Replit's optional **"العمر النمائي المقدر" (estimated developmental age) is omitted** — a clinical
+estimate, not parent input, and absent from the real API (TBD with product owner); cards show a
+neutral journey status and computed age instead of developmental age; the "ولي الأمر" picker (staff
+only in Replit) is not needed. Birth date is kept (Replit) although the API docs use "Age" (TBD).
+
+Child-profile deviations from Replit: an **"التقييمات" tab was added** (the parent needs to see the
+initial-assessment state; Replit had only نظرة عامة / الأنشطة / التقارير); Replit's **skills radar
+chart is replaced by summary cards** (assessment, training plan with "3 من 8 أنشطة", latest
+reports, recent activity) — no scores; **developmental age, diagnosis and risk are not shown**;
+Replit's IEP button and "إنشاء تقرير AI" are omitted (staff/AI features); edit and "بدء التقييم"
+are disabled "قريباً" buttons; delete is not shown. Unknown IDs show a not-found state.
 
 ## 5. Assessment & activities
 
