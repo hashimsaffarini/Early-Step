@@ -110,6 +110,24 @@
   color: var(--color-primary-soft-text);
 }
 
+.navLinkUnavailable,
+.navLinkUnavailable:hover {
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: default;
+}
+
+.soonBadge {
+  margin-inline-start: auto;
+  padding-block: 0.125rem;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
 .navIcon {
   position: relative;
   display: grid;

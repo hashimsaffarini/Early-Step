@@ -23,16 +23,24 @@ carried over: it produced hooks-order bugs and redirect loops.)
 
 ## Current routes (implemented)
 
-| Path               | Element                                | Layout / loading                  |
-| ------------------ | -------------------------------------- | --------------------------------- |
-| `/`                | `features/landing` LandingPage         | own page (navbar + footer), eager |
-| `/login`           | `features/auth` LoginPage              | `AuthLayout`, lazy                |
-| `/register`        | `features/auth` RegisterPage (parents) | `AuthLayout`, lazy                |
-| `/forgot-password` | `features/auth` ForgotPasswordPage     | `AuthSplitShell` (in page), lazy  |
-| `/reset-password`  | `features/auth` ResetPasswordPage      | `AuthSplitShell` (in page), lazy  |
-| `/unauthorized`    | UnauthorizedPage                       | —                                 |
-| `/ui-preview/*`    | Dev-only gallery                       | registered only in DEV, lazy      |
-| `*`                | NotFoundPage                           | —                                 |
+| Path                | Element                                               | Layout / loading                     |
+| ------------------- | ----------------------------------------------------- | ------------------------------------ |
+| `/`                 | `features/landing` LandingPage                        | own page (navbar + footer), eager    |
+| `/login`            | `features/auth` LoginPage                             | `AuthLayout`, lazy                   |
+| `/register`         | `features/auth` RegisterPage (parents)                | `AuthLayout`, lazy                   |
+| `/forgot-password`  | `features/auth` ForgotPasswordPage                    | `AuthSplitShell` (in page), lazy     |
+| `/reset-password`   | `features/auth` ResetPasswordPage                     | `AuthSplitShell` (in page), lazy     |
+| `/unauthorized`     | UnauthorizedPage                                      | —                                    |
+| `/parent`           | redirect → `/parent/dashboard`                        | `ParentAreaLayout` (DashboardLayout) |
+| `/parent/dashboard` | `features/dashboards` ParentDashboardPage (mock data) | `ParentAreaLayout`, lazy             |
+| `/ui-preview/*`     | Dev-only gallery                                      | registered only in DEV, lazy         |
+| `*`                 | NotFoundPage                                          | —                                    |
+
+**Parent area (TEMPORARY UI-development access):** `/parent/*` has **no guard** — real
+authentication does not exist yet. It renders with a mock parent (`src/app/dev/mockParentSession.ts`)
+and mock dashboard data. The parent sidebar shows only "الرئيسية" as a link; أطفالي / التقييمات /
+الخطط التدريبية / التقارير / الرسائل are **unavailable items** ("قريباً"), not routes. Add
+`ProtectedRoute` + `RoleGuard(Parent)` when auth is implemented.
 
 **Status:** landing + auth **UI implemented**. **No backend authentication** — forms validate
 locally and show a "UI only" notice; nothing is sent, no session exists, no guards, no role or

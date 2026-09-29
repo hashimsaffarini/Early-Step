@@ -37,16 +37,19 @@ sent"); reset's 15-minute code claim removed.
 
 ## 3. Dashboards
 
-| Replit                                         | New route → feature/component                                         | Reuse                                       |
-| ---------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------- |
-| Parent dashboard (hero + stats + sections)     | `/parent` → `features/dashboards/parent` (`ParentDashboardPage`)      | V L C (only real data; no rewards/charts)   |
-| Admin (same page as parent in Replit)          | `/admin` → `features/dashboards/admin`                                | V L (new content per admin needs)           |
-| Teacher dashboard                              | `/teacher` → `features/dashboards/teacher`                            | V L C                                       |
-| Specialist dashboard                           | `/specialist` → `features/dashboards/specialist`                      | V L C (main dialect colours)                |
-| Super Admin panel (dark, tabs)                 | `/super-admin` → `features/dashboards/super-admin` + `features/users` | L C (use main light dialect unless decided) |
-| Gradient hero banner                           | `components/shared/PageBanner`                                        | V                                           |
-| Stat cards                                     | `components/shared/StatCard`                                          | V                                           |
-| Rewards widgets, leaderboard, insights, charts | —                                                                     | not migrated                                |
+| Replit                                          | New route → feature/component                                                                       | Reuse                                       |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Parent dashboard (hero + stats + sections)      | ✅ `/parent/dashboard` → `features/dashboards/parent` (`ParentDashboardPage`, mock data)            | V L C                                       |
+| Replit per-child rewards widgets + leaderboard  | → "أطفالي" preview with shared `ChildCard` (neutral status, plan activities "3 من 8"; no XP/levels) | V L                                         |
+| Replit "نظرة ذكية" insights card                | → "نصائح لك" general-advice tiles (`ParentTipsCard`)                                                | V L                                         |
+| Replit skills chart + "أحدث التقارير" side card | → "آخر النشاطات" side card (`RecentActivityCard`); no chart                                         | V L                                         |
+| Admin (same page as parent in Replit)           | `/admin` → `features/dashboards/admin`                                                              | V L (new content per admin needs)           |
+| Teacher dashboard                               | `/teacher` → `features/dashboards/teacher`                                                          | V L C                                       |
+| Specialist dashboard                            | `/specialist` → `features/dashboards/specialist`                                                    | V L C (main dialect colours)                |
+| Super Admin panel (dark, tabs)                  | `/super-admin` → `features/dashboards/super-admin` + `features/users`                               | L C (use main light dialect unless decided) |
+| Gradient hero banner                            | `components/shared/PageBanner`                                                                      | V                                           |
+| Stat cards                                      | `components/shared/StatCard`                                                                        | V                                           |
+| Rewards widgets, leaderboard, insights, charts  | —                                                                                                   | not migrated                                |
 
 ## 4. Children
 

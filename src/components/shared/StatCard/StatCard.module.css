@@ -38,6 +38,11 @@
   color: var(--color-warning-strong);
 }
 
+.violet {
+  background: var(--color-violet-soft);
+  color: var(--color-violet-strong);
+}
+
 .danger {
   background: var(--color-danger-soft);
   color: var(--color-danger-strong);

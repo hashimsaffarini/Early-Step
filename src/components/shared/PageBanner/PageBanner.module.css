@@ -89,6 +89,19 @@
   }
 }
 
+.overline {
+  display: block;
+  margin-block-end: var(--space-2);
+  font-size: var(--font-size-2xl);
+  opacity: 0.9;
+}
+
+@media (min-width: 48rem) {
+  .overline {
+    font-size: var(--font-size-3xl);
+  }
+}
+
 .subtitle {
   font-size: var(--font-size-md);
   opacity: 0.95;

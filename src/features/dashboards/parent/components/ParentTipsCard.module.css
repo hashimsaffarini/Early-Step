@@ -1,0 +1,77 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.tip {
+  padding: var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+}
+
+.primary {
+  border-color: var(--color-info-border);
+  background: var(--color-info-soft);
+}
+
+.success {
+  border-color: var(--color-success-border);
+  background: var(--color-success-soft);
+}
+
+.violet {
+  border-color: var(--color-violet-soft);
+  background: var(--color-violet-soft);
+}
+
+.tipIcon {
+  display: grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  margin-block-end: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.primary .tipIcon {
+  color: var(--color-primary-strong);
+}
+
+.success .tipIcon {
+  color: var(--color-success-strong);
+}
+
+.violet .tipIcon {
+  color: var(--color-violet-strong);
+}
+
+.tipIcon svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.tipTitle {
+  margin-block-end: var(--space-1);
+  font-size: var(--font-size-md);
+}
+
+.tipText {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}

@@ -64,6 +64,12 @@ exist — ADR required; credentials only via CI secrets.
   via router state (not URL), back link.
 - `ResetPasswordPage.test.tsx` — required/code-format errors, weak + mismatch, success → login.
 - `password.test.ts` — strength levels and criteria scoring.
+- `ParentDashboardPage.test.tsx` — banner heading, four summary cards, child cards per mock child,
+  recent activity items + dates, section headings, unfinished actions are disabled buttons (no
+  links), no percentages.
+- `format.test.ts` (dashboards) — Arabic age phrasing, time-of-day greeting.
+- `parentRoutes.test.tsx` — `/parent` → `/parent/dashboard` redirect (real route tree), active nav
+  item, unavailable nav items are not links.
 - `Button.test.tsx` — click, loading disables + `aria-busy`, default `type="button"`.
 - `FormField.test.tsx` — label/hint/error associations, `aria-invalid`; PasswordInput toggle.
 - `Tabs.test.tsx` — selection + panel, RTL arrow-key order, wrap-around.

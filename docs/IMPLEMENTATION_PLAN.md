@@ -144,6 +144,11 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 
 ## Stage 12 — Dashboards
 
+> **Progress (2026-09-29):** **Parent Dashboard UI implemented** (`/parent/dashboard`, mock data,
+> parent sidebar with unavailable future items). Parent children management **not started**;
+> backend integration **not started**; real authentication **not started**. Other role dashboards
+> not started.
+
 - **Screens:** Admin, Specialist, Teacher, SuperAdmin dashboards; Parent home.
 - **Endpoints:** role dashboard endpoints (shapes from Stage 1).
 - **Rule:** display only real data — no fabricated stats (Replit's "85%").

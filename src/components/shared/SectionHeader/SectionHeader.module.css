@@ -1,0 +1,58 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.icon svg {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+}
+
+.primary {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
+.accent {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.success {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+}
+
+.violet {
+  background: var(--color-violet-soft);
+  color: var(--color-violet-strong);
+}
+
+.title {
+  font-size: var(--font-size-xl);
+}
+
+@media (min-width: 48rem) {
+  .title {
+    font-size: var(--font-size-2xl);
+  }
+}

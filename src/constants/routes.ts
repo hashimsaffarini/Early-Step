@@ -13,6 +13,8 @@ export const ROUTE_PATHS = {
   register: '/register',
   forgotPassword: '/forgot-password',
   resetPassword: '/reset-password',
+  parentRoot: '/parent',
+  parentDashboard: '/parent/dashboard',
   unauthorized: '/unauthorized',
 } as const;
 

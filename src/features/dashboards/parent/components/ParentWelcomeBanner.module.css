@@ -1,0 +1,35 @@
+.date {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.date svg {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  color: var(--color-accent);
+}
+
+.illustration {
+  display: none;
+  flex-shrink: 0;
+  inline-size: 9rem;
+  block-size: 9rem;
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+  transform: rotate(-4deg);
+}
+
+@media (min-width: 48rem) {
+  .illustration {
+    display: block;
+  }
+}
+
+.illustration img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+}

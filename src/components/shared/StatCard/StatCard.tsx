@@ -5,7 +5,7 @@ import { cx } from '@/utils/classNames';
 
 import styles from './StatCard.module.css';
 
-export type StatCardTone = 'primary' | 'success' | 'warning' | 'danger';
+export type StatCardTone = 'primary' | 'success' | 'warning' | 'violet' | 'danger';
 
 export interface StatCardProps {
   label: string;

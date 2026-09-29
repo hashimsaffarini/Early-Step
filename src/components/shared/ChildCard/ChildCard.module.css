@@ -1,0 +1,102 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  block-size: 100%;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  transition:
+    border-color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+}
+
+.card:hover {
+  border-color: var(--color-primary-border-hover);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 4rem;
+  block-size: 4rem;
+  border-radius: var(--radius-card);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+  transition: transform var(--duration-base) var(--ease-bounce);
+}
+
+.card:hover .avatar {
+  transform: scale(1.06);
+}
+
+.primary {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
+.violet {
+  background: var(--color-violet-soft);
+  color: var(--color-violet-strong);
+}
+
+.warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.success {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+}
+
+.name {
+  font-size: var(--font-size-xl);
+}
+
+.subtitle {
+  margin-block-start: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-4) 0 0;
+  border-block-start: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.detail svg {
+  flex-shrink: 0;
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--color-accent);
+}
+
+.footer {
+  margin-block-start: auto;
+}
