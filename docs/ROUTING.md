@@ -5,7 +5,7 @@
 - React Router 7, data router (`createBrowserRouter` + `RouterProvider`), in `src/app/router/`.
 - `routes.tsx` is the single route tree. Features export page components (and optionally
   `RouteObject[]`); `app/router` composes them under layouts and guards.
-- Paths are constants in `app/router/paths.ts` (`ROUTE_PATHS`, `ROLE_NAMESPACES`). No
+- Paths are constants in `src/constants/routes.ts` (`ROUTE_PATHS`, `ROLE_NAMESPACES`; ADR-018). No
   hardcoded path strings in components.
 - Route-level errors → `RouteErrorPage` (`errorElement`). Unknown paths → `NotFoundPage`.
 - Route-level code splitting with `lazy` per role namespace.
@@ -23,11 +23,22 @@ carried over: it produced hooks-order bugs and redirect loops.)
 
 ## Current routes (implemented)
 
-| Path            | Element                            |
-| --------------- | ---------------------------------- |
-| `/`             | Foundation placeholder (temporary) |
-| `/unauthorized` | UnauthorizedPage                   |
-| `*`             | NotFoundPage                       |
+| Path               | Element                                | Layout / loading                  |
+| ------------------ | -------------------------------------- | --------------------------------- |
+| `/`                | `features/landing` LandingPage         | own page (navbar + footer), eager |
+| `/login`           | `features/auth` LoginPage              | `AuthLayout`, lazy                |
+| `/register`        | `features/auth` RegisterPage (parents) | `AuthLayout`, lazy                |
+| `/forgot-password` | `features/auth` ForgotPasswordPage     | `AuthSplitShell` (in page), lazy  |
+| `/reset-password`  | `features/auth` ResetPasswordPage      | `AuthSplitShell` (in page), lazy  |
+| `/unauthorized`    | UnauthorizedPage                       | —                                 |
+| `/ui-preview/*`    | Dev-only gallery                       | registered only in DEV, lazy      |
+| `*`                | NotFoundPage                           | —                                 |
+
+**Status:** landing + auth **UI implemented**. **No backend authentication** — forms validate
+locally and show a "UI only" notice; nothing is sent, no session exists, no guards, no role or
+dashboard routes. Public flow: `/` → `/register` ↔ `/login` → `/forgot-password` →
+`/reset-password` → `/login`. The email typed on forgot-password reaches reset-password via router
+state (never the URL).
 
 ## Planned route hierarchy (not implemented)
 
@@ -36,14 +47,14 @@ Legend — Guard: `public` (redirect signed-in users to their home), `auth` (ses
 
 ### Public / auth (AuthLayout)
 
-| Path               | Page                                                          | Feature | Required APIs               | Guard                           |
-| ------------------ | ------------------------------------------------------------- | ------- | --------------------------- | ------------------------------- |
-| `/`                | Landing (design from Replit, no fabricated stats) or redirect | app     | —                           | public (TBD: landing in scope?) |
-| `/login`           | LoginPage                                                     | auth    | `POST /api/Auth/login`      | public                          |
-| `/register`        | RegisterPage                                                  | auth    | `POST /api/Auth/register`   | public                          |
-| `/forgot-password` | ForgotPasswordPage                                            | auth    | `POST /Auth/ForgotPassword` | public                          |
-| `/reset-password`  | ResetPasswordPage                                             | auth    | `POST /Auth/reset-password` | public                          |
-| `/unauthorized`    | UnauthorizedPage                                              | app     | —                           | none                            |
+| Path               | Page                                                      | Feature | Required APIs               | Guard  |
+| ------------------ | --------------------------------------------------------- | ------- | --------------------------- | ------ |
+| `/`                | Landing (implemented; redirect for signed-in users later) | landing | —                           | public |
+| `/login`           | LoginPage                                                 | auth    | `POST /api/Auth/login`      | public |
+| `/register`        | RegisterPage                                              | auth    | `POST /api/Auth/register`   | public |
+| `/forgot-password` | ForgotPasswordPage                                        | auth    | `POST /Auth/ForgotPassword` | public |
+| `/reset-password`  | ResetPasswordPage                                         | auth    | `POST /Auth/reset-password` | public |
+| `/unauthorized`    | UnauthorizedPage                                          | app     | —                           | none   |
 
 ### Parent — `/parent/*` (DashboardLayout)
 

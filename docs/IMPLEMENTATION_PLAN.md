@@ -57,6 +57,11 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 
 ## Stage 3 — Authentication
 
+> **Progress (2026-09-28):** public **landing + auth UI implemented** (login, parent register,
+> forgot, reset; React Hook Form + Zod; Arabic validation; responsive; tests). **Backend
+> authentication not implemented** (no requests, tokens, sessions, guards). **Logged-in product
+> not started.** Change-password and API wiring remain for when Stage 1 (live API) is done.
+
 - **Screens:** login, register (role cards if multiple roles allowed), forgot password, reset
   password, change password.
 - **Endpoints:** `/api/Auth/login`, `/api/Auth/register`, `/Auth/ForgotPassword`,

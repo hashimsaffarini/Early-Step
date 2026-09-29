@@ -131,9 +131,8 @@ Changes from the foundation plan: `categories`, `activities` and `games` are mer
   props-driven, **no API calls**).
 - Enum display maps (roles, gender, activity type) → `src/constants/` (one module per enum).
 - Media URL helper (`/uploads/...` → absolute) → `src/services/api/` or `src/lib/`.
-- Route path constants: features must link to other areas without importing `app/`. When the
-  first feature needs a path, **move `ROUTE_PATHS` / `ROLE_NAMESPACES` from `app/router/paths.ts`
-  to `src/constants/routes.ts`** (ADR required).
+- Route path constants live in `src/constants/routes.ts` (moved from `app/router/paths.ts`,
+  ADR-018) so features can link to each other's routes without importing `app/`.
 
 ### Feature dependency rules
 

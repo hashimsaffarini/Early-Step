@@ -1,6 +1,6 @@
 import type { RouteObject } from 'react-router';
 
-import { DEV_PREVIEW_PATHS } from '@/app/router/paths';
+import { DEV_PREVIEW_PATHS } from '@/constants/routes';
 
 /**
  * Development-only UI preview routes. Lazy-loaded so none of this code ships
@@ -26,16 +26,6 @@ export const devPreviewRoutes: RouteObject[] = [
       {
         path: DEV_PREVIEW_PATHS.forms,
         lazy: async () => ({ Component: (await import('./FormsPreviewPage')).FormsPreviewPage }),
-      },
-    ],
-  },
-  {
-    path: DEV_PREVIEW_PATHS.auth,
-    lazy: async () => ({ Component: (await import('@/components/layout/AuthLayout')).AuthLayout }),
-    children: [
-      {
-        index: true,
-        lazy: async () => ({ Component: (await import('./AuthPreviewPage')).AuthPreviewPage }),
       },
     ],
   },

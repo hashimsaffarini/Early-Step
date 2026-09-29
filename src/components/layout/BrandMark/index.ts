@@ -1,1 +1,1 @@
-export { BrandMark } from './BrandMark';
+export { BrandMark, type BrandMarkProps } from './BrandMark';

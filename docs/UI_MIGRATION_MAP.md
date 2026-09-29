@@ -21,13 +21,19 @@ fabricated numbers.
 
 ## 2. Public & auth
 
-| Replit                | New route → feature/component                                                                | Reuse                         |
-| --------------------- | -------------------------------------------------------------------------------------------- | ----------------------------- |
-| Landing `/`           | `/` → `app/pages/LandingPage` (scope TBD)                                                    | V L C (no fake stats)         |
-| Login                 | `/login` → `features/auth/pages/LoginPage` + `LoginForm`                                     | V L C I                       |
-| Register + role cards | `/register` → `features/auth/pages/RegisterPage` + `RoleCardPicker`, `PasswordStrengthMeter` | V L C I                       |
-| Forgot password       | `/forgot-password` → `features/auth/pages/ForgotPasswordPage`                                | L C (restyle to main dialect) |
-| Reset password        | `/reset-password` → `features/auth/pages/ResetPasswordPage` + `ResetCodeForm`                | L C I                         |
+| Replit                | New route → feature/component                                                                                                                                                  | Reuse                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- |
+| Landing `/`           | ✅ `/` → `features/landing` (LandingNavbar, HeroSection, HeroVisual, CallToActionSection, LandingFooter)                                                                       | V L C (no fake stats) |
+| Login                 | ✅ `/login` → `features/auth/pages/LoginPage` + `AuthCard`                                                                                                                     | V L C I               |
+| Register + role cards | ✅ `/register` → `features/auth/pages/RegisterPage` + `PasswordStrengthMeter`; role cards reduced to a fixed **parent** account-type card (public registration is parent-only) | V L C I               |
+| Forgot password       | ✅ `/forgot-password` → `features/auth/pages/ForgotPasswordPage` + `AuthSplitShell` (split layout, brand-gradient panel instead of stone/emerald)                              | L C                   |
+| Reset password        | ✅ `/reset-password` → `features/auth/pages/ResetPasswordPage` + `AuthSplitShell`, `PasswordStrengthMeter`                                                                     | L C I                 |
+
+Deviations from Replit (intentional): fabricated/absolute claims on the hero cards replaced by
+descriptive text; hero secondary CTA says "تسجيل الدخول" (Replit's "معرفة المزيد" linked to
+login); heading spacing/wrap bug fixed; scroll hint is in flow (no overlap); "free" wording kept from
+Replit but **unverified** (pricing TBD); success states say nothing was sent (no fake "email
+sent"); reset's 15-minute code claim removed.
 
 ## 3. Dashboards
 

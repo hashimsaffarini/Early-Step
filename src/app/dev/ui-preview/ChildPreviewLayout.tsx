@@ -1,7 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
 
-import { DEV_PREVIEW_PATHS } from '@/app/router/paths';
+import { DEV_PREVIEW_PATHS } from '@/constants/routes';
 import { ChildActivityLayout } from '@/components/layout/ChildActivityLayout';
 import { getButtonClassName } from '@/components/ui/Button';
 

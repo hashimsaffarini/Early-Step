@@ -1,0 +1,11 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  overflow-x: clip;
+  background: var(--color-background);
+}
+
+.main {
+  flex: 1;
+}

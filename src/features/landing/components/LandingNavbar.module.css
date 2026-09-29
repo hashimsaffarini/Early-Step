@@ -1,0 +1,53 @@
+.nav {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-header);
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-glass-strong);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-xs);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  max-inline-size: var(--layout-content-max-width);
+  min-block-size: 5rem;
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+}
+
+@media (min-width: 64rem) {
+  .inner {
+    padding-inline: var(--space-8);
+  }
+}
+
+.brandLink {
+  border-radius: var(--radius-card);
+  text-decoration: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Replit hid the login link on phones; kept visible but compact. */
+.loginLink {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--tap-target-min);
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.loginLink:hover {
+  color: var(--color-primary-strong);
+}

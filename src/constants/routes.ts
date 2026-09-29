@@ -2,13 +2,17 @@ import type { UserRole } from '@/types/roles';
 
 /**
  * Centralized route paths. Never hardcode path strings in components —
- * import them from here.
+ * import them from here. Lives in a shared layer so features can link to each
+ * other's routes without importing `app/` (ADR-018).
  *
- * Only routes that actually exist are listed. Role namespaces are declared
- * below for planning but have no pages yet.
+ * Only routes that actually exist are listed.
  */
 export const ROUTE_PATHS = {
   home: '/',
+  login: '/login',
+  register: '/register',
+  forgotPassword: '/forgot-password',
+  resetPassword: '/reset-password',
   unauthorized: '/unauthorized',
 } as const;
 
@@ -17,7 +21,6 @@ export const DEV_PREVIEW_PATHS = {
   root: '/ui-preview',
   components: '/ui-preview/components',
   forms: '/ui-preview/forms',
-  auth: '/ui-preview/auth',
   child: '/ui-preview/child',
 } as const;
 

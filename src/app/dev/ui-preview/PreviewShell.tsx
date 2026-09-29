@@ -1,14 +1,6 @@
-import {
-  Bell,
-  FileText,
-  LayoutDashboard,
-  LogOut,
-  MessageCircle,
-  Palette,
-  SquarePen,
-} from 'lucide-react';
+import { Bell, LayoutDashboard, LogOut, MessageCircle, Palette, SquarePen } from 'lucide-react';
 
-import { DEV_PREVIEW_PATHS } from '@/app/router/paths';
+import { DEV_PREVIEW_PATHS } from '@/constants/routes';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import type { NavItemConfig } from '@/components/layout/navigation';
 import { Button } from '@/components/ui/Button';
@@ -20,7 +12,6 @@ const PREVIEW_NAV: readonly NavItemConfig[] = [
   { to: DEV_PREVIEW_PATHS.root, label: 'نظرة عامة', icon: LayoutDashboard, end: true },
   { to: DEV_PREVIEW_PATHS.components, label: 'المكونات', icon: Palette },
   { to: DEV_PREVIEW_PATHS.forms, label: 'النماذج', icon: SquarePen },
-  { to: DEV_PREVIEW_PATHS.auth, label: 'تخطيط الدخول', icon: FileText },
   {
     to: DEV_PREVIEW_PATHS.child,
     label: 'تخطيط الطفل',

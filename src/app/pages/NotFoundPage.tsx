@@ -1,7 +1,7 @@
 import { SearchX } from 'lucide-react';
 import { Link } from 'react-router';
 
-import { ROUTE_PATHS } from '@/app/router/paths';
+import { ROUTE_PATHS } from '@/constants/routes';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { getButtonClassName } from '@/components/ui/Button';
 

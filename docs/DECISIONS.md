@@ -375,3 +375,24 @@ core components without building product features.
 Small dependency footprint; components are portable and token-driven. Breakpoints are written
 literally in media queries (CSS variables are not allowed there) and documented at the top of
 `tokens.css`.
+
+## ADR-018 — Shared route constants and lazy auth routes
+
+### Status
+
+Accepted
+
+### Context
+
+The auth and landing features link to each other's routes, but features must not import `app/`.
+The auth screens also pulled React Hook Form + Zod into the main bundle (> 500 kB warning).
+
+### Decision
+
+- Route constants move from `app/router/paths.ts` to `src/constants/routes.ts`.
+- `/login`, `/register`, `/forgot-password`, `/reset-password` use React Router `lazy`; the landing
+  page stays eager for first paint.
+
+### Consequences
+
+Features stay independent of `app/`. Main bundle ≈ 370 kB, auth chunk ≈ 144 kB loaded on demand.

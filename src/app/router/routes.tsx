@@ -1,23 +1,48 @@
 import type { RouteObject } from 'react-router';
 
 import { devPreviewRoutes } from '@/app/dev/ui-preview/devRoutes';
-import { HomePage } from '@/app/pages/HomePage';
 import { NotFoundPage } from '@/app/pages/NotFoundPage';
 import { UnauthorizedPage } from '@/app/pages/UnauthorizedPage';
-import { ROUTE_PATHS } from '@/app/router/paths';
 import { RouteErrorPage } from '@/app/router/RouteErrorPage';
+import { AuthLayout } from '@/components/layout/AuthLayout';
 import { RootLayout } from '@/components/layout/RootLayout';
+import { ROUTE_PATHS } from '@/constants/routes';
+import { LandingPage } from '@/features/landing';
+
+/** Auth screens (and their form/validation libraries) load on demand. */
+const loadAuth = () => import('@/features/auth');
 
 /**
- * Route tree. Feature routes (auth, role namespaces) will be added here as
- * route modules exported from each feature — see docs/ROUTING.md.
+ * Route tree. Public routes only for now (landing + auth UI, no backend) —
+ * see docs/ROUTING.md. The landing page is eager for first paint.
  */
 export const routes: RouteObject[] = [
   {
     element: <RootLayout />,
     errorElement: <RouteErrorPage />,
     children: [
-      { path: ROUTE_PATHS.home, element: <HomePage /> },
+      { path: ROUTE_PATHS.home, element: <LandingPage /> },
+      {
+        element: <AuthLayout />,
+        children: [
+          {
+            path: ROUTE_PATHS.login,
+            lazy: async () => ({ Component: (await loadAuth()).LoginPage }),
+          },
+          {
+            path: ROUTE_PATHS.register,
+            lazy: async () => ({ Component: (await loadAuth()).RegisterPage }),
+          },
+        ],
+      },
+      {
+        path: ROUTE_PATHS.forgotPassword,
+        lazy: async () => ({ Component: (await loadAuth()).ForgotPasswordPage }),
+      },
+      {
+        path: ROUTE_PATHS.resetPassword,
+        lazy: async () => ({ Component: (await loadAuth()).ResetPasswordPage }),
+      },
       { path: ROUTE_PATHS.unauthorized, element: <UnauthorizedPage /> },
       ...(import.meta.env.DEV ? devPreviewRoutes : []),
       { path: '*', element: <NotFoundPage /> },

@@ -55,7 +55,15 @@ exist — ADR required; credentials only via CI secrets.
 
 ## Current tests
 
-- `src/app/App.test.tsx` — smoke test: app boots with providers + router.
+- `src/app/App.test.tsx` — smoke test: app boots and renders the landing page.
+- `LandingPage.test.tsx` — hero/illustration/CTA render, no fabricated stats, register + login CTAs.
+- `LoginPage.test.tsx` — required + invalid-email errors, password toggle, UI-only notice, forgot link.
+- `RegisterPage.test.tsx` — parent-only account type + fields, required/email errors, strength text
+  updates, confirmation mismatch, UI-only notice.
+- `ForgotPasswordPage.test.tsx` — validation, neutral success state + reset, email handed to reset
+  via router state (not URL), back link.
+- `ResetPasswordPage.test.tsx` — required/code-format errors, weak + mismatch, success → login.
+- `password.test.ts` — strength levels and criteria scoring.
 - `Button.test.tsx` — click, loading disables + `aria-busy`, default `type="button"`.
 - `FormField.test.tsx` — label/hint/error associations, `aria-invalid`; PasswordInput toggle.
 - `Tabs.test.tsx` — selection + panel, RTL arrow-key order, wrap-around.

@@ -14,7 +14,10 @@ High-level flow: Parent registers → adds children → child completes initial 
 plan → Specialist assigns Teacher → Teacher follows progress and gives feedback →
 Specialist monitors progress.
 
-Current status: **foundation + discovery complete** — no product features are implemented yet.
+Current status: foundation, discovery, UI foundation and the **public landing + auth UI** are
+implemented (`/`, `/login`, `/register`, `/forgot-password`, `/reset-password`). **Backend
+authentication is not implemented** (forms validate locally, nothing is sent). **The logged-in
+product (dashboards, roles, guards) has not started.**
 Next steps: `docs/IMPLEMENTATION_PLAN.md`.
 
 ## External references
