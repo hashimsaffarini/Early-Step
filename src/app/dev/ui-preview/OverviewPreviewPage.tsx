@@ -1,4 +1,5 @@
 import { Baby, CircleCheck, FileText, TriangleAlert } from 'lucide-react';
+import { Link } from 'react-router';
 
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -10,6 +11,9 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ROLE_LABELS } from '@/constants/roleLabels';
+import { ROLE_NAMESPACES } from '@/constants/routes';
+import { USER_ROLES } from '@/types/roles';
 
 import styles from './preview.module.css';
 
@@ -31,6 +35,21 @@ export function OverviewPreviewPage() {
           </>
         }
       />
+
+      <section className={styles.section} aria-labelledby="areas-title">
+        <h2 id="areas-title" className={styles.sectionTitle}>
+          مناطق الأدوار (تطوير فقط — لا يوجد تسجيل دخول بعد)
+        </h2>
+        <ul className={styles.row} role="list">
+          {USER_ROLES.map((role) => (
+            <li key={role}>
+              <Link to={ROLE_NAMESPACES[role]} className={getButtonClassName({ variant: 'soft' })}>
+                {ROLE_LABELS[role]}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <section className={styles.section} aria-labelledby="stats-title">
         <h2 id="stats-title" className={styles.sectionTitle}>

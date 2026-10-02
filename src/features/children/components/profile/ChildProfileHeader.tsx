@@ -1,23 +1,28 @@
-import { Cake, CalendarDays, ClipboardCheck, Smile } from 'lucide-react';
+import { BookOpen, Cake, CalendarDays, Smile } from 'lucide-react';
+import { Link } from 'react-router';
 
 import { ComingSoonButton } from '@/components/shared/ComingSoonButton';
 import { Avatar } from '@/components/ui/Avatar';
+import { getButtonClassName } from '@/components/ui/Button';
 import { CHILD_GENDER_LABELS, CHILD_STATUS_DISPLAY } from '@/constants/childDisplay';
+import { useRoleArea } from '@/hooks/useRoleArea';
 import { ageInYears, formatAge } from '@/utils/age';
 import { cx } from '@/utils/classNames';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
-import type { ChildProfileDetails, ParentChild } from '@/features/children/types';
+import type { ChildProfileDetails, ChildRecord } from '@/features/children/types';
 
 import styles from './ChildProfileHeader.module.css';
+import { StartAssessmentLink } from './StartAssessmentLink';
 
 export interface ChildProfileHeaderProps {
-  child: ParentChild;
+  child: ChildRecord;
   details: ChildProfileDetails;
 }
 
 /** Replit profile header: gradient card, large avatar, name, info pills, actions. */
 export function ChildProfileHeader({ child, details }: ChildProfileHeaderProps) {
+  const { paths } = useRoleArea();
   const status = CHILD_STATUS_DISPLAY[child.status];
   const hasPendingAssessment = details.assessments.some(
     (assessment) => assessment.state === 'not-started',
@@ -48,10 +53,15 @@ export function ChildProfileHeader({ child, details }: ChildProfileHeaderProps) 
         </ul>
         <div className={styles.actions}>
           {hasPendingAssessment ? (
-            <ComingSoonButton variant="outline" iconStart={<ClipboardCheck aria-hidden="true" />}>
-              بدء التقييم
-            </ComingSoonButton>
+            <StartAssessmentLink childId={child.id} childName={child.name} variant="outline" />
           ) : null}
+          <Link
+            to={paths.childPlans(child.id)}
+            className={getButtonClassName({ variant: 'outline' })}
+          >
+            <BookOpen aria-hidden="true" />
+            الخطط التعليمية
+          </Link>
           <ComingSoonButton variant="outline">تعديل البيانات</ComingSoonButton>
         </div>
       </div>

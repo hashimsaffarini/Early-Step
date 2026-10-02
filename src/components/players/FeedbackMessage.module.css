@@ -1,0 +1,39 @@
+.message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 3rem;
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-extrabold);
+  text-align: center;
+}
+
+.message svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.correct {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+}
+
+.wrong {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.info {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-soft-text);
+}
+
+.placeholder {
+  visibility: hidden;
+}

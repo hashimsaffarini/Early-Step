@@ -161,3 +161,90 @@
 .fullSpan {
   grid-column: 1 / -1;
 }
+
+.rowLink {
+  color: var(--color-primary-strong);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.rowLink:hover {
+  text-decoration: underline;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Replit's gradient "تعيين نشاط جديد" call to action (white text ≥ 4.5:1 on every stop). */
+.assignCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  min-block-size: var(--control-height-lg);
+  padding-inline: var(--space-6);
+  border: 0;
+  border-radius: var(--radius-card);
+  background: var(--gradient-banner-violet);
+  color: var(--color-text-on-dark);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-black);
+  box-shadow: var(--shadow-raised);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.assignCta:hover {
+  transform: translateY(-2px);
+}
+
+.assignCta svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.actionBar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.actionBar .assignCta {
+  inline-size: auto;
+}
+
+.playLink {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: var(--tap-target-min);
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--color-primary-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.playLink:hover {
+  background: var(--color-primary-soft);
+}
+
+.playLink svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

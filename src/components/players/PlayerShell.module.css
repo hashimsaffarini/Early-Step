@@ -1,0 +1,110 @@
+/* Full-screen child activity page — light assessment style (ADR-016). */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  background: var(--gradient-child-canvas);
+}
+
+.topBar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-header);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 4rem;
+  padding-block: var(--space-2);
+  padding-inline: var(--space-4);
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-glass-strong);
+  backdrop-filter: blur(8px);
+}
+
+.topStart {
+  justify-self: start;
+}
+
+.topEnd {
+  display: flex;
+  justify-self: end;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.exit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--tap-target-min);
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.exit:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
+.exit svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-text-primary);
+}
+
+.titleText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 30rem) {
+  .exitLabel {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .main {
+    padding: var(--space-8);
+  }
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  inline-size: 100%;
+  max-inline-size: var(--layout-player-max-width);
+}
+
+.wide {
+  max-inline-size: 60rem;
+}

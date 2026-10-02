@@ -1,0 +1,22 @@
+.hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-accent-soft);
+  color: var(--color-warning-strong);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.hintEmoji {
+  font-size: var(--font-size-4xl);
+  line-height: 1;
+}
+
+.hintText {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}

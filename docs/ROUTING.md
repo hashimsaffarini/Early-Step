@@ -21,43 +21,90 @@ component** mounted inside each namespace so the role's layout/nav stays consist
 (Replit used flat URLs like `/dashboard`, `/children` with role branching inside pages — not
 carried over: it produced hooks-order bugs and redirect loops.)
 
-## Current routes (implemented)
+## Current routes (implemented — UI only, mock data)
 
-| Path                        | Element                                                        | Layout / loading                     |
-| --------------------------- | -------------------------------------------------------------- | ------------------------------------ |
-| `/`                         | `features/landing` LandingPage                                 | own page (navbar + footer), eager    |
-| `/login`                    | `features/auth` LoginPage                                      | `AuthLayout`, lazy                   |
-| `/register`                 | `features/auth` RegisterPage (parents)                         | `AuthLayout`, lazy                   |
-| `/forgot-password`          | `features/auth` ForgotPasswordPage                             | `AuthSplitShell` (in page), lazy     |
-| `/reset-password`           | `features/auth` ResetPasswordPage                              | `AuthSplitShell` (in page), lazy     |
-| `/unauthorized`             | UnauthorizedPage                                               | —                                    |
-| `/parent`                   | redirect → `/parent/dashboard`                                 | `ParentAreaLayout` (DashboardLayout) |
-| `/parent/dashboard`         | `features/dashboards` ParentDashboardPage (mock data)          | `ParentAreaLayout`, lazy             |
-| `/parent/children`          | `features/children` ParentChildrenPage (mock list + local add) | `ParentAreaLayout`, lazy             |
-| `/parent/children/:childId` | `features/children` ChildProfilePage (mock profile, view only) | `ParentAreaLayout`, lazy             |
-| `/ui-preview/*`             | Dev-only gallery                                               | registered only in DEV, lazy         |
-| `*`                         | NotFoundPage                                                   | —                                    |
+### Public
 
-**Parent area (TEMPORARY UI-development access):** `/parent/*` has **no guard** — real
-authentication does not exist yet. It renders with a mock parent (`src/app/dev/mockParentSession.ts`)
-and mock dashboard data. The parent sidebar links "الرئيسية" and "أطفالي"; التقييمات /
-الخطط التدريبية / التقارير / الرسائل are **unavailable items** ("قريباً"), not routes. Add
-`ProtectedRoute` + `RoleGuard(Parent)` when auth is implemented.
+| Path               | Element                                | Layout / loading                  |
+| ------------------ | -------------------------------------- | --------------------------------- |
+| `/`                | `features/landing` LandingPage         | own page (navbar + footer), eager |
+| `/login`           | `features/auth` LoginPage              | `AuthLayout`, lazy                |
+| `/register`        | `features/auth` RegisterPage (parents) | `AuthLayout`, lazy                |
+| `/forgot-password` | `features/auth` ForgotPasswordPage     | `AuthSplitShell` (in page), lazy  |
+| `/reset-password`  | `features/auth` ResetPasswordPage      | `AuthSplitShell` (in page), lazy  |
+| `/unauthorized`    | UnauthorizedPage                       | —                                 |
+| `/ui-preview/*`    | Dev-only gallery (+ role-area links)   | registered only in DEV, lazy      |
+| `*`                | NotFoundPage                           | —                                 |
 
-**Child profile:** `/parent/children/:childId` resolves the child from the stable TEMPORARY mock
-IDs (`mock-child-1..4`); a locally added (unsaved) child opens via router state from its card. An
-unknown ID renders a "لم يتم العثور على الطفل" state with a link back to `/parent/children` — it
-never falls back to another child. Build paths with `buildParentChildProfilePath(id)`. Tabs
-(نظرة عامة / التقييمات / الأنشطة / التقارير) are local UI state, not sub-routes. Edit child, delete
-child, the assessment runner and report details have **no routes yet**.
+### Role areas — `/{role}` for `parent`, `teacher`, `specialist`, `admin`
 
-**Status:** landing + auth **UI implemented**. **No backend authentication** — forms validate
-locally and show a "UI only" notice; nothing is sent, no session exists, no guards, no role or
-dashboard routes. Public flow: `/` → `/register` ↔ `/login` → `/forgot-password` →
-`/reset-password` → `/login`. The email typed on forgot-password reaches reset-password via router
-state (never the URL).
+Built by `buildAreaRoute(role)` in `src/app/router/areaRoutes.tsx` (ADR-019). Paths come from
+`getAreaPaths(role)` (`src/constants/routes.ts`); pages read the current role with
+`useRoleArea()`. All pages are lazy.
 
-## Planned route hierarchy (not implemented)
+| Segment (under `/{role}`) | Screen                                                            | Feature        | Roles                  |
+| ------------------------- | ----------------------------------------------------------------- | -------------- | ---------------------- |
+| _(index)_                 | redirect → `dashboard`                                            | —              | all four               |
+| `dashboard`               | Parent / Teacher / Specialist / Admin dashboard                   | dashboards     | all four               |
+| `children`                | ChildrenListPage (parent: add child; staff: parent names, no add) | children       | all four               |
+| `children/:childId`       | ChildProfilePage (staff: assign activity)                         | children       | all four               |
+| `children/:childId/plans` | ChildPlansPage — education plans (Specialist/Admin: new plan)     | training-plans | all four               |
+| `tests`                   | TestsCatalogPage                                                  | activities     | all four               |
+| `games`                   | GamesCatalogPage                                                  | activities     | all four               |
+| `reports`                 | ReportsListPage                                                   | reports        | all four               |
+| `reports/new`             | CreateReportPage                                                  | reports        | Specialist, Admin only |
+| `reports/:reportId`       | ReportDetailPage                                                  | reports        | all four               |
+| `messages`                | MessagesPage                                                      | chat           | all four               |
+| `tests/:testId/play`      | TestPlayerPage — **full screen**, no sidebar                      | activities     | all four               |
+| `games/:gameId/play`      | GamePlayerPage — **full screen**, no sidebar                      | activities     | all four               |
+| `assessment/:childId`     | AssessmentPage (initial assessment) — **full screen**, no sidebar | assessments    | all four               |
+
+Shell pages render inside `RoleAreaLayout` (DashboardLayout + role navigation + notifications
+menu + mock session user). Full-screen pages render inside `RoleAreaRoot` only, so they still
+know their role (exit links go back into the same area).
+
+### Super Admin — `/super-admin`
+
+| Path           | Screen                                                                  | Layout           |
+| -------------- | ----------------------------------------------------------------------- | ---------------- |
+| `/super-admin` | SuperAdminPanelPage (tabs: نظرة عامة / المستخدمون / الأطفال / التقارير) | `RoleAreaLayout` |
+
+### Navigation
+
+Every sidebar item is a real route — no "قريباً" nav items remain. Parent: الرئيسية, أطفالي,
+الاختبارات, الألعاب, التقارير, الرسائل (unread badge). Teacher/Specialist/Admin: لوحة القيادة,
+الأطفال, الاختبارات, الألعاب, التقارير, الرسائل. Super Admin: لوحة التحكم. Replit's order is kept.
+Unfinished actions **inside** screens (edit child, change role, PDF download…) are disabled
+"قريباً" buttons, never links to empty pages.
+
+### TEMPORARY UI-development access
+
+All role areas are **unguarded** — authentication does not exist yet. Each area renders with a
+mock session user (`src/app/dev/mockSessions.ts`) and per-feature mock data following
+`docs/MOCK_DATA.md`. `useRoleArea()` is for display and links only — it is **not** access
+control. Reach the areas by URL or from the dev-only `/ui-preview` page. When auth arrives,
+wrap each area route in `ProtectedRoute` + `RoleGuard(role)`.
+
+### Not-found and visibility states
+
+Unknown or not-visible ids never fall back to other data: an unknown child, report, test, game
+or assessment child renders an in-page not-found state with a link back. A locally added
+(unsaved) child opens its profile via router state from its card. Tabs (profile, super admin) are
+local UI state, not sub-routes.
+
+### Status
+
+UI for every Replit screen is implemented (see `docs/UI_COMPLETENESS_AUDIT.md`). **No backend
+integration, no real authentication, no guards, no persistence** — forms validate locally and
+say that nothing is saved; mutations change local state only.
+
+## API-era route plan (future)
+
+The UI routes above are the structure for integration. The tables below record the planned API
+mapping and the screens that **do not exist yet** (edit child, account/change password, admin
+content management, user detail, assign teacher/specialist). Where they differ, the implemented
+routes above win (e.g. child activities now live at `/{role}/tests|games/:id/play` and the
+assessment at `/{role}/assessment/:childId`, instead of `/play/*`).
 
 Legend — Guard: `public` (redirect signed-in users to their home), `auth` (session required),
 `role:X` (session + role X). APIs refer to `API_ENDPOINTS.md` numbering/paths.
@@ -152,12 +199,11 @@ Whether SuperAdmin also gets the Admin content pages is **TBD** (see
 RootLayout
 ├── PublicOnly (AuthLayout): /login, /register, /forgot-password, /reset-password
 ├── ProtectedRoute
-│   ├── RoleGuard(Parent)      → /parent/*       (DashboardLayout, parent nav)
+│   ├── RoleGuard(Parent)      → /parent/*       (shell pages + full-screen play pages)
 │   ├── RoleGuard(Teacher)     → /teacher/*
 │   ├── RoleGuard(Specialist)  → /specialist/*
 │   ├── RoleGuard(Admin)       → /admin/*
 │   ├── RoleGuard(SuperAdmin)  → /super-admin/*
-│   └── RoleGuard(TBD)         → /play/*         (ChildActivityLayout)
 └── /unauthorized, *
 ```
 

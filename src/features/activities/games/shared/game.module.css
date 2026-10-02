@@ -1,0 +1,60 @@
+/* Layout shared by the games (inside the player card). */
+.game {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.stimulus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-muted);
+  text-align: center;
+}
+
+.stimulusEmoji {
+  font-size: 3.5rem;
+  line-height: 1.1;
+}
+
+.stimulusText {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-black);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-snug);
+}
+
+.prompt {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-extrabold);
+  text-align: center;
+  color: var(--color-text-primary);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  text-align: center;
+}
+
+.answers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}

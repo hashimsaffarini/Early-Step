@@ -17,3 +17,16 @@ export function countCompleted(items: readonly { isCompleted: boolean }[]): numb
 export function formatActivityProgress(completed: number, total: number): string {
   return `${completed} من ${total} أنشطة`;
 }
+
+export const ASSIGN_ACTIVITY_LABEL = 'تعيين نشاط جديد';
+
+const FEW_MIN = 3;
+const FEW_MAX = 10;
+
+/** Arabic count phrase for activities ("نشاط واحد", "نشاطان", "3 أنشطة", "11 نشاط"). */
+export function formatActivityCount(count: number): string {
+  if (count === 1) return 'نشاط واحد';
+  if (count === 2) return 'نشاطان';
+  if (count >= FEW_MIN && count <= FEW_MAX) return `${count.toString()} أنشطة`;
+  return `${count.toString()} نشاط`;
+}

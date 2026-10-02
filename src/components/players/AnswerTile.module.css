@@ -1,0 +1,114 @@
+/* Big, tappable answer tile for children (≥ 56px). State is never shown by colour alone. */
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-block-size: 4.5rem;
+  padding: var(--space-3) var(--space-4);
+  border: 3px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-extrabold);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.row {
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: start;
+}
+
+.tile:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+.tile:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.tile:disabled {
+  cursor: default;
+}
+
+.emoji {
+  font-size: var(--font-size-3xl);
+  line-height: 1;
+}
+
+.label {
+  line-height: var(--line-height-snug);
+}
+
+.badge {
+  position: absolute;
+  inset-block-start: calc(var(--space-2) * -1);
+  inset-inline-start: calc(var(--space-2) * -1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-soft-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-black);
+}
+
+.stateIcon {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-on-dark);
+}
+
+.stateIcon svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+.selected {
+  border-color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
+}
+
+.correct {
+  border-color: var(--color-success-strong);
+  background: var(--color-success-soft);
+}
+
+.correct .stateIcon {
+  background: var(--color-success-strong);
+}
+
+.wrong {
+  border-color: var(--color-danger-strong);
+  background: var(--color-danger-soft);
+  border-style: dashed;
+}
+
+.wrong .stateIcon {
+  background: var(--color-danger-strong);
+}
+
+.dimmed {
+  opacity: 0.55;
+}

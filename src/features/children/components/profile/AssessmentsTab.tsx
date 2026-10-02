@@ -1,6 +1,5 @@
 import { CalendarDays, ClipboardCheck, Layers } from 'lucide-react';
 
-import { ComingSoonButton } from '@/components/shared/ComingSoonButton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Badge } from '@/components/ui/Badge';
@@ -11,10 +10,17 @@ import type { ChildAssessment } from '@/features/children/types';
 
 import { ASSESSMENT_STATE_DISPLAY } from './labels';
 import styles from './profile.module.css';
+import { StartAssessmentLink } from './StartAssessmentLink';
 
 const HEADING_ID = 'profile-assessments-title';
 
-export function AssessmentsTab({ assessments }: { assessments: readonly ChildAssessment[] }) {
+export interface AssessmentsTabProps {
+  assessments: readonly ChildAssessment[];
+  childId: string;
+  childName: string;
+}
+
+export function AssessmentsTab({ assessments, childId, childName }: AssessmentsTabProps) {
   if (assessments.length === 0) {
     return <EmptyState icon={<ClipboardCheck />} title="لا توجد تقييمات بعد" />;
   }
@@ -56,7 +62,7 @@ export function AssessmentsTab({ assessments }: { assessments: readonly ChildAss
                 {state.label}
               </Badge>
               {assessment.state === 'not-started' ? (
-                <ComingSoonButton>بدء التقييم</ComingSoonButton>
+                <StartAssessmentLink childId={childId} childName={childName} size="sm" />
               ) : null}
             </li>
           );

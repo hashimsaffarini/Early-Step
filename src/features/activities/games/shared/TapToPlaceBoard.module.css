@@ -1,0 +1,91 @@
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 5rem;
+  margin: 0;
+  padding: var(--space-3);
+  border: 3px dashed var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-muted);
+  list-style: none;
+}
+
+.lineCorrect {
+  border-style: solid;
+  border-color: var(--color-success-strong);
+  background: var(--color-success-soft);
+}
+
+.lineWrong {
+  border-color: var(--color-danger-strong);
+  background: var(--color-danger-soft);
+}
+
+.tray {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.token {
+  min-inline-size: var(--tap-target-child);
+  min-block-size: var(--tap-target-child);
+  padding-inline: var(--space-4);
+  border: 3px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-extrabold);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.token:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+.token:disabled {
+  cursor: default;
+}
+
+.placedToken {
+  border-color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
+}
+
+.letter {
+  font-size: var(--font-size-2xl);
+}
+
+.slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--tap-target-child);
+  block-size: var(--tap-target-child);
+  border: 3px dashed var(--color-border-strong);
+  border-radius: var(--radius-card);
+  color: var(--color-text-secondary);
+}
+
+.placeholder {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+}

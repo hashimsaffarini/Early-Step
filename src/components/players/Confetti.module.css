@@ -1,0 +1,51 @@
+/* Decorative celebration. Hidden entirely when the user prefers reduced motion. */
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  inset-block-start: -1rem;
+  inline-size: 0.625rem;
+  block-size: 1rem;
+  border-radius: 0.125rem;
+  opacity: 0;
+  animation: fall 2.4s var(--ease-standard) forwards;
+}
+
+.piece:nth-child(4n) {
+  background: var(--color-primary);
+}
+
+.piece:nth-child(4n + 1) {
+  background: var(--color-accent);
+}
+
+.piece:nth-child(4n + 2) {
+  background: var(--color-violet);
+}
+
+.piece:nth-child(4n + 3) {
+  background: var(--color-success);
+}
+
+@keyframes fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100dvh) rotate(540deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
+}

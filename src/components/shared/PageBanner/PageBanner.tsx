@@ -9,7 +9,7 @@ export type PageBannerTone = 'brand' | 'violet' | 'teal' | 'sunset';
 export interface PageBannerProps {
   title: string;
   /** Smaller line shown above the title, inside the heading (e.g. a greeting). */
-  overline?: string;
+  overline?: ReactNode;
   subtitle?: string;
   eyebrow?: ReactNode;
   actions?: ReactNode;

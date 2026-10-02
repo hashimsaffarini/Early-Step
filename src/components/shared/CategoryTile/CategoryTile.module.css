@@ -1,0 +1,33 @@
+.tile {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-on-dark);
+  box-shadow: var(--shadow-card);
+}
+
+.sm {
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-xl);
+}
+
+.md {
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-3xl);
+}
+
+.lg {
+  inline-size: 5rem;
+  block-size: 5rem;
+  border-radius: var(--radius-card);
+  font-size: var(--font-size-5xl);
+}
+
+.round {
+  border-radius: var(--radius-pill);
+}

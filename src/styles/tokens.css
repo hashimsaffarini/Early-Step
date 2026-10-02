@@ -71,12 +71,23 @@
   --gradient-banner-teal: linear-gradient(135deg, #0f766e 0%, #4f46e5 55%, #7c3aed 100%);
   --gradient-banner-sunset: linear-gradient(135deg, #b45309 0%, #c2410c 50%, #be185d 100%);
   --gradient-child-canvas: linear-gradient(160deg, #f0fdf4 0%, #eff6ff 50%, #faf5ff 100%);
-  --gradient-category-memory: linear-gradient(135deg, #a855f7, #4f46e5);
-  --gradient-category-reading: linear-gradient(135deg, #06b6d4, #2563eb);
-  --gradient-category-math: linear-gradient(135deg, #f59e0b, #ea580c);
-  --gradient-category-writing: linear-gradient(135deg, #10b981, #0d9488);
-  --gradient-category-logic: linear-gradient(135deg, #ec4899, #e11d48);
-  --gradient-category-listening: linear-gradient(135deg, #8b5cf6, #9333ea);
+  /* Category gradients (tests, games, assessment sections). Every stop keeps white text ≥ 4.5:1. */
+  --gradient-category-memory: linear-gradient(135deg, #7e22ce, #4338ca);
+  --gradient-category-reading: linear-gradient(135deg, #0e7490, #1d4ed8);
+  --gradient-category-math: linear-gradient(135deg, #b45309, #c2410c);
+  --gradient-category-writing: linear-gradient(135deg, #047857, #0f766e);
+  --gradient-category-logic: linear-gradient(135deg, #be185d, #be123c);
+  --gradient-category-listening: linear-gradient(135deg, #6d28d9, #7e22ce);
+  --gradient-category-attention: linear-gradient(135deg, #0369a1, #4338ca);
+  --gradient-category-neutral: linear-gradient(135deg, #475569, #334155);
+  /* Soft tints matching each category (tile backgrounds, chips). */
+  --color-category-memory-soft: #f3e8ff;
+  --color-category-reading-soft: #cffafe;
+  --color-category-math-soft: #fef3c7;
+  --color-category-writing-soft: #d1fae5;
+  --color-category-logic-soft: #fce7f3;
+  --color-category-listening-soft: #ede9fe;
+  --color-category-attention-soft: #e0f2fe;
 
   /* ── Typography ────────────────────────────────────── */
   --font-family-base: 'Cairo Variable', 'Cairo', 'Noto Sans Arabic', system-ui, sans-serif;

@@ -17,12 +17,101 @@ export const ROUTE_PATHS = {
   parentDashboard: '/parent/dashboard',
   parentChildren: '/parent/children',
   parentChildProfile: '/parent/children/:childId',
+  superAdmin: '/super-admin',
   unauthorized: '/unauthorized',
 } as const;
 
+/** URL namespace for each role's area. */
+export const ROLE_NAMESPACES = {
+  Parent: '/parent',
+  Teacher: '/teacher',
+  Specialist: '/specialist',
+  Admin: '/admin',
+  SuperAdmin: '/super-admin',
+} as const satisfies Record<UserRole, `/${string}`>;
+
+/**
+ * Roles that share the standard area (dashboard, children, tests, games, reports, messages).
+ * The Super Admin has its own single panel at `ROUTE_PATHS.superAdmin`.
+ */
+export type AreaRole = Exclude<UserRole, 'SuperAdmin'>;
+
+export const AREA_ROLES = [
+  'Parent',
+  'Teacher',
+  'Specialist',
+  'Admin',
+] as const satisfies readonly AreaRole[];
+
+/** Route segments inside every role area (relative to the role namespace). */
+export const AREA_SEGMENTS = {
+  dashboard: 'dashboard',
+  children: 'children',
+  childProfile: 'children/:childId',
+  childPlans: 'children/:childId/plans',
+  tests: 'tests',
+  testPlay: 'tests/:testId/play',
+  games: 'games',
+  gamePlay: 'games/:gameId/play',
+  assessment: 'assessment/:childId',
+  reports: 'reports',
+  reportCreate: 'reports/new',
+  reportDetail: 'reports/:reportId',
+  messages: 'messages',
+} as const;
+
+/** Roles that can open the create-report screen (Replit: Specialist, Admin). */
+export const REPORT_AUTHOR_ROLES = ['Specialist', 'Admin'] as const satisfies readonly AreaRole[];
+
+export function canCreateReports(role: AreaRole): boolean {
+  return (REPORT_AUTHOR_ROLES as readonly AreaRole[]).includes(role);
+}
+
+/** Concrete, role-scoped paths. Builders encode ids. */
+export interface AreaPaths {
+  root: string;
+  dashboard: string;
+  children: string;
+  tests: string;
+  games: string;
+  reports: string;
+  reportCreate: string;
+  messages: string;
+  childProfile: (childId: string) => string;
+  childPlans: (childId: string) => string;
+  testPlay: (testId: string) => string;
+  gamePlay: (gameId: string) => string;
+  assessment: (childId: string) => string;
+  reportDetail: (reportId: string) => string;
+}
+
+export function getAreaPaths(role: AreaRole): AreaPaths {
+  const root = ROLE_NAMESPACES[role];
+  const at = (segment: string) => `${root}/${segment}`;
+  const withId = (segment: string, param: string) => (id: string) =>
+    at(segment.replace(param, encodeURIComponent(id)));
+
+  return {
+    root,
+    dashboard: at(AREA_SEGMENTS.dashboard),
+    children: at(AREA_SEGMENTS.children),
+    tests: at(AREA_SEGMENTS.tests),
+    games: at(AREA_SEGMENTS.games),
+    reports: at(AREA_SEGMENTS.reports),
+    reportCreate: at(AREA_SEGMENTS.reportCreate),
+    messages: at(AREA_SEGMENTS.messages),
+    childProfile: withId(AREA_SEGMENTS.childProfile, ':childId'),
+    childPlans: withId(AREA_SEGMENTS.childPlans, ':childId'),
+    testPlay: withId(AREA_SEGMENTS.testPlay, ':testId'),
+    gamePlay: withId(AREA_SEGMENTS.gamePlay, ':gameId'),
+    assessment: withId(AREA_SEGMENTS.assessment, ':childId'),
+    reportDetail: withId(AREA_SEGMENTS.reportDetail, ':reportId'),
+  };
+}
+
 /** `/parent/children/<id>` for a child profile link. */
 export function buildParentChildProfilePath(childId: string): string {
-  return ROUTE_PATHS.parentChildProfile.replace(':childId', encodeURIComponent(childId));
+  return getAreaPaths('Parent').childProfile(childId);
 }
 
 /** Development-only UI preview (not registered in production builds). */
@@ -32,12 +121,3 @@ export const DEV_PREVIEW_PATHS = {
   forms: '/ui-preview/forms',
   child: '/ui-preview/child',
 } as const;
-
-/** Planned URL namespace for each role's area (pages TBD). */
-export const ROLE_NAMESPACES = {
-  Parent: '/parent',
-  Teacher: '/teacher',
-  Specialist: '/specialist',
-  Admin: '/admin',
-  SuperAdmin: '/super-admin',
-} as const satisfies Record<UserRole, `/${string}`>;

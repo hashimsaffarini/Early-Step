@@ -1,6 +1,5 @@
 import { CalendarDays, ClipboardCheck, Layers } from 'lucide-react';
 
-import { ComingSoonButton } from '@/components/shared/ComingSoonButton';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -10,6 +9,7 @@ import type { ChildAssessment } from '@/features/children/types';
 
 import { ASSESSMENT_STATE_DISPLAY } from './labels';
 import styles from './profile.module.css';
+import { StartAssessmentLink } from './StartAssessmentLink';
 
 const HEADING_ID = 'profile-assessment-title';
 
@@ -19,7 +19,17 @@ const SUMMARY_TEXT = {
   'not-started': 'لم يبدأ التقييم المبدئي بعد',
 } as const;
 
-export function AssessmentSummaryCard({ assessment }: { assessment: ChildAssessment | undefined }) {
+export interface AssessmentSummaryCardProps {
+  assessment: ChildAssessment | undefined;
+  childId: string;
+  childName: string;
+}
+
+export function AssessmentSummaryCard({
+  assessment,
+  childId,
+  childName,
+}: AssessmentSummaryCardProps) {
   return (
     <Card as="section" className={styles.card} aria-labelledby={HEADING_ID}>
       <SectionHeader
@@ -58,7 +68,7 @@ export function AssessmentSummaryCard({ assessment }: { assessment: ChildAssessm
       )}
       {assessment?.state === 'completed' ? null : (
         <div className={styles.footer}>
-          <ComingSoonButton size="md">بدء التقييم</ComingSoonButton>
+          <StartAssessmentLink childId={childId} childName={childName} />
         </div>
       )}
     </Card>

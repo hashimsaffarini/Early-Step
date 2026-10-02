@@ -1,0 +1,31 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  inline-size: min(100%, 18rem);
+  margin: 0 auto;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-muted);
+  list-style: none;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: var(--font-size-2xl);
+  line-height: 1.1;
+  text-align: center;
+  word-break: break-all;
+}
+
+.missing {
+  border: 3px dashed var(--color-primary-strong);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-soft-text);
+  font-weight: var(--font-weight-black);
+}

@@ -14,15 +14,15 @@ High-level flow: Parent registers → adds children → child completes initial 
 plan → Specialist assigns Teacher → Teacher follows progress and gives feedback →
 Specialist monitors progress.
 
-Current status: foundation, discovery, UI foundation and the **public landing + auth UI** are
-implemented (`/`, `/login`, `/register`, `/forgot-password`, `/reset-password`). **Backend
-authentication is not implemented** (forms validate locally, nothing is sent). **The logged-in
-product has started with the Parent Dashboard UI, Parent Children List + Add Child UI and Child
-Profile UI** (`/parent/dashboard`, `/parent/children`, `/parent/children/:childId`; mock data,
-local-only add, view-only profile, no guard — temporary UI-development access). Edit Child, Delete
-Child, the Assessment flow, backend integration, real authentication, guards and other role
-dashboards have **not started**. Unfinished areas are shown
-as disabled "قريباً" items — never as links to empty pages.
+Current status: foundation, discovery, UI foundation, public landing + auth UI, and the
+**complete Replit UI migration** are implemented (ADR-019, `docs/UI_COMPLETENESS_AUDIT.md`): role
+areas `/parent`, `/teacher`, `/specialist`, `/admin` (dashboard, children, child profile,
+education plans, tests, games, reports, messages, full-screen test/game players and initial
+assessment) and `/super-admin`. Everything is **UI only with local mock data**
+(`docs/MOCK_DATA.md`) — **no backend integration, no real authentication, no guards, no
+persistence**; role areas are temporarily open for UI development (mock session users in
+`src/app/dev/mockSessions.ts`). Unfinished actions inside screens are disabled "قريباً" buttons —
+never links to empty pages.
 Next steps: `docs/IMPLEMENTATION_PLAN.md`.
 
 ## External references

@@ -1,7 +1,7 @@
 # UI Component Inventory
 
-Derived from the Replit UI audit (`REPLIT_AUDIT.md`, `DESIGN_SYSTEM.md`). **Plan only — nothing
-here is implemented yet.** Each entry lists where the pattern appears in Replit and the key visual
+Derived from the Replit UI audit (`REPLIT_AUDIT.md`, `DESIGN_SYSTEM.md`). The tables at the top
+list what is **implemented**; the sections below are the original plan (kept for reference). Each entry lists where the pattern appears in Replit and the key visual
 spec. Placement follows `ARCHITECTURE.md`: primitives in `src/components/ui/`, shared product
 components in `src/components/shared/` (or `layout/`), feature components inside their feature.
 
@@ -13,7 +13,22 @@ components in `src/components/shared/` (or `layout/`), feature components inside
 | Shared product | PageHeader, PageBanner (+ overline), StatCard (+ violet tone), SearchField, ChildCard, SectionHeader, ComingSoonButton, EmptyState / ErrorState / LoadingState (restyled)                                                       | `src/components/shared/*` |
 | Layout         | DashboardLayout (sidebar, mobile header, RTL drawer, skip link), SidebarContent (brand, user badge, nav with count badge), BrandMark, AuthLayout, ChildActivityLayout (light assessment style)                                  | `src/components/layout/*` |
 
-Everything else below remains **planned**. Visual QA: `npm run dev` → `/ui-preview`.
+## Added in the complete UI migration pass (2026-09-29, ADR-019)
+
+| Area             | Components                                                                                                                                                                                             | Location                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| Players (shared) | PlayerShell (top bar + stage), PlayerBanner, StartScreen, AnswerTile, QuestionProgress, FeedbackMessage, ResultPanel, StarRating, StatPill, SoundToggle + `useSoundEffects`, Confetti, `starsForScore` | `src/components/players/`                      |
+| Shared product   | CategoryTile + `getCategoryGradientClass` (text-safe category gradients)                                                                                                                               | `src/components/shared/CategoryTile/`          |
+| Role shell       | RoleAreaLayout, RoleAreaRoot, `areaNavigation` (per-role nav), NotificationsMenu                                                                                                                       | `src/app/layouts/`, `features/notifications`   |
+| Activities       | ActivityCatalog, CategoryFilter, CatalogCard, AssignToChildDialog, QuestionPrompt (LTR fragments), 11 game components + shared game helpers                                                            | `features/activities`                          |
+| Assessment       | AssessmentIntro, SectionProgress, AssessmentSectionRunner, SectionComplete, AssessmentResults                                                                                                          | `features/assessments`                         |
+| Children / plans | ChildListCard, AssignActivityDialog, StartAssessmentLink; PlanCard, PlanFormDialog                                                                                                                     | `features/children`, `features/training-plans` |
+| Reports / chat   | ReportCard, FilterChips; ConversationList, ChatThread, NewConversationDialog                                                                                                                           | `features/reports`, `features/chat`            |
+| Dashboards       | DashboardGreetingBanner, DashboardStatsGrid, StaffChildCard, ChildrenDirectory; super-admin OverviewTab, UsersTab, ChildrenTab, ReportsTab                                                             | `features/dashboards`                          |
+
+Not built (by decision): rewards widgets, charts, risk/level badges, difficulty selector, theme and
+language toggles (see `UI_COMPLETENESS_AUDIT.md`). Still planned for later stages: admin content
+editors, tables, image upload, child edit form. Visual QA: `npm run dev` → `/ui-preview`.
 
 ## 1. Primitive / shared UI (`src/components/ui/`)
 
@@ -71,7 +86,7 @@ Everything else below remains **planned**. Visual QA: `npm run dev` → `/ui-pre
 | GroupedListCard                              | profile activities list                                                         | profile, plans                            |
 | SectionCard (icon + coloured title)          | report detail sections                                                          | reports, plans                            |
 | NotificationsMenu                            | bell + popover                                                                  | shell (only if notifications exist)       |
-| question-players (see ARCHITECTURE)          | answer tiles, stimulus card, result panel                                       | assessments, training plans               |
+| players (`src/components/players`, ADR-019)  | answer tiles, stimulus card, result panel                                       | assessments, training plans               |
 
 ## 3. Feature-specific components
 

@@ -1,0 +1,96 @@
+.mission {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-category-attention-soft);
+  text-align: center;
+}
+
+.missionText {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.targetEmoji {
+  font-size: var(--font-size-4xl);
+  line-height: 1;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 40rem) {
+  .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.cell {
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 1;
+  min-block-size: var(--tap-target-child);
+  border: 3px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: var(--font-size-3xl);
+  line-height: 1;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.cell:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+
+.cell:disabled {
+  cursor: default;
+}
+
+.found {
+  border-color: var(--color-success-strong);
+  background: var(--color-success-soft);
+}
+
+.foundMark {
+  position: absolute;
+  inset-block-start: var(--space-1);
+  inset-inline-end: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-success-strong);
+  color: var(--color-text-on-dark);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-black);
+}
+
+.miss {
+  border-style: dashed;
+  border-color: var(--color-danger-strong);
+  animation: shake 0.4s ease-in-out 1;
+}
+
+@keyframes shake {
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}

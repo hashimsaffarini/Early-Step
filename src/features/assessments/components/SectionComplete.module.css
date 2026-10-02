@@ -1,0 +1,34 @@
+.done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+
+.emoji {
+  font-size: var(--font-size-5xl);
+  line-height: 1;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+  color: var(--color-text-primary);
+}
+
+.title:focus {
+  outline: none;
+}
+
+.text {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.action {
+  inline-size: 100%;
+  min-block-size: var(--tap-target-child);
+}

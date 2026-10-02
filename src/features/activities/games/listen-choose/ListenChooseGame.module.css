@@ -1,0 +1,41 @@
+.listen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-card);
+  background: var(--color-category-listening-soft);
+  text-align: center;
+}
+
+.speaker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 6rem;
+  block-size: 6rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--gradient-category-listening);
+  color: var(--color-text-on-dark);
+  box-shadow: var(--shadow-raised);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.speaker:hover {
+  transform: scale(1.05);
+}
+
+.speaker svg {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+}
+
+.word {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+}

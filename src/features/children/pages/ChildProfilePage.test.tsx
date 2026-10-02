@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { routes } from '@/app/router/routes';
-import { buildParentChildProfilePath, ROUTE_PATHS } from '@/constants/routes';
+import { buildParentChildProfilePath, getAreaPaths, ROUTE_PATHS } from '@/constants/routes';
 import { renderWithRouter } from '@/test/renderWithRouter';
 
 async function renderProfile(childId: string) {
@@ -132,7 +132,9 @@ describe('ChildProfilePage — overview', () => {
 
     const assessment = screen.getByRole('region', { name: 'التقييم المبدئي' });
     expect(within(assessment).getByText('لم يبدأ التقييم المبدئي بعد')).toBeInTheDocument();
-    expect(within(assessment).getByRole('button', { name: /بدء التقييم/ })).toBeDisabled();
+    expect(
+      within(assessment).getByRole('link', { name: 'بدء التقييم المبدئي لـ ريم' }),
+    ).toHaveAttribute('href', getAreaPaths('Parent').assessment('mock-child-3'));
   });
 });
 
@@ -155,5 +157,100 @@ describe('ChildProfilePage — empty states', () => {
 
     await userEvent.click(getTab(/التقارير/));
     expect(screen.getByText('لا توجد تقارير بعد')).toBeInTheDocument();
+  });
+});
+
+describe('ChildProfilePage — links to other screens', () => {
+  it('links the header to the education plans page', async () => {
+    await renderProfile('mock-child-1');
+
+    expect(screen.getByRole('link', { name: 'الخطط التعليمية' })).toHaveAttribute(
+      'href',
+      '/parent/children/mock-child-1/plans',
+    );
+  });
+
+  it('links activities to the role-scoped players', async () => {
+    await renderProfile('mock-child-1');
+
+    await userEvent.click(getTab(/الأنشطة/));
+
+    expect(screen.getByRole('link', { name: 'العب: مطابقة البطاقات' })).toHaveAttribute(
+      'href',
+      '/parent/games/memory-match/play',
+    );
+    expect(screen.getByRole('link', { name: 'ابدأ: اختبار الحروف' })).toHaveAttribute(
+      'href',
+      '/parent/tests/letters-test/play',
+    );
+  });
+
+  it('links reports to the report detail', async () => {
+    await renderProfile('mock-child-1');
+
+    const summary = screen.getByRole('region', { name: 'أحدث التقارير' });
+    expect(within(summary).getByRole('link', { name: 'تقرير متابعة' })).toHaveAttribute(
+      'href',
+      getAreaPaths('Parent').reportDetail('report-1'),
+    );
+
+    await userEvent.click(getTab(/التقارير/));
+    expect(screen.getByRole('link', { name: 'عرض التقرير: تقرير متابعة' })).toHaveAttribute(
+      'href',
+      '/parent/reports/report-1',
+    );
+  });
+
+  it('does not offer activity assignment to the parent', async () => {
+    await renderProfile('mock-child-1');
+
+    expect(screen.queryByRole('button', { name: /تعيين نشاط جديد/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('ChildProfilePage — staff roles', () => {
+  async function renderStaffProfile(path: string) {
+    const result = renderWithRouter(routes, path);
+    await screen.findAllByRole('link', { name: 'العودة إلى الأطفال' });
+    return result;
+  }
+
+  it('shows not-found for a child outside the role roster', async () => {
+    await renderStaffProfile(getAreaPaths('Teacher').childProfile('mock-child-4'));
+
+    expect(screen.getByText('لم يتم العثور على الطفل')).toBeInTheDocument();
+  });
+
+  it('lets a teacher assign a game locally', async () => {
+    await renderStaffProfile(getAreaPaths('Teacher').childProfile('mock-child-6'));
+
+    await userEvent.click(screen.getByRole('button', { name: /تعيين نشاط جديد/ }));
+    const dialog = screen.getByRole('dialog', { name: 'تعيين نشاط للطفل' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'تعيين الكلمات المتقاطعة' }));
+
+    expect(within(dialog).getByText('مُعيَّن')).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'تم' }));
+    expect(
+      screen.getByText('تمت إضافة «الكلمات المتقاطعة» إلى أنشطة الطفل (محلياً فقط).'),
+    ).toBeInTheDocument();
+
+    await userEvent.click(getTab(/الأنشطة/));
+    expect(screen.getByRole('link', { name: 'العب: الكلمات المتقاطعة' })).toHaveAttribute(
+      'href',
+      '/teacher/games/word-reading/play',
+    );
+  });
+
+  it('marks activities the child already has as assigned', async () => {
+    await renderStaffProfile(getAreaPaths('Specialist').childProfile('mock-child-1'));
+
+    await userEvent.click(screen.getByRole('button', { name: /تعيين نشاط جديد/ }));
+    const dialog = screen.getByRole('dialog', { name: 'تعيين نشاط للطفل' });
+
+    expect(
+      within(dialog).queryByRole('button', { name: 'تعيين مطابقة البطاقات' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('tab', { name: /الاختبارات/ }));
+    expect(within(dialog).getByRole('button', { name: 'تعيين اختبار الكتابة' })).toBeEnabled();
   });
 });

@@ -1,9 +1,11 @@
 import { FileText } from 'lucide-react';
+import { Link } from 'react-router';
 
 import { EmptyState } from '@/components/shared/EmptyState';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useRoleArea } from '@/hooks/useRoleArea';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
 import type { ChildReport } from '@/features/children/types';
@@ -19,6 +21,7 @@ export interface ReportsSummaryCardProps {
 }
 
 export function ReportsSummaryCard({ reports, onShowReports }: ReportsSummaryCardProps) {
+  const { paths } = useRoleArea();
   return (
     <Card as="section" className={styles.card} aria-labelledby={HEADING_ID}>
       <SectionHeader id={HEADING_ID} title="أحدث التقارير" icon={FileText} iconTone="violet" />
@@ -31,7 +34,9 @@ export function ReportsSummaryCard({ reports, onShowReports }: ReportsSummaryCar
                   <FileText />
                 </span>
                 <div className={styles.rowBody}>
-                  <p className={styles.rowTitle}>{report.title}</p>
+                  <Link to={paths.reportDetail(report.id)} className={styles.rowLink}>
+                    {report.title}
+                  </Link>
                   <time className={styles.muted} dateTime={report.date}>
                     {formatDisplayDate(report.date)}
                   </time>

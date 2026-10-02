@@ -35,13 +35,20 @@ export const MOCK_PARENT_CHILDREN: readonly ParentChildSummary[] = [
     status: 'assessment-pending',
     latestAssessmentLabel: 'التقييم المبدئي: لم يبدأ بعد',
   },
+  {
+    id: 'mock-child-4',
+    name: 'عمر',
+    ageYears: 7,
+    status: 'assessment-completed',
+    latestAssessmentLabel: 'التقييم المبدئي: مكتمل',
+  },
 ];
 
 export const MOCK_PARENT_STATS: ParentDashboardStats = {
-  children: 3,
-  completedAssessments: 2,
+  children: 4,
+  completedAssessments: 3,
   trainingPlans: 1,
-  reports: 2,
+  reports: 3,
 };
 
 export const MOCK_PARENT_ACTIVITY: readonly ParentActivityItem[] = [

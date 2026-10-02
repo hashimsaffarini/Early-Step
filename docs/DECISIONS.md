@@ -283,7 +283,7 @@ composition under admin content management, and exposes progress only as trainin
 
 Features: `auth`, `children`, `users`, `content`, `assessments`, `training-plans`, `feedback`,
 `reports`, `chat`, `dashboards`. Question renderers shared by assessments and training plans
-live in `src/components/question-players/` (presentational, no API). Details in
+live in `src/components/question-players/` (presentational, no API; implemented as `src/components/players/`, ADR-019). Details in
 `ARCHITECTURE.md`.
 
 ### Consequences
@@ -396,3 +396,49 @@ The auth screens also pulled React Hook Form + Zod into the main bundle (> 500 k
 ### Consequences
 
 Features stay independent of `app/`. Main bundle ≈ 370 kB, auth chunk ≈ 144 kB loaded on demand.
+
+## ADR-019 — Complete Replit UI migration: role areas, shared players, mock roster
+
+### Status
+
+Accepted (2026-09-29)
+
+### Context
+
+The remaining Replit screens (tests, games, initial assessment, reports, messages, notifications,
+education plans, teacher/specialist/admin dashboards, super admin panel) are migrated as UI only,
+before backend integration. In Replit most screens are shared by four roles at flat URLs
+(`/children`, `/tests`, …) with role branching inside pages. Authentication does not exist yet.
+
+### Decision
+
+- **Role areas.** Each role gets its own namespace (ADR-015): `/parent`, `/teacher`, `/specialist`,
+  `/admin` share one set of screens built by `buildAreaRoute(role)` in `app/router/areaRoutes.tsx`
+  (dashboard, children, child profile, education plans, tests, games, reports, report detail,
+  messages; create report only for Specialist/Admin). Full-screen child pages (test player, game
+  player, initial assessment) live in the same namespace but outside the sidebar shell. The Super
+  Admin has a single panel at `/super-admin`.
+- **`useRoleArea()`** (`src/hooks/useRoleArea.ts`) exposes the current role and its path builders
+  (`getAreaPaths` in `src/constants/routes.ts`) so shared pages build role-scoped links and vary
+  role-specific UI. It is display/navigation only — **not** access control. Areas remain
+  **temporarily unguarded** for UI development (mock session users in `app/dev/mockSessions.ts`).
+- **Shared players** in `src/components/players/` (PlayerShell, PlayerBanner, StartScreen,
+  AnswerTile, QuestionProgress, FeedbackMessage, ResultPanel, StarRating, StatPill, SoundToggle +
+  `useSoundEffects`, Confetti) are used by games, tests and the assessment — presentational, no
+  data access. `CategoryTile` + category gradient tokens (text-safe) are shared UI; category keys
+  live in `src/constants/activityCategories.ts`.
+- **`features/activities`** owns the child-facing catalogues and players (tests + games). Admin
+  content CRUD stays planned in `features/content` (ADR-014).
+- **One light visual language.** Replit's dark test player and dark super-admin app are rebuilt in
+  the Early Step light style (ADR-016).
+- **Mock data** stays per feature (features never import each other) but follows one documented
+  roster (`docs/MOCK_DATA.md`) so ids, names and facts agree across screens.
+- **Excluded or neutralized:** AI report generation and "AI" branding, risk levels/probabilities,
+  percentage scores, clinical result claims, rewards (XP, levels, streaks, badges, leaderboard),
+  countdown timers for children, PDF generation, real messaging (no sockets).
+
+### Consequences
+
+Every Replit screen has a route in each role that can use it, with no dead links. When auth
+arrives, guards wrap each area route and `useRoleArea` keeps working; the mock sessions and
+mock files are deleted as screens are connected to the API.

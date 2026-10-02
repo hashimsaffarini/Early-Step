@@ -25,6 +25,15 @@ cannot start until the listed backend/product questions are answered.
 
 ---
 
+## UI migration pass — ✅ complete (2026-09-29, ADR-019)
+
+Every Replit screen now has a React equivalent (UI only, mock data, unguarded role areas):
+dashboards for all roles, children + profiles for all roles, education plans, tests and games
+catalogues, test player, 11 games, initial assessment, reports (list/detail/create), messages,
+notifications, super admin panel. See `UI_COMPLETENESS_AUDIT.md`. **Backend integration, real
+authentication, guards and persistence have not started**; the stages below keep their API
+scope and now start from existing screens (replace each mock with API hooks).
+
 ## Stage 0 — Foundation ✅
 
 Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `10c12f9`.
@@ -59,8 +68,7 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 
 > **Progress (2026-09-28):** public **landing + auth UI implemented** (login, parent register,
 > forgot, reset; React Hook Form + Zod; Arabic validation; responsive; tests). **Backend
-> authentication not implemented** (no requests, tokens, sessions, guards). **Logged-in product
-> not started.** Change-password and API wiring remain for when Stage 1 (live API) is done.
+> authentication not implemented** (no requests, tokens, sessions, guards). Change-password and API wiring remain for when Stage 1 (live API) is done.
 
 - **Screens:** login, register (role cards if multiple roles allowed), forgot password, reset
   password, change password.
@@ -83,11 +91,9 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 
 ## Stage 5 — Parent + Children
 
-> **Progress (2026-09-29):** **Parent Children List UI implemented** (`/parent/children`), **Add
-> Child UI implemented** (dialog, validation, local add) and **Child Profile UI implemented**
-> (`/parent/children/:childId`; header, tabs, overview summaries, empty states, not-found; mock
-> data, view only). Edit Child, Delete Child and the Assessment flow **not started**; backend
-> integration **not started**.
+> **Progress (2026-09-29):** children list and child profile **UI implemented for every role**
+> (parent add child; staff assign activity), education plans page (view; Specialist/Admin create
+> locally). Edit Child, Delete Child and backend integration **not started**.
 
 - **Screens:** parent home, children list, add/edit child, child profile (info + reports list +
   plan summary if allowed), delete confirm.
@@ -110,10 +116,13 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 
 ## Stage 7 — Initial assessment (runner)
 
+> **Progress (2026-09-29):** full assessment **UI implemented** (`/{role}/assessment/:childId`:
+> intro, 4 sections, neutral completion screen) with local demo content. API wiring blocked as below.
+
 - **Screens:** intro, runner (question per screen, progress), completion; results (**BLOCKED**:
   no results endpoint).
 - **Endpoints:** `start`, `answer`, `complete`.
-- **Components:** `components/question-players` (choice first), AssessmentProgress.
+- **Components:** `components/players` (AnswerTile, QuestionProgress, …) + `features/assessments` UI (done).
 - **Depends on:** 5 (child), 6 (content exists). **BLOCKED on:** start response, `{id}`
   semantics, non-single-choice payloads, operator (parent vs child), timing requirements.
 - **Tests:** runner state machine, renderers, full MSW run.
@@ -143,6 +152,9 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 
 ## Stage 11 — Reports
 
+> **Progress (2026-09-29):** list, detail and create (manual) **UI implemented** with mock data;
+> PDF download disabled "قريباً". No API.
+
 - **Screens:** specialist list/create/edit/delete, parent child reports, PDF download.
 - **Endpoints:** `/specialist/Reports`, `/specialist/CreateReport`, `/specialist/{id}`,
   `/Reports/child/{id}`, `/Reports/{id}/download`.
@@ -150,16 +162,18 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 
 ## Stage 12 — Dashboards
 
-> **Progress (2026-09-29):** **Parent Dashboard UI implemented** (`/parent/dashboard`, mock data,
-> parent sidebar with unavailable future items; "عرض الكل" and child cards now link to the children
-> list and child profiles). Backend integration **not started**; real authentication **not started**. Other role dashboards
-> not started.
+> **Progress (2026-09-29):** Parent, Teacher, Specialist, Admin dashboards and the Super Admin
+> panel **UI implemented** with mock data (no fabricated stats, no risk). Backend integration and
+> real authentication **not started**.
 
 - **Screens:** Admin, Specialist, Teacher, SuperAdmin dashboards; Parent home.
 - **Endpoints:** role dashboard endpoints (shapes from Stage 1).
 - **Rule:** display only real data — no fabricated stats (Replit's "85%").
 
 ## Stage 13 — Chat
+
+> **Progress (2026-09-29):** messages **UI implemented** (responsive list ↔ thread, local send,
+> unread badges) + notifications menu. No hub/API.
 
 - **Screens:** conversation list, thread, contact picker, unread badge in nav.
 - **Endpoints:** `/api/Chats/*`, `/Chats*`, hub.
@@ -169,10 +183,15 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 
 ## Stage 14 — Super Admin
 
+> **Progress (2026-09-29):** panel **UI implemented** (`/super-admin`, 4 tabs, local delete).
+
 - **Screens:** dashboard, users, children overview.
 - **Endpoints:** `/SuperAdmin/*`. **BLOCKED on:** SuperAdmin vs Admin differentiation.
 
 ## Stage 15 — Child activity play + games (BLOCKED)
+
+> **Progress (2026-09-29):** tests/games catalogues, test player and all 11 game UIs
+> **implemented** with demo content. API integration still blocked as below.
 
 - **Blocked on:** submit endpoint for training-plan activities; game endpoints; game scope
   decision (content vs custom logic); answer payloads; audio.

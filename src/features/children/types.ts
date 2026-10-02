@@ -1,13 +1,16 @@
+import type { ActivityCategory } from '@/constants/activityCategories';
 import type { ChildGender, ChildJourneyStatus } from '@/types/child';
 
-/** Child as shown on the parent's children screen (UI model; API mapping TBD). */
-export interface ParentChild {
+/** Child as shown on the children screens of every role (UI model; API mapping TBD). */
+export interface ChildRecord {
   id: string;
   name: string;
   /** ISO date `YYYY-MM-DD` (Replit form uses a birth date; the API docs show "Age" — TBD). */
   birthDate: string;
   gender: ChildGender;
   status: ChildJourneyStatus;
+  /** Shown to staff (teacher, specialist, admin); the parent's own list omits it. */
+  parentName?: string;
 }
 
 export type AssessmentState = 'not-started' | 'in-progress' | 'completed';
@@ -25,10 +28,14 @@ export interface ChildAssessment {
 export type PlanActivityType = 'test' | 'game';
 
 export interface PlanActivity {
+  /** Assignment id (unique within the child). */
   id: string;
+  /** Game or test id — opens the player (`paths.gamePlay` / `paths.testPlay`). */
+  activityId: string;
   title: string;
   type: PlanActivityType;
-  category: string;
+  category: ActivityCategory;
+  emoji: string;
   isCompleted: boolean;
 }
 

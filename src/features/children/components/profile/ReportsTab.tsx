@@ -1,16 +1,19 @@
-import { CalendarDays, FileText, UserRound } from 'lucide-react';
+import { CalendarDays, ChevronLeft, FileText, UserRound } from 'lucide-react';
+import { Link } from 'react-router';
 
-import { ComingSoonButton } from '@/components/shared/ComingSoonButton';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useRoleArea } from '@/hooks/useRoleArea';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
 import type { ChildReport } from '@/features/children/types';
 
 import styles from './profile.module.css';
 
-/** Replit "التقارير" tab: report cards (no detail page yet). */
+/** Replit "التقارير" tab: report cards linking to the report detail. */
 export function ReportsTab({ reports }: { reports: readonly ChildReport[] }) {
+  const { paths } = useRoleArea();
   if (reports.length === 0) {
     return (
       <EmptyState
@@ -45,7 +48,14 @@ export function ReportsTab({ reports }: { reports: readonly ChildReport[] }) {
           </div>
           <p className={styles.muted}>{report.summary}</p>
           <div className={styles.footer}>
-            <ComingSoonButton size="md">عرض التقرير</ComingSoonButton>
+            <Link
+              to={paths.reportDetail(report.id)}
+              className={getButtonClassName({ variant: 'soft' })}
+              aria-label={`عرض التقرير: ${report.title}`}
+            >
+              عرض التقرير
+              <ChevronLeft aria-hidden="true" />
+            </Link>
           </div>
         </Card>
       ))}

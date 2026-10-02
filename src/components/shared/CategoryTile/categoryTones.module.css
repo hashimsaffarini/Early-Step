@@ -1,0 +1,25 @@
+/* Category gradient backgrounds (tokens are text-safe for white text). */
+.memory {
+  background-image: var(--gradient-category-memory);
+}
+.reading {
+  background-image: var(--gradient-category-reading);
+}
+.math {
+  background-image: var(--gradient-category-math);
+}
+.writing {
+  background-image: var(--gradient-category-writing);
+}
+.logic {
+  background-image: var(--gradient-category-logic);
+}
+.listening {
+  background-image: var(--gradient-category-listening);
+}
+.attention {
+  background-image: var(--gradient-category-attention);
+}
+.neutral {
+  background-image: var(--gradient-category-neutral);
+}

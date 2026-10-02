@@ -117,6 +117,8 @@ Based on the real API partitioning (`API_ENDPOINTS.md`) and the Replit screens
 | `training-plans` | specialist plan editor, plan views, child activity play/results, progress summary                                                                          | `/TrainingPlan/*`                                                                                                                                                |
 | `feedback`       | teacher notes CRUD                                                                                                                                         | `/Teacher/notes*`, `/Teacher/children/{id}/notes`                                                                                                                |
 | `reports`        | report CRUD, lists, PDF download                                                                                                                           | `/specialist/Reports`, `/specialist/CreateReport`, `/specialist/{id}`, `/Reports/*`                                                                              |
+| `activities`     | child-facing tests/games catalogues, test player, game player + games (UI prototype content; ADR-019)                                                      | `/TrainingPlan/*` activity play (TBD)                                                                                                                            |
+| `notifications`  | notifications menu (bell + panel)                                                                                                                          | TBD (no notifications API documented)                                                                                                                            |
 | `chat`           | conversations, messages, unread, seen, hub connection                                                                                                      | `/api/Chats/*`, `/Chats*`, hub                                                                                                                                   |
 | `dashboards`     | per-role home/dashboard pages                                                                                                                              | `/Admin/dashboard`, `/specialist/dashboard`, `/Teacher/dashboard`, `/SuperAdmin/dashboard`                                                                       |
 
@@ -126,9 +128,11 @@ Changes from the foundation plan: `categories`, `activities` and `games` are mer
 
 ### Shared product components needed by several features
 
-- **Question players** (choice / order / match renderers, answer feedback, result stars) are
-  used by `assessments` and `training-plans` → `src/components/question-players/` (presentational,
-  props-driven, **no API calls**).
+- **Players** (PlayerShell, start screen, answer tiles, feedback, result panel, stars, sounds,
+  confetti) are used by `activities` and `assessments` → `src/components/players/`
+  (presentational, props-driven, **no API calls**; ADR-019).
+- **Role areas**: `useRoleArea()` (`src/hooks/`) gives shared pages the current role and its
+  path builders (`getAreaPaths`); set by `RoleAreaRoot` in `app/layouts` (ADR-019).
 - Enum display maps (roles, gender, activity type) → `src/constants/` (one module per enum).
 - Media URL helper (`/uploads/...` → absolute) → `src/services/api/` or `src/lib/`.
 - Route path constants live in `src/constants/routes.ts` (moved from `app/router/paths.ts`,

@@ -1,0 +1,112 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  transition:
+    transform var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  color: var(--color-text-on-dark);
+}
+
+.stars {
+  display: flex;
+  gap: 0.125rem;
+  margin-block-end: var(--space-2);
+}
+
+.star {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  color: var(--color-glass);
+}
+
+.starFilled {
+  color: var(--color-text-on-dark);
+  fill: var(--color-text-on-dark);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-extrabold);
+  line-height: var(--line-height-snug);
+}
+
+.emoji {
+  flex-shrink: 0;
+  font-size: var(--font-size-5xl);
+  line-height: 1;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.description {
+  flex: 1;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-snug);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.play {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: var(--tap-target-min);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-on-dark);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  box-shadow: var(--shadow-card);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.play:hover {
+  transform: translateY(-1px);
+  color: var(--color-text-on-dark);
+}
+
+.play svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
