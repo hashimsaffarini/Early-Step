@@ -1,5 +1,24 @@
 import '@testing-library/jest-dom/vitest';
 
+import { resetMockDb } from '@/mocks/db';
+import { server } from '@/mocks/server';
+import { useSessionStore } from '@/services/session';
+
+/* Mocked HTTP for every test — unhandled requests fail loudly; nothing reaches the live backend. */
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'error' });
+});
+beforeEach(() => {
+  resetMockDb();
+});
+afterEach(() => {
+  server.resetHandlers();
+  useSessionStore.getState().signOut();
+});
+afterAll(() => {
+  server.close();
+});
+
 /*
  * jsdom does not implement HTMLDialogElement.showModal/close.
  * Minimal stand-in: toggles the `open` attribute and fires `close`.

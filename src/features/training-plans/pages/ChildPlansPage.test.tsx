@@ -4,8 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { routes } from '@/app/router/routes';
 import { getAreaPaths, type AreaRole } from '@/constants/routes';
 import { renderWithRouter } from '@/test/renderWithRouter';
+import { signInForPath } from '@/test/session';
 
 async function renderPlans(role: AreaRole, childId: string) {
+  signInForPath(getAreaPaths(role).root);
   const result = renderWithRouter(routes, getAreaPaths(role).childPlans(childId));
   await screen.findAllByRole('link', { name: /العودة إلى/ });
   return result;

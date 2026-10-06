@@ -1,7 +1,11 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { http, HttpResponse } from 'msw';
+
 import { ROUTE_PATHS } from '@/constants/routes';
+import { apiUrl } from '@/mocks/http';
+import { server } from '@/mocks/server';
 import { renderWithRouter } from '@/test/renderWithRouter';
 
 import { ForgotPasswordPage } from './ForgotPasswordPage';
@@ -38,7 +42,7 @@ describe('ForgotPasswordPage', () => {
     await userEvent.type(screen.getByLabelText('البريد الإلكتروني'), 'parent@example.com');
     await submit();
 
-    expect(screen.getByRole('heading', { name: 'تم استلام طلبك' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'تم استلام طلبك' })).toBeInTheDocument();
     expect(
       screen.getByText(
         'إذا كان البريد الإلكتروني مسجلاً، فسيتم إرسال تعليمات استعادة كلمة المرور.',
@@ -54,11 +58,32 @@ describe('ForgotPasswordPage', () => {
 
     await userEvent.type(screen.getByLabelText('البريد الإلكتروني'), 'parent@example.com');
     await submit();
-    await userEvent.click(screen.getByRole('link', { name: 'إدخال رمز التحقق' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'إدخال رمز التحقق' }));
 
     expect(router.state.location.pathname).toBe(ROUTE_PATHS.resetPassword);
     expect(router.state.location.search).toBe('');
-    expect(screen.getByText('parent@example.com')).toBeInTheDocument();
+    expect(screen.getByLabelText('البريد الإلكتروني')).toHaveValue('parent@example.com');
+  });
+
+  it('shows the same neutral state for an unknown email (no account enumeration)', async () => {
+    renderForgot();
+
+    await userEvent.type(screen.getByLabelText('البريد الإلكتروني'), 'unknown@demo.test');
+    await submit();
+
+    expect(await screen.findByRole('heading', { name: 'تم استلام طلبك' })).toBeInTheDocument();
+  });
+
+  it('shows an error when the server fails', async () => {
+    server.use(
+      http.post(apiUrl('Auth/ForgotPassword'), () => new HttpResponse(null, { status: 500 })),
+    );
+    renderForgot();
+
+    await userEvent.type(screen.getByLabelText('البريد الإلكتروني'), 'parent@demo.test');
+    await submit();
+
+    expect(await screen.findByText('حدث خطأ في الخادم. يرجى المحاولة لاحقًا.')).toBeInTheDocument();
   });
 
   it('links back to login', async () => {

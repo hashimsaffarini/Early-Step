@@ -1,11 +1,32 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router';
 
-/** Renders route objects in a memory router (for layout/navigation tests). */
-export function renderWithRouter(routes: RouteObject[], initialPath = '/') {
-  const router = createMemoryRouter(routes, { initialEntries: [initialPath] });
-  return { router, ...render(<RouterProvider router={router} />) };
+/** Fresh query client per test: no retries, no cache shared between tests. */
+export function createTestQueryClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } },
+  });
+}
+
+/** Renders route objects in a memory router with a query client (HTTP is mocked by MSW). */
+export function renderWithRouter(routes: RouteObject[], initialPath = '/', initialState?: unknown) {
+  const queryClient = createTestQueryClient();
+  const router = createMemoryRouter(routes, {
+    initialEntries: [
+      initialState === undefined ? initialPath : { pathname: initialPath, state: initialState },
+    ],
+  });
+  return {
+    router,
+    queryClient,
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    ),
+  };
 }
 
 /** Wraps a single element in a router at `/`. */

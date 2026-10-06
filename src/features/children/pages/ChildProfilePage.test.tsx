@@ -4,8 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { routes } from '@/app/router/routes';
 import { buildParentChildProfilePath, getAreaPaths, ROUTE_PATHS } from '@/constants/routes';
 import { renderWithRouter } from '@/test/renderWithRouter';
+import { signInForPath } from '@/test/session';
 
 async function renderProfile(childId: string) {
+  signInForPath('/parent');
   const result = renderWithRouter(routes, buildParentChildProfilePath(childId));
   await screen.findAllByRole('link', { name: 'العودة إلى أطفالي' });
   return result;
@@ -32,6 +34,7 @@ describe('ChildProfilePage — routing', () => {
   });
 
   it('opens the profile from the children list card', async () => {
+    signInForPath(ROUTE_PATHS.parentChildren);
     const { router } = renderWithRouter(routes, ROUTE_PATHS.parentChildren);
 
     await userEvent.click(await screen.findByRole('link', { name: 'عرض ملف نور' }));
@@ -210,6 +213,7 @@ describe('ChildProfilePage — links to other screens', () => {
 
 describe('ChildProfilePage — staff roles', () => {
   async function renderStaffProfile(path: string) {
+    signInForPath(path);
     const result = renderWithRouter(routes, path);
     await screen.findAllByRole('link', { name: 'العودة إلى الأطفال' });
     return result;

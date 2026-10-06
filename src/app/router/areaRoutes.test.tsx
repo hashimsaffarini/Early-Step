@@ -1,14 +1,56 @@
-import { render, screen, within } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider } from 'react-router';
+import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { routes } from '@/app/router/routes';
 import { getAreaPaths, ROUTE_PATHS } from '@/constants/routes';
+import { useSessionStore } from '@/services/session';
+import { renderWithRouter } from '@/test/renderWithRouter';
+import { signInAs, signInForPath } from '@/test/session';
 
+/** Renders the real route tree, signed in as the role that owns the path. */
 function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
-  render(<RouterProvider router={router} />);
-  return router;
+  signInForPath(path);
+  return renderWithRouter(routes, path).router;
 }
+
+describe('route guards', () => {
+  it('sends a signed-out visitor to login and remembers the target', async () => {
+    const { router } = renderWithRouter(routes, getAreaPaths('Teacher').reports);
+
+    expect(await screen.findByRole('heading', { name: 'أهلاً بعودتك!' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(ROUTE_PATHS.login);
+    expect(router.state.location.state).toEqual({ from: getAreaPaths('Teacher').reports });
+  });
+
+  it('blocks a signed-in user from another role area', async () => {
+    signInAs('Parent');
+    const { router } = renderWithRouter(routes, getAreaPaths('Admin').dashboard);
+
+    expect(await screen.findByText('غير مصرّح لك بالوصول')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(ROUTE_PATHS.unauthorized);
+  });
+
+  it('sends a signed-in user away from the login page to their own area', async () => {
+    signInAs('Specialist');
+    const { router } = renderWithRouter(routes, ROUTE_PATHS.login);
+
+    await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
+    expect(router.state.location.pathname).toBe(getAreaPaths('Specialist').dashboard);
+  });
+
+  it('logs out locally: clears the session and the cache, then shows login', async () => {
+    const router = renderAt(ROUTE_PATHS.parentDashboard);
+    await screen.findByRole('heading', { level: 1, name: /محمد أحمد/ });
+
+    const [logout] = screen.getAllByRole('button', { name: 'تسجيل الخروج' });
+    if (!logout) throw new Error('logout not found');
+    await userEvent.click(logout);
+
+    expect(await screen.findByRole('heading', { name: 'أهلاً بعودتك!' })).toBeInTheDocument();
+    expect(useSessionStore.getState().session).toBeNull();
+    expect(router.state.location.pathname).toBe(ROUTE_PATHS.login);
+  });
+});
 
 describe('role area routing', () => {
   it('redirects /parent to /parent/dashboard', async () => {

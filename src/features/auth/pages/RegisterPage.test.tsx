@@ -1,7 +1,11 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { http, HttpResponse } from 'msw';
+
 import { ROUTE_PATHS } from '@/constants/routes';
+import { apiUrl } from '@/mocks/http';
+import { server } from '@/mocks/server';
 import { renderWithRouter } from '@/test/renderWithRouter';
 
 import { RegisterPage } from './RegisterPage';
@@ -72,15 +76,37 @@ describe('RegisterPage', () => {
     expect(screen.getByText('كلمتا المرور غير متطابقتين')).toBeInTheDocument();
   });
 
-  it('shows the UI-only notice after a valid submission', async () => {
-    renderRegister();
-
+  async function fillValid(email: string) {
     await userEvent.type(screen.getByLabelText('الاسم الكامل'), 'سارة أحمد');
-    await userEvent.type(screen.getByLabelText('البريد الإلكتروني'), 'parent@example.com');
+    await userEvent.type(screen.getByLabelText('البريد الإلكتروني'), email);
     await userEvent.type(screen.getByLabelText('كلمة المرور'), STRONG_PASSWORD);
     await userEvent.type(screen.getByLabelText('تأكيد كلمة المرور'), STRONG_PASSWORD);
     await submit();
+  }
 
-    expect(screen.getByText(/لم يتم إنشاء أي حساب/)).toBeInTheDocument();
+  it('registers a parent account with the backend role value', async () => {
+    let received: FormData | undefined;
+    server.use(
+      http.post(apiUrl('Auth/register'), async ({ request }) => {
+        received = await request.formData();
+        return HttpResponse.json({ message: 'ok' });
+      }),
+    );
+    renderRegister();
+
+    await fillValid('new-parent@demo.test');
+
+    expect(await screen.findByText(/تم إنشاء الحساب/)).toBeInTheDocument();
+    expect(received?.get('Role')).toBe('ولي أمر');
+    expect(received?.get('FullName')).toBe('سارة أحمد');
+    expect(received?.get('ConfirmPassword')).toBe(STRONG_PASSWORD);
+  });
+
+  it('shows the backend error message (e.g. email already used)', async () => {
+    renderRegister();
+
+    await fillValid('parent@demo.test');
+
+    expect(await screen.findByText('البريد الإلكتروني مستخدم بالفعل.')).toBeInTheDocument();
   });
 });

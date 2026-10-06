@@ -2,6 +2,7 @@ import { Navigate, type RouteObject } from 'react-router';
 
 import { RoleAreaLayout } from '@/app/layouts/RoleAreaLayout';
 import { RoleAreaRoot } from '@/app/layouts/RoleAreaRoot';
+import { RequireRole } from '@/app/router/guards';
 import {
   AREA_SEGMENTS,
   canCreateReports,
@@ -31,7 +32,7 @@ async function loadDashboardRoute(role: AreaRole) {
 /**
  * One role area: shell pages inside the DashboardLayout plus full-screen child activity
  * pages (players and the initial assessment) without the sidebar.
- * TEMPORARY: no auth guard — every area is open for UI development (see ROUTING.md).
+ * Guarded by `RequireRole` (UX only — the backend enforces authorization).
  */
 function buildAreaRoute(role: AreaRole): RouteObject {
   const shellPages: RouteObject[] = [
@@ -98,7 +99,11 @@ function buildAreaRoute(role: AreaRole): RouteObject {
 
   return {
     path: ROLE_NAMESPACES[role],
-    element: <RoleAreaRoot role={role} />,
+    element: (
+      <RequireRole role={role}>
+        <RoleAreaRoot role={role} />
+      </RequireRole>
+    ),
     children: [
       { element: <RoleAreaLayout role={role} />, children: shellPages },
       ...fullScreenPages,
@@ -106,10 +111,14 @@ function buildAreaRoute(role: AreaRole): RouteObject {
   };
 }
 
-/** Super Admin: a single panel (Replit `/admin`), in the shared shell. TEMPORARY: no guard. */
+/** Super Admin: a single panel (Replit `/admin`), in the shared shell. */
 const superAdminRoute: RouteObject = {
   path: ROUTE_PATHS.superAdmin,
-  element: <RoleAreaLayout role="SuperAdmin" />,
+  element: (
+    <RequireRole role="SuperAdmin">
+      <RoleAreaLayout role="SuperAdmin" />
+    </RequireRole>
+  ),
   children: [
     {
       index: true,

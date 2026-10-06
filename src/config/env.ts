@@ -8,14 +8,21 @@ import { z } from 'zod';
  * is known. Once a value is required it fails fast with a clear message.
  */
 const envSchema = z.object({
-  VITE_API_BASE_URL: z.url({
-    message:
-      'VITE_API_BASE_URL must be a valid absolute URL. Copy .env.example to .env and set it.',
-  }),
+  VITE_API_BASE_URL: z
+    .url({
+      message:
+        'VITE_API_BASE_URL must be a valid absolute URL. Copy .env.example to .env and set it.',
+    })
+    .refine((value) => value.endsWith('/api/'), {
+      message: 'VITE_API_BASE_URL must end with "/api/" (feature paths are relative to it).',
+    }),
 });
 
 export interface AppEnv {
+  /** e.g. `https://earlystep22.runasp.net/api/` — request paths are relative to it. */
   apiBaseUrl: string;
+  /** Origin of the API host — server-relative media (`/uploads/...`) resolves against it. */
+  apiOrigin: string;
 }
 
 let cachedEnv: AppEnv | undefined;
@@ -31,6 +38,12 @@ export function getEnv(): AppEnv {
     throw new Error(`Invalid environment configuration:\n${details}`);
   }
 
-  cachedEnv = { apiBaseUrl: result.data.VITE_API_BASE_URL };
+  const apiBaseUrl = result.data.VITE_API_BASE_URL;
+  cachedEnv = { apiBaseUrl, apiOrigin: new URL(apiBaseUrl).origin };
   return cachedEnv;
+}
+
+/** Development mock mode (MSW in the browser). Never on in production builds. */
+export function isMockMode(): boolean {
+  return import.meta.env.DEV && import.meta.env.VITE_USE_MOCKS === 'true';
 }

@@ -7,9 +7,10 @@ export const forgotPasswordSchema = z.object({ email: emailField });
 
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
-/** TBD: code length/format — confirm with the backend (Replit used 6 digits). */
+/** Code: digits only; length not documented (Apidog example: 4 digits) — NOT LIVE-VERIFIED. */
 export const resetPasswordSchema = z
   .object({
+    email: emailField,
     code: z
       .string()
       .trim()

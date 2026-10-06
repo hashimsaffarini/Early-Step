@@ -21,6 +21,11 @@ export const ROUTE_PATHS = {
   unauthorized: '/unauthorized',
 } as const;
 
+/** Where a signed-in user lands (area roots redirect to their dashboard). */
+export function getRoleHomePath(role: UserRole): string {
+  return ROLE_NAMESPACES[role];
+}
+
 /** URL namespace for each role's area. */
 export const ROLE_NAMESPACES = {
   Parent: '/parent',
