@@ -5,7 +5,7 @@ import { LogoutButton } from '@/app/layouts/LogoutButton';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { IconButton } from '@/components/ui/IconButton';
 import { ROLE_LABELS } from '@/constants/roleLabels';
-import { useUnreadMessagesCount } from '@/features/chat';
+import { useUnreadMessagesCount } from '@/hooks/api/useUnreadMessagesCount';
 import { useSession } from '@/services/session';
 import type { UserRole } from '@/types/roles';
 

@@ -13,7 +13,6 @@ import {
   fetchMessages,
   fetchNewerMessages,
   fetchOlderMessages,
-  fetchUnreadCount,
   markConversationSeen,
   MESSAGE_PAGE_SIZE,
   sendMessage,
@@ -23,7 +22,6 @@ import {
 export const CHAT_POLL_MS = {
   messages: 7_000,
   conversations: 30_000,
-  unread: 30_000,
 } as const;
 
 /** Messages cache key: by conversation id, or by receiver for a conversation not created yet. */
@@ -44,19 +42,6 @@ export function useConversations() {
 
 export function useChatUsers(enabled: boolean) {
   return useQuery({ queryKey: queryKeys.chat.users(), queryFn: fetchChatUsers, enabled });
-}
-
-/** Unread total for the sidebar badge. Only polls while signed in and when `enabled`. */
-export function useUnreadMessagesCount(enabled = true): number {
-  const session = useSession();
-  const { data } = useQuery({
-    queryKey: queryKeys.chat.unread(),
-    queryFn: fetchUnreadCount,
-    enabled: enabled && session !== null,
-    refetchInterval: CHAT_POLL_MS.unread,
-    refetchIntervalInBackground: false,
-  });
-  return data ?? 0;
 }
 
 /** Marks a conversation seen; refreshes the unread badge and zeroes its row immediately. */

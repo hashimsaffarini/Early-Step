@@ -121,11 +121,6 @@ export async function sendMessage(input: SendMessageInput): Promise<ChatMessage>
   return mapMessage(messageSchema.parse(data));
 }
 
-export async function fetchUnreadCount(): Promise<number> {
-  const { data } = await httpClient.get<unknown>(CHAT_PATHS.unreadCount);
-  return z.number().parse(data);
-}
-
 export async function markConversationSeen(conversationId: string): Promise<void> {
   await httpClient.post(CHAT_PATHS.markSeen, null, { params: { conversationId } });
 }
