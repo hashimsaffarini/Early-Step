@@ -2,7 +2,7 @@ import { rmSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
 
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [
@@ -27,6 +27,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Live contract tests run only via `npm run test:live` (never in validate/CI).
+    exclude: [...configDefaults.exclude, 'src/test/live/**'],
     css: false,
     // Deterministic test API origin — tests never call the live backend (MSW intercepts).
     env: { VITE_API_BASE_URL: 'https://api.test/api/', VITE_USE_MOCKS: 'false' },
