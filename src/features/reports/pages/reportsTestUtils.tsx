@@ -3,8 +3,6 @@ import type { ReactElement } from 'react';
 import type { AreaRole } from '@/constants/routes';
 import { getAreaPaths, ROLE_NAMESPACES } from '@/constants/routes';
 import { RoleAreaContext } from '@/hooks/useRoleArea';
-import { registerHttpAuthHooks } from '@/services/http/interceptors';
-import { getAccessToken } from '@/services/session';
 import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
@@ -12,13 +10,6 @@ export const YOUSEF = 'c0000000-0000-4000-8000-000000000001';
 export const NOUR = 'c0000000-0000-4000-8000-000000000002';
 export const REPORT_YOUSEF = 'r0000000-0000-4000-8000-000000000001';
 export const REPORT_NOUR = 'r0000000-0000-4000-8000-000000000002';
-
-/** Sends the signed-in test user's token (the app does this via `AuthHttpBridge`). */
-export function installTestAuthHeader(): void {
-  beforeAll(() => {
-    registerHttpAuthHooks({ getAccessToken, onUnauthorized: () => undefined });
-  });
-}
 
 /**
  * Signs in as `role` and renders a reports page inside its role area. Other report routes

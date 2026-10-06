@@ -7,8 +7,6 @@ import { RoleAreaContext } from '@/hooks/useRoleArea';
 import { mockMessages, PARENT_TEACHER_CONVERSATION } from '@/mocks/fixtures/chat';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
-import { registerHttpAuthHooks } from '@/services/http/interceptors';
-import { getAccessToken } from '@/services/session';
 import { renderInRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
@@ -43,9 +41,6 @@ function spyOn(method: 'get' | 'post', path: string) {
 }
 
 // The app registers these in AuthHttpBridge (AppProviders); render helpers don't mount it.
-beforeEach(() => {
-  registerHttpAuthHooks({ getAccessToken, onUnauthorized: () => undefined });
-});
 
 afterEach(() => {
   server.events.removeAllListeners();

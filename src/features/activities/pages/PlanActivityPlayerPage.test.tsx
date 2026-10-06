@@ -4,8 +4,6 @@ import { http, HttpResponse } from 'msw';
 
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
-import { registerHttpAuthHooks } from '@/services/http/interceptors';
-import { getAccessToken } from '@/services/session';
 import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
@@ -29,7 +27,6 @@ function renderPlayer(activityId: string) {
 
 describe('PlanActivityPlayerPage', () => {
   beforeEach(() => {
-    registerHttpAuthHooks({ getAccessToken, onUnauthorized: () => undefined });
     signInAs('Parent');
   });
 

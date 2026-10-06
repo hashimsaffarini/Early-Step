@@ -7,15 +7,9 @@ import { getAreaPaths } from '@/constants/routes';
 import { mockChildren } from '@/mocks/fixtures/children';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
-import { registerHttpAuthHooks } from '@/services/http/interceptors';
-import { getAccessToken } from '@/services/session';
 import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 import type { AreaRole } from '@/constants/routes';
-
-beforeEach(() => {
-  registerHttpAuthHooks({ getAccessToken, onUnauthorized: () => undefined });
-});
 
 function renderList(role: AreaRole) {
   signInAs(role);

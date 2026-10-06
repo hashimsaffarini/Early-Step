@@ -5,8 +5,6 @@ import { http, HttpResponse } from 'msw';
 import { RoleAreaContext } from '@/hooks/useRoleArea';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
-import { registerHttpAuthHooks } from '@/services/http/interceptors';
-import { getAccessToken } from '@/services/session';
 import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
@@ -39,7 +37,6 @@ const start = async () => {
 describe('AssessmentPage (initial assessment)', () => {
   beforeEach(() => {
     // The app wires these in AuthHttpBridge; page-level renders register them directly.
-    registerHttpAuthHooks({ getAccessToken, onUnauthorized: () => undefined });
     signInAs('Parent');
   });
 

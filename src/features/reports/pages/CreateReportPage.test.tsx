@@ -8,14 +8,7 @@ import { server } from '@/mocks/server';
 
 import { CreateReportPage } from './CreateReportPage';
 import { EditReportPage } from './EditReportPage';
-import {
-  renderReportsPage,
-  REPORT_YOUSEF,
-  installTestAuthHeader,
-  YOUSEF,
-} from './reportsTestUtils';
-
-installTestAuthHeader();
+import { renderReportsPage, REPORT_YOUSEF, YOUSEF } from './reportsTestUtils';
 
 const paths = getAreaPaths('Specialist');
 

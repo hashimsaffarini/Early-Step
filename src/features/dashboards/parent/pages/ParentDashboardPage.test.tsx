@@ -3,15 +3,12 @@ import { http, HttpResponse } from 'msw';
 
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
-import { registerHttpAuthHooks } from '@/services/http/interceptors';
-import { getAccessToken } from '@/services/session';
 import { renderInRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
 import { ParentDashboardPage } from './ParentDashboardPage';
 
 beforeEach(() => {
-  registerHttpAuthHooks({ getAccessToken, onUnauthorized: () => undefined });
   signInAs('Parent');
 });
 

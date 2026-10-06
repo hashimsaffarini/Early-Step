@@ -18,7 +18,7 @@ import { ROLE_LABELS } from '@/constants/roleLabels';
 import { useAdminUsers } from '../api/usersQueries';
 import { ROLE_WIRE_VALUES, type AdminUsersTotals, type FilterableRole } from '../api/usersApi';
 import { RoleBadge } from '../components/RoleBadge';
-import { useDebouncedValue } from '../useDebouncedValue';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 import styles from './users.module.css';
 

@@ -7,18 +7,12 @@ import { getAreaPaths, type AreaRole } from '@/constants/routes';
 import { findMockChild } from '@/mocks/fixtures/children';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
-import { registerHttpAuthHooks } from '@/services/http/interceptors';
-import { getAccessToken } from '@/services/session';
 import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
 const YOUSEF = 'c0000000-0000-4000-8000-000000000001';
 const REEM = 'c0000000-0000-4000-8000-000000000003';
 const SALMA = 'c0000000-0000-4000-8000-000000000005'; // another parent's child
-
-beforeEach(() => {
-  registerHttpAuthHooks({ getAccessToken, onUnauthorized: () => undefined });
-});
 
 function renderProfile(role: AreaRole, childId: string) {
   signInAs(role);

@@ -8,7 +8,7 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { SearchField } from '@/components/shared/SearchField';
 import { Button } from '@/components/ui/Button';
 import { useSuperAdminChildren } from '@/features/dashboards/api/superAdminApi';
-import { useDebouncedValue } from '@/features/dashboards/useDebouncedValue';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatAge } from '@/utils/age';
 
 import styles from './superAdmin.module.css';

@@ -5,8 +5,6 @@ import { routes } from '@/app/router/routes';
 import { getAreaPaths, ROUTE_PATHS } from '@/constants/routes';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
-import { registerHttpAuthHooks } from '@/services/http/interceptors';
-import { getAccessToken } from '@/services/session';
 import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
@@ -17,9 +15,6 @@ async function desktopNav() {
 }
 
 // The app registers these in AuthHttpBridge (AppProviders); render helpers don't mount it.
-beforeEach(() => {
-  registerHttpAuthHooks({ getAccessToken, onUnauthorized: () => undefined });
-});
 
 describe('RoleAreaLayout', () => {
   it('shows the unread-messages badge from Chats/unread-count', async () => {

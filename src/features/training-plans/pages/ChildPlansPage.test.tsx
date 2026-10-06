@@ -9,11 +9,7 @@ import { server } from '@/mocks/server';
 import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
-import { installTestAuthHeader } from '../test/installTestAuth';
-
 import { ChildPlansPage } from './ChildPlansPage';
-
-installTestAuthHeader();
 
 const YOUSEF = 'c0000000-0000-4000-8000-000000000001';
 const NOUR = 'c0000000-0000-4000-8000-000000000002';

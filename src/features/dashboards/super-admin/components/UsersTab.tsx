@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
 import { ROLE_WIRE_VALUES, useSuperAdminUsers } from '@/features/dashboards/api/superAdminApi';
-import { useDebouncedValue } from '@/features/dashboards/useDebouncedValue';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { UserRole } from '@/types/roles';
 
 import { ROLE_DISPLAY } from '../roleDisplay';
