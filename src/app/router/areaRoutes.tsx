@@ -4,6 +4,8 @@ import { RoleAreaLayout } from '@/app/layouts/RoleAreaLayout';
 import { RoleAreaRoot } from '@/app/layouts/RoleAreaRoot';
 import { RequireRole } from '@/app/router/guards';
 import {
+  ADMIN_PATHS,
+  ADMIN_SEGMENTS,
   AREA_SEGMENTS,
   canCreateReports,
   getAreaPaths,
@@ -28,6 +30,41 @@ async function loadDashboardRoute(role: AreaRole) {
   } satisfies Record<AreaRole, unknown>;
   return { Component: byRole[role] };
 }
+
+const loadContent = () => import('@/features/content');
+const loadUsers = () => import('@/features/users');
+
+/** Admin-only screens: users and content management (designed new — no Replit UI). */
+const adminOnlyPages: RouteObject[] = [
+  {
+    path: ADMIN_SEGMENTS.users,
+    lazy: async () => ({ Component: (await loadUsers()).AdminUsersPage }),
+  },
+  {
+    path: ADMIN_SEGMENTS.userDetail,
+    lazy: async () => ({ Component: (await loadUsers()).AdminUserDetailPage }),
+  },
+  {
+    path: ADMIN_SEGMENTS.content,
+    element: <Navigate to={ADMIN_PATHS.categories} replace />,
+  },
+  {
+    path: ADMIN_SEGMENTS.categories,
+    lazy: async () => ({ Component: (await loadContent()).CategoriesPage }),
+  },
+  {
+    path: ADMIN_SEGMENTS.activities,
+    lazy: async () => ({ Component: (await loadContent()).ActivitiesPage }),
+  },
+  {
+    path: ADMIN_SEGMENTS.activityDetail,
+    lazy: async () => ({ Component: (await loadContent()).ActivityDetailPage }),
+  },
+  {
+    path: ADMIN_SEGMENTS.initialAssessment,
+    lazy: async () => ({ Component: (await loadContent()).InitialAssessmentAdminPage }),
+  },
+];
 
 /**
  * One role area: shell pages inside the DashboardLayout plus full-screen child activity
@@ -76,6 +113,15 @@ function buildAreaRoute(role: AreaRole): RouteObject {
       path: AREA_SEGMENTS.reportDetail,
       lazy: async () => ({ Component: (await loadReports()).ReportDetailPage }),
     },
+    ...(canCreateReports(role)
+      ? [
+          {
+            path: AREA_SEGMENTS.reportEdit,
+            lazy: async () => ({ Component: (await loadReports()).EditReportPage }),
+          },
+        ]
+      : []),
+    ...(role === 'Admin' ? adminOnlyPages : []),
     {
       path: AREA_SEGMENTS.messages,
       lazy: async () => ({ Component: (await import('@/features/chat')).MessagesPage }),
@@ -90,6 +136,10 @@ function buildAreaRoute(role: AreaRole): RouteObject {
     {
       path: AREA_SEGMENTS.gamePlay,
       lazy: async () => ({ Component: (await loadActivities()).GamePlayerPage }),
+    },
+    {
+      path: AREA_SEGMENTS.planActivityPlay,
+      lazy: async () => ({ Component: (await loadActivities()).PlanActivityPlayerPage }),
     },
     {
       path: AREA_SEGMENTS.assessment,

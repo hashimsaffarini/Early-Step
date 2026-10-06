@@ -62,7 +62,32 @@ export const AREA_SEGMENTS = {
   reports: 'reports',
   reportCreate: 'reports/new',
   reportDetail: 'reports/:reportId',
+  reportEdit: 'reports/:reportId/edit',
+  /** A training-plan activity played by the child (test questions from the plan). */
+  planActivityPlay: 'children/:childId/activities/:activityId/play',
   messages: 'messages',
+} as const;
+
+/** Admin-only segments (under `/admin`): users and content management (no Replit UI). */
+export const ADMIN_SEGMENTS = {
+  content: 'content',
+  users: 'users',
+  userDetail: 'users/:userId',
+  categories: 'content/categories',
+  activities: 'content/activities',
+  activityDetail: 'content/activities/:activityType/:activityId',
+  initialAssessment: 'content/initial-assessment',
+} as const;
+
+export const ADMIN_PATHS = {
+  content: `/admin/${ADMIN_SEGMENTS.content}`,
+  users: `/admin/${ADMIN_SEGMENTS.users}`,
+  categories: `/admin/${ADMIN_SEGMENTS.categories}`,
+  activities: `/admin/${ADMIN_SEGMENTS.activities}`,
+  initialAssessment: `/admin/${ADMIN_SEGMENTS.initialAssessment}`,
+  userDetail: (userId: string) => `/admin/users/${encodeURIComponent(userId)}`,
+  activityDetail: (activityType: string, activityId: string) =>
+    `/admin/content/activities/${encodeURIComponent(activityType)}/${encodeURIComponent(activityId)}`,
 } as const;
 
 /** Roles that can open the create-report screen (Replit: Specialist, Admin). */
@@ -88,6 +113,8 @@ export interface AreaPaths {
   gamePlay: (gameId: string) => string;
   assessment: (childId: string) => string;
   reportDetail: (reportId: string) => string;
+  reportEdit: (reportId: string) => string;
+  planActivityPlay: (childId: string, activityId: string) => string;
 }
 
 export function getAreaPaths(role: AreaRole): AreaPaths {
@@ -111,6 +138,13 @@ export function getAreaPaths(role: AreaRole): AreaPaths {
     gamePlay: withId(AREA_SEGMENTS.gamePlay, ':gameId'),
     assessment: withId(AREA_SEGMENTS.assessment, ':childId'),
     reportDetail: withId(AREA_SEGMENTS.reportDetail, ':reportId'),
+    reportEdit: withId(AREA_SEGMENTS.reportEdit, ':reportId'),
+    planActivityPlay: (childId: string, activityId: string) =>
+      at(
+        AREA_SEGMENTS.planActivityPlay
+          .replace(':childId', encodeURIComponent(childId))
+          .replace(':activityId', encodeURIComponent(activityId)),
+      ),
   };
 }
 
