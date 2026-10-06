@@ -1,70 +1,89 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 
-import { getAreaPaths } from '@/constants/routes';
+import { apiUrl } from '@/mocks/http';
+import { server } from '@/mocks/server';
 
 import { ReportsListPage } from './ReportsListPage';
-import { renderReportsPage } from './reportsTestUtils';
+import { renderReportsPage, REPORT_YOUSEF, installTestAuthHeader } from './reportsTestUtils';
 
-const getCards = () =>
-  within(screen.getByRole('list', { name: 'قائمة التقارير' })).getAllByRole('article');
+installTestAuthHeader();
+
+const list = () => screen.findByRole('list', { name: 'قائمة التقارير' });
 
 describe('ReportsListPage', () => {
-  it.each([
-    ['Parent', 3],
-    ['Teacher', 5],
-    ['Specialist', 6],
-    ['Admin', 6],
-  ] as const)('shows only the reports visible to the %s', (role, count) => {
-    renderReportsPage(role, <ReportsListPage />);
+  it('lists the specialist reports (GET specialist/Reports) with a create link', async () => {
+    renderReportsPage('Specialist', <ReportsListPage />);
 
-    expect(getCards()).toHaveLength(count);
+    const cards = within(await list()).getAllByRole('article');
+    expect(cards).toHaveLength(2);
+    expect(screen.getByRole('link', { name: /تقرير جديد/ })).toHaveAttribute(
+      'href',
+      '/specialist/reports/new',
+    );
+    expect(
+      screen.getByRole('link', { name: 'عرض التقرير الكامل: تقرير متابعة — يوسف' }),
+    ).toHaveAttribute('href', `/specialist/reports/${REPORT_YOUSEF}`);
   });
 
-  it('shows the child name on every card and no percentages', () => {
+  it("merges the parent's children reports (GET Reports/child/{id} per child)", async () => {
+    const requested: string[] = [];
+    server.events.on('request:start', ({ request }) => {
+      requested.push(new URL(request.url).pathname);
+    });
     renderReportsPage('Parent', <ReportsListPage />);
 
-    expect(screen.getAllByText('يوسف')).toHaveLength(2);
-    expect(screen.getByText('نور')).toBeInTheDocument();
+    const cards = within(await list()).getAllByRole('article');
+    expect(cards).toHaveLength(2);
+    expect(screen.getByRole('heading', { name: 'تقرير متابعة' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'تقرير التقييم المبدئي' })).toBeInTheDocument();
+    expect(requested.filter((path) => path.startsWith('/api/Reports/child/'))).toHaveLength(3);
+    expect(screen.queryByRole('link', { name: /تقرير جديد/ })).not.toBeInTheDocument();
+    server.events.removeAllListeners();
+  });
+
+  it('shows only real fields — no strengths section and no report types', async () => {
+    renderReportsPage('Parent', <ReportsListPage />);
+
+    await list();
+    expect(screen.getAllByText('جوانب تحتاج إلى دعم').length).toBeGreaterThan(0);
+    expect(screen.queryByText('نقاط القوة')).not.toBeInTheDocument();
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
   });
 
-  it('links each card to its detail page', () => {
-    renderReportsPage('Teacher', <ReportsListPage />);
-
-    expect(
-      screen.getByRole('link', { name: 'عرض التقرير الكامل: تقرير متابعة — سلمى' }),
-    ).toHaveAttribute('href', getAreaPaths('Teacher').reportDetail('report-4'));
-  });
-
-  it('offers "تقرير جديد" only to report authors', () => {
-    const { unmount } = renderReportsPage('Parent', <ReportsListPage />);
-    expect(screen.queryByRole('link', { name: /تقرير جديد/ })).not.toBeInTheDocument();
-    unmount();
-
-    renderReportsPage('Specialist', <ReportsListPage />);
-    expect(screen.getByRole('link', { name: /تقرير جديد/ })).toHaveAttribute(
-      'href',
-      getAreaPaths('Specialist').reportCreate,
-    );
-  });
-
-  it('searches by child name and filters by report type', async () => {
-    renderReportsPage('Specialist', <ReportsListPage />);
-
-    await userEvent.type(screen.getByRole('searchbox', { name: 'البحث في التقارير' }), 'يوسف');
-    expect(getCards()).toHaveLength(2);
-
-    await userEvent.click(screen.getByRole('button', { name: /^متابعة/ }));
-    expect(screen.getByRole('button', { name: /^متابعة/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(getCards()).toHaveLength(1);
-  });
-
-  it('shows a no-results state when nothing matches', async () => {
+  it('filters by search text and by child', async () => {
     renderReportsPage('Parent', <ReportsListPage />);
+    await list();
 
+    await userEvent.selectOptions(screen.getByLabelText('الطفل'), 'نور');
+    expect(within(await list()).getAllByRole('article')).toHaveLength(1);
+
+    await userEvent.selectOptions(screen.getByLabelText('الطفل'), 'كل الأطفال');
     await userEvent.type(screen.getByRole('searchbox', { name: 'البحث في التقارير' }), 'غير موجود');
-
     expect(screen.getByText('لا توجد نتائج')).toBeInTheDocument();
+  });
+
+  it('shows the empty state when there are no reports', async () => {
+    server.use(http.get(apiUrl('specialist/Reports'), () => HttpResponse.json([])));
+    renderReportsPage('Specialist', <ReportsListPage />);
+
+    expect(await screen.findByText('لا توجد تقارير بعد')).toBeInTheDocument();
+  });
+
+  it('shows an error with retry when loading fails', async () => {
+    server.use(
+      http.get(apiUrl('specialist/Reports'), () => new HttpResponse(null, { status: 500 })),
+    );
+    renderReportsPage('Specialist', <ReportsListPage />);
+
+    expect(await screen.findByText('تعذّر تحميل التقارير')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'إعادة المحاولة' })).toBeInTheDocument();
+  });
+
+  it('tells the admin that reports are not available (no endpoint)', () => {
+    renderReportsPage('Admin', <ReportsListPage />);
+
+    expect(screen.getByText('التقارير غير متاحة لهذا الدور بعد')).toBeInTheDocument();
   });
 });

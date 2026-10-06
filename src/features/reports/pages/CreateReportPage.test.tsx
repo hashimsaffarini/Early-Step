@@ -1,57 +1,134 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 
 import { getAreaPaths } from '@/constants/routes';
+import { apiUrl } from '@/mocks/http';
+import { server } from '@/mocks/server';
 
 import { CreateReportPage } from './CreateReportPage';
-import { renderReportsPage } from './reportsTestUtils';
+import { EditReportPage } from './EditReportPage';
+import {
+  renderReportsPage,
+  REPORT_YOUSEF,
+  installTestAuthHeader,
+  YOUSEF,
+} from './reportsTestUtils';
+
+installTestAuthHeader();
+
+const paths = getAreaPaths('Specialist');
 
 function renderCreate() {
-  const path = getAreaPaths('Specialist').reportCreate;
-  return renderReportsPage('Specialist', <CreateReportPage />, { routePath: path, path });
+  return renderReportsPage('Specialist', <CreateReportPage />, {
+    routePath: paths.reportCreate,
+    path: paths.reportCreate,
+  });
+}
+
+async function fillReport() {
+  await userEvent.click(await screen.findByRole('radio', { name: /يوسف/ }));
+  await userEvent.type(screen.getByLabelText(/عنوان التقرير/), 'تقرير شهري');
+  await userEvent.type(screen.getByLabelText(/جوانب تحتاج إلى دعم/), 'العدّ بعد 10');
+  await userEvent.type(screen.getByLabelText(/التوصيات/), 'ألعاب عدّ قصيرة');
 }
 
 describe('CreateReportPage', () => {
-  it('shows the author and manual form only (no AI mode, no probability)', () => {
+  it('offers only the specialist assigned children and validates required fields', async () => {
     renderCreate();
 
-    expect(screen.getByText('بقلم: أ. ليلى حسن')).toBeInTheDocument();
-    expect(screen.getAllByRole('radio')).toHaveLength(6);
-    expect(screen.queryByText(/ذكاء|AI|احتمالية/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
-  });
-
-  it('shows Arabic validation errors when submitted empty', async () => {
-    renderCreate();
-
+    expect(await screen.findAllByRole('radio')).toHaveLength(3);
     await userEvent.click(screen.getByRole('button', { name: 'حفظ التقرير' }));
 
-    expect(await screen.findByText('الرجاء اختيار الطفل')).toBeInTheDocument();
-    expect(screen.getByText('الرجاء اختيار نوع التقرير')).toBeInTheDocument();
-    expect(screen.getByText('الرجاء كتابة نقاط القوة')).toBeInTheDocument();
+    expect(screen.getByText('الرجاء اختيار الطفل')).toBeInTheDocument();
+    expect(screen.getByText('الرجاء كتابة عنوان التقرير')).toBeInTheDocument();
+    expect(screen.getByText('الرجاء كتابة الجوانب التي تحتاج إلى دعم')).toBeInTheDocument();
     expect(screen.getByText('الرجاء كتابة التوصيات')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/نقاط القوة/)).not.toBeInTheDocument();
   });
 
-  it('saves locally and shows an honest success state', async () => {
+  it('creates the report with the Swagger JSON body', async () => {
+    let body: unknown;
+    server.events.on('request:start', ({ request }) => {
+      if (request.url.endsWith('/specialist/CreateReport')) {
+        void request
+          .clone()
+          .json()
+          .then((json: unknown) => {
+            body = json;
+          });
+      }
+    });
     renderCreate();
 
-    await userEvent.click(screen.getByRole('radio', { name: 'نور' }));
-    await userEvent.selectOptions(screen.getByLabelText(/نوع التقرير/), 'follow-up');
-    await userEvent.type(screen.getByLabelText(/نقاط القوة/), 'تتعاون');
-    await userEvent.type(screen.getByLabelText(/جوانب تحتاج إلى دعم/), 'التركيز');
-    await userEvent.type(screen.getByLabelText(/التوصيات/), 'أنشطة قصيرة');
+    await fillReport();
     await userEvent.click(screen.getByRole('button', { name: 'حفظ التقرير' }));
 
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'تم حفظ التقرير!' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'تم حفظ التقرير' })).toBeInTheDocument();
+    expect(body).toEqual({
+      childId: YOUSEF,
+      title: 'تقرير شهري',
+      weaknesses: 'العدّ بعد 10',
+      recommendations: 'ألعاب عدّ قصيرة',
     });
-    expect(screen.getByText(/محلياً للعرض فقط/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'عرض جميع التقارير' })).toHaveAttribute(
-      'href',
-      getAreaPaths('Specialist').reports,
-    );
+    server.events.removeAllListeners();
+  });
 
-    await userEvent.click(screen.getByRole('button', { name: 'كتابة تقرير آخر' }));
+  it('shows the server error and keeps the form', async () => {
+    server.use(
+      http.post(apiUrl('specialist/CreateReport'), () =>
+        HttpResponse.json({ message: 'لا يمكن إنشاء التقرير الآن.' }, { status: 400 }),
+      ),
+    );
+    renderCreate();
+
+    await fillReport();
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ التقرير' }));
+
+    expect(await screen.findByText('لا يمكن إنشاء التقرير الآن.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'حفظ التقرير' })).toBeInTheDocument();
+  });
+});
+
+describe('EditReportPage', () => {
+  it('prefills the report and saves multipart Title / Weaknesses / Recommendations', async () => {
+    let form: FormData | undefined;
+    server.events.on('request:start', ({ request }) => {
+      if (request.method === 'PUT') {
+        void request
+          .clone()
+          .formData()
+          .then((data) => {
+            form = data;
+          });
+      }
+    });
+    renderReportsPage('Specialist', <EditReportPage />, {
+      routePath: `${paths.root}/reports/:reportId/edit`,
+      path: paths.reportEdit(REPORT_YOUSEF),
+    });
+
+    const title = await screen.findByLabelText(/عنوان التقرير/);
+    expect(title).toHaveValue('تقرير متابعة');
+    await userEvent.clear(title);
+    await userEvent.type(title, 'تقرير متابعة محدّث');
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ التعديلات' }));
+
+    expect(await screen.findByRole('heading', { name: 'تفاصيل التقرير' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(form?.get('Title')).toBe('تقرير متابعة محدّث');
+    });
+    expect(form?.get('Weaknesses')).toContain('تمييز الحروف');
+    expect(form?.get('Recommendations')).toContain('قراءة قصة');
+    server.events.removeAllListeners();
+  });
+
+  it('shows not-found for an unknown report', async () => {
+    renderReportsPage('Specialist', <EditReportPage />, {
+      routePath: `${paths.root}/reports/:reportId/edit`,
+      path: paths.reportEdit('missing'),
+    });
+
+    expect(await screen.findByText('لم يتم العثور على التقرير')).toBeInTheDocument();
   });
 });

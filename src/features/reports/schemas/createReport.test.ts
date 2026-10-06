@@ -1,48 +1,53 @@
-import { CREATE_REPORT_MESSAGES, createReportSchema, toLines } from './createReport';
+import { toLines } from '../lines';
 
-const VALID = {
-  childId: 'mock-child-1',
-  type: 'follow-up',
-  strengths: 'يركّز جيداً\n\n  يتعاون  ',
-  areasToSupport: 'الحروف المتشابهة',
-  recommendations: 'قراءة يومية\nلعبة الحروف',
-};
+import { createReportSchema, REPORT_FORM_MESSAGES, reportFieldsSchema } from './createReport';
 
 describe('createReportSchema', () => {
-  it('splits each textarea into trimmed non-empty lines', () => {
-    const result = createReportSchema.parse(VALID);
-
-    expect(result.strengths).toEqual(['يركّز جيداً', 'يتعاون']);
-    expect(result.recommendations).toHaveLength(2);
+  it('accepts the API fields and trims them', () => {
+    const result = createReportSchema.parse({
+      childId: 'c-1',
+      title: '  تقرير متابعة ',
+      weaknesses: 'تمييز الحروف',
+      recommendations: 'قراءة يومية',
+    });
+    expect(result).toEqual({
+      childId: 'c-1',
+      title: 'تقرير متابعة',
+      weaknesses: 'تمييز الحروف',
+      recommendations: 'قراءة يومية',
+    });
   });
 
-  it('requires a child, a type and every section', () => {
+  it('requires the child, title, weaknesses and recommendations', () => {
     const result = createReportSchema.safeParse({
       childId: '',
-      type: '',
-      strengths: '   ',
-      areasToSupport: '',
-      recommendations: '\n',
+      title: ' ',
+      weaknesses: '',
+      recommendations: '',
     });
-
     expect(result.success).toBe(false);
-    const messages = result.error?.issues.map((issue) => issue.message);
+    const messages = result.error?.issues.map((issue) => issue.message) ?? [];
     expect(messages).toEqual(
       expect.arrayContaining([
-        CREATE_REPORT_MESSAGES.childRequired,
-        CREATE_REPORT_MESSAGES.typeRequired,
-        CREATE_REPORT_MESSAGES.strengthsRequired,
-        CREATE_REPORT_MESSAGES.areasRequired,
-        CREATE_REPORT_MESSAGES.recommendationsRequired,
+        REPORT_FORM_MESSAGES.childRequired,
+        REPORT_FORM_MESSAGES.titleRequired,
+        REPORT_FORM_MESSAGES.weaknessesRequired,
+        REPORT_FORM_MESSAGES.recommendationsRequired,
       ]),
     );
   });
 
-  it('rejects an unknown report type', () => {
-    expect(createReportSchema.safeParse({ ...VALID, type: 'risk' }).success).toBe(false);
+  it('has no strengths or report type (not API fields)', () => {
+    expect(Object.keys(reportFieldsSchema.shape)).toEqual([
+      'title',
+      'weaknesses',
+      'recommendations',
+    ]);
   });
+});
 
-  it('toLines drops blank lines', () => {
-    expect(toLines('أ\n \nب')).toEqual(['أ', 'ب']);
+describe('toLines', () => {
+  it('splits API text into non-empty trimmed lines', () => {
+    expect(toLines(' أولاً \r\n\nثانياً\n')).toEqual(['أولاً', 'ثانياً']);
   });
 });

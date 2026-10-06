@@ -92,8 +92,11 @@ export const ADMIN_PATHS = {
     `/admin/content/activities/${encodeURIComponent(activityType)}/${encodeURIComponent(activityId)}`,
 } as const;
 
-/** Roles that can open the create-report screen (Replit: Specialist, Admin). */
-export const REPORT_AUTHOR_ROLES = ['Specialist', 'Admin'] as const satisfies readonly AreaRole[];
+/**
+ * Roles that can create/edit/delete reports. The API exposes these only under `/specialist/*`
+ * (Swagger tag "Specialist"), so only the Specialist (Replit also allowed Admin — no admin endpoint).
+ */
+export const REPORT_AUTHOR_ROLES = ['Specialist'] as const satisfies readonly AreaRole[];
 
 export function canCreateReports(role: AreaRole): boolean {
   return (REPORT_AUTHOR_ROLES as readonly AreaRole[]).includes(role);

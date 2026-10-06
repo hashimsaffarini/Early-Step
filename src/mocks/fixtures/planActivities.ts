@@ -1,4 +1,7 @@
-/** TEMPORARY MOCK DATA — training-plan activities per child (Apidog add-response shape). */
+/**
+ * TEMPORARY MOCK DATA — training-plan activities per child (Apidog add-response shape) and the
+ * activity catalogue a specialist can assign from (Apidog available-activities shape).
+ */
 import { registerMockTable } from '../db';
 
 export interface MockPlanActivityRow {
@@ -60,3 +63,53 @@ export const mockPlanActivities: MockPlanActivityRow[] = [];
 registerMockTable(() => {
   mockPlanActivities.splice(0, mockPlanActivities.length, ...INITIAL.map((row) => ({ ...row })));
 });
+
+/** Catalogue activities (what `available-activities` lists). Type uses the Arabic wire value. */
+export interface MockCatalogActivity {
+  id: string;
+  title: string;
+  description: string;
+  type: 'اختبارات' | 'ألعاب';
+  categoryId: string;
+  categoryName: string;
+  questionCount: number;
+}
+
+export const MOCK_CATALOG_ACTIVITIES: readonly MockCatalogActivity[] = [
+  {
+    id: 'a0000000-0000-4000-8000-000000000001',
+    title: 'اختبار الحروف',
+    description: 'أسئلة بسيطة عن الحروف.',
+    type: 'اختبارات',
+    categoryId: 'cat-reading',
+    categoryName: 'الحروف والقراءة',
+    questionCount: 4,
+  },
+  {
+    id: 'a0000000-0000-4000-8000-000000000002',
+    title: 'اختبار الأعداد',
+    description: 'جمع وطرح بسيط.',
+    type: 'اختبارات',
+    categoryId: 'cat-math',
+    categoryName: 'الأرقام والحساب',
+    questionCount: 4,
+  },
+  {
+    id: 'a0000000-0000-4000-8000-000000000003',
+    title: 'اختبار الذاكرة القصيرة',
+    description: 'تذكّر الأشكال والألوان.',
+    type: 'اختبارات',
+    categoryId: 'cat-memory',
+    categoryName: 'الذاكرة والتسلسل',
+    questionCount: 3,
+  },
+  {
+    id: 'a0000000-0000-4000-8000-000000000004',
+    title: 'مطابقة البطاقات',
+    description: 'اقلب البطاقات وطابق الصور.',
+    type: 'ألعاب',
+    categoryId: 'cat-memory',
+    categoryName: 'الذاكرة والتسلسل',
+    questionCount: 6,
+  },
+];
