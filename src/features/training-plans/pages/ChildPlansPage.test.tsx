@@ -43,7 +43,8 @@ describe('ChildPlansPage — read-only roles', () => {
     expect(within(list).getAllByRole('listitem')).toHaveLength(2);
     expect(within(list).getByText('مكتمل')).toBeInTheDocument();
     expect(within(list).getByText('لم يكتمل بعد')).toBeInTheDocument();
-    expect(within(list).getByText(/إجابات صحيحة: 3/)).toBeInTheDocument();
+    // The live child-facing list has no answer counts (verified) — none are shown.
+    expect(within(list).queryByText(/إجابات صحيحة/)).not.toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 من 2 أنشطة');
     expect(screen.queryByRole('button', { name: 'إضافة نشاط' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /إزالة/ })).not.toBeInTheDocument();
@@ -156,5 +157,47 @@ describe('ChildPlansPage — specialist', () => {
       `/api/TrainingPlan/specialist/children/${YOUSEF}/activities/a0000000-0000-4000-8000-000000000002`,
     ]);
     server.events.removeAllListeners();
+  });
+});
+
+describe('ChildPlansPage — teacher assignment (specialist)', () => {
+  it('shows the current teacher from the plan and lists teachers from specialist/teachers', async () => {
+    renderPlans('Specialist', YOUSEF);
+
+    expect(await screen.findByText('المعلم الحالي: أ. سارة خالد')).toBeInTheDocument();
+    const select = await screen.findByLabelText('اختر المعلم');
+    await waitFor(() => {
+      expect(within(select).getByRole('option', { name: 'أ. سارة خالد' })).toBeInTheDocument();
+    });
+  });
+
+  it('assigns the chosen teacher with POST { teacherId, childIds } after confirmation', async () => {
+    let body: unknown;
+    server.use(
+      http.post(apiUrl('specialist/assign-teacher'), async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ message: 'ok' });
+      }),
+    );
+    renderPlans('Specialist', YOUSEF);
+
+    const select = await screen.findByLabelText('اختر المعلم');
+    await waitFor(() => {
+      expect(within(select).getByRole('option', { name: 'أ. سارة خالد' })).toBeInTheDocument();
+    });
+    await userEvent.selectOptions(select, 'u-teacher');
+    await userEvent.click(screen.getByRole('button', { name: 'تعيين المعلم' }));
+    const dialog = screen.getByRole('dialog', { name: 'تعيين المعلم' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'تعيين' }));
+
+    expect(await screen.findByText('تم تعيين أ. سارة خالد معلماً لـ يوسف.')).toBeInTheDocument();
+    expect(body).toEqual({ teacherId: 'u-teacher', childIds: [YOUSEF] });
+  });
+
+  it('is not offered to read-only roles', async () => {
+    renderPlans('Parent', YOUSEF);
+
+    await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    expect(screen.queryByLabelText('اختر المعلم')).not.toBeInTheDocument();
   });
 });

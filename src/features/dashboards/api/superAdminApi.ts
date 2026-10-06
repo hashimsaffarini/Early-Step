@@ -12,8 +12,10 @@ import { httpClient } from '@/services/http/httpClient';
 import type { UserRole } from '@/types/roles';
 
 /**
- * Super Admin reads (Swagger: `SuperAdmin/users?Search=&Role=`, `SuperAdmin/children?Name=`).
- * Shapes undocumented for users; children follow the Apidog example. NOT LIVE-VERIFIED.
+ * Super Admin reads — VERIFIED LIVE (2026-10-06):
+ * - `SuperAdmin/users?Search=&Role=` → array of `{ id, fullName, email, role, emailConfirmed }`
+ * - `SuperAdmin/children?Name=` → array of `{ id, fullName, age, gender, parentId, parentName }`
+ * Role values include `Admin` and `SuperAdmin` (English) besides the Arabic ones.
  * No create / edit / delete / role-change endpoints exist (BLOCKED BY BACKEND).
  */
 const userItemSchema = z.looseObject({
@@ -39,11 +41,13 @@ export interface PanelUser {
   roleValue: string;
 }
 
-/** Role values as the backend sends them (observed live). Admin/SuperAdmin values unknown. */
+/** Role values as the backend sends them — all five VERIFIED LIVE (user lists, login). */
 export const ROLE_WIRE_VALUES: Partial<Record<UserRole, string>> = {
   Parent: 'ولي أمر',
   Teacher: 'معلم/ة',
   Specialist: 'أخصائي/ة',
+  Admin: 'Admin',
+  SuperAdmin: 'SuperAdmin',
 };
 
 export async function fetchSuperAdminUsers(role: string, search: string): Promise<PanelUser[]> {

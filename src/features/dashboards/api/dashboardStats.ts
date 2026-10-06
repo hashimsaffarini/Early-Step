@@ -23,9 +23,11 @@ interface StatDisplay {
 }
 
 /**
- * Known dashboard fields → display. The Admin dashboard's Arabic keys were observed live
- * (2026-10-06); the English keys are common ASP.NET naming and NOT LIVE-VERIFIED (the
- * Teacher/Specialist/SuperAdmin dashboard responses are undocumented).
+ * Known dashboard fields → display. VERIFIED LIVE (2026-10-06):
+ * - Admin: `إجمالي المستخدمين`, `إجمالي التقارير`, `إجمالي الانشطة`, `إجمالي الفئات`, `عدد الأطفال`
+ * - Specialist: `عددالأطفال الكلي`, `عددالتقارير` (sic, no space)
+ * - SuperAdmin: `totalUsers`, `totalReports`, `totalActivities` (+ `usersByRole[]`, read separately)
+ * Teacher: not verified (no teacher demo account). Other English keys stay as a fallback.
  */
 const KNOWN_STATS: Readonly<Record<string, StatDisplay>> = {
   'إجمالي المستخدمين': { label: 'إجمالي المستخدمين', icon: UserRound, tone: 'primary' },
@@ -33,6 +35,8 @@ const KNOWN_STATS: Readonly<Record<string, StatDisplay>> = {
   'إجمالي التقارير': { label: 'إجمالي التقارير', icon: FileText, tone: 'violet' },
   'إجمالي الانشطة': { label: 'إجمالي الأنشطة', icon: Activity, tone: 'warning' },
   'إجمالي الفئات': { label: 'إجمالي الفئات', icon: FolderTree, tone: 'primary' },
+  'عددالأطفال الكلي': { label: 'الأطفال المتابَعون', icon: Users, tone: 'success' },
+  عددالتقارير: { label: 'التقارير', icon: FileText, tone: 'violet' },
   totalUsers: { label: 'إجمالي المستخدمين', icon: UserRound, tone: 'primary' },
   totalParents: { label: 'أولياء الأمور', icon: UserRound, tone: 'success' },
   totalTeachers: { label: 'المعلمون', icon: GraduationCap, tone: 'violet' },

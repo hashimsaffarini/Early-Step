@@ -5,11 +5,12 @@ import type { Session } from '@/services/session';
 /**
  * Maps the login response to a `Session`.
  *
- * ⚠️ NOT LIVE-VERIFIED: Swagger documents no response schema for `POST Auth/login` and no
- * demo account could sign in yet. This parser accepts the common ASP.NET shapes — a string token
- * under `token` / `accessToken` / `jwt` (top level or under `data`), with user fields either on the
- * response or as standard JWT claims. Anything else fails with a clear error instead of guessing.
- * The JWT is decoded for display/routing only — it is never trusted for authorization.
+ * VERIFIED LIVE (2026-10-06, all four demo roles): `200 { id, fullName, accessToken, role }`.
+ * `accessToken` is a JWT (HS, issuer `EarlyStepAPI`, audience `EarlyStepClient`) valid 120 h with
+ * the standard ASP.NET claims (nameidentifier, name, emailaddress, role) and `exp`; `RememberMe`
+ * does not change the response (no cookie). Role values: `ولي أمر`, `أخصائي/ة`, `Admin`,
+ * `SuperAdmin` (teacher `معلم/ة` seen in user lists). The parser reads that shape and keeps the JWT
+ * claims only as a fallback. The JWT is decoded for display/routing only — never trusted.
  */
 const TOKEN_KEYS = ['token', 'accessToken', 'access_token', 'jwt'] as const;
 

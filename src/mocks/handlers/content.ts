@@ -304,7 +304,9 @@ export const contentHandlers: HttpHandler[] = [
     const user = requireRole(request, ADMIN);
     if (user instanceof Response) return user;
     return HttpResponse.json({
-      categories: mockCategories.filter((c) => c.isInInitialAssessment).map((c) => c.name),
+      categories: mockCategories
+        .filter((c) => c.isInInitialAssessment)
+        .map((c, index) => ({ id: c.id, name: c.name, order: index + 1 })),
     });
   }),
   http.post(apiUrl('initial-assessment/categories/:categoryId'), ({ request, params }) => {

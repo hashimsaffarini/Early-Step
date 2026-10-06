@@ -95,7 +95,8 @@ describe('ChildProfilePage — tabs from the API', () => {
       'href',
       getAreaPaths('Parent').planActivityPlay(YOUSEF, 'a0000000-0000-4000-8000-000000000002'),
     );
-    expect(screen.getByText('إجابات صحيحة: 3 · غير صحيحة: 1')).toBeInTheDocument();
+    // The live child-facing list has no answer counts (verified) — none are shown.
+    expect(screen.queryByText(/إجابات صحيحة/)).not.toBeInTheDocument();
   });
 
   it('gives the specialist a plan-management link instead of play links', async () => {

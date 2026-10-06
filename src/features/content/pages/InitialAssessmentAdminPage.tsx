@@ -12,6 +12,7 @@ import { FormField, Select } from '@/components/ui/Field';
 import {
   useActivities,
   useActivity,
+  useAssessmentCategoryIds,
   useCategoriesWithCounts,
   useToggleAssessmentCategory,
   useToggleAssessmentQuestion,
@@ -26,8 +27,8 @@ const ASSESSMENT_ACTIVITY_TYPE = 'test' as const;
 type QuestionAction = 'added' | 'removed';
 
 /**
- * Initial-assessment composition. Category membership is read from `categoriesActivity`
- * (`isInInitialAssessment`). The API has **no endpoint listing the questions already in the
+ * Initial-assessment composition. Category membership comes from `initial-assessment/categories`
+ * (VERIFIED LIVE; more reliable than the `isInInitialAssessment` flag). The API has **no endpoint listing the questions already in the
  * assessment** (BLOCKED BY BACKEND), so question actions only show what was done in this session.
  */
 export function InitialAssessmentAdminPage() {
@@ -38,7 +39,14 @@ export function InitialAssessmentAdminPage() {
   const [activityId, setActivityId] = useState('');
   const activityQuery = useActivity(activityId ? ASSESSMENT_ACTIVITY_TYPE : null, activityId);
   const [questionActions, setQuestionActions] = useState<Record<string, QuestionAction>>({});
-  const categories = categoriesQuery.data ?? [];
+  const memberIds = useAssessmentCategoryIds();
+  const memberSet = new Set(memberIds.data ?? []);
+  const categories = (categoriesQuery.data ?? []).map((category) => ({
+    ...category,
+    isInInitialAssessment: memberIds.data
+      ? memberSet.has(category.id)
+      : category.isInInitialAssessment,
+  }));
 
   const runQuestion = (questionId: string, include: boolean) => {
     toggleQuestion.mutate(
@@ -63,8 +71,8 @@ export function InitialAssessmentAdminPage() {
         <SectionHeader id="assessment-categories" title="التصنيفات في التقييم" />
         <ApiErrorAlert error={toggleCategory.error} />
         <QueryStatus
-          isLoading={categoriesQuery.isPending}
-          error={categoriesQuery.error}
+          isLoading={categoriesQuery.isPending || memberIds.isPending}
+          error={categoriesQuery.error ?? memberIds.error}
           isEmpty={categories.length === 0}
           emptyTitle="لا توجد تصنيفات"
           onRetry={() => void categoriesQuery.refetch()}

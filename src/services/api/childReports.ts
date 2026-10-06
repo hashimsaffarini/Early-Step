@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
+import { AppError } from '@/services/http/apiError';
 import { httpClient } from '@/services/http/httpClient';
+import { HTTP_STATUS } from '@/services/http/httpStatus';
 
 /**
  * Child report (shared by children, reports and dashboards).
  * Fields from the Swagger request (`title`, `weaknesses`, `recommendations`); the response
- * shape is undocumented — ids/dates/author are read leniently. NOT LIVE-VERIFIED.
+ * shape is still unverified live (the demo accounts have no reports yet) — read leniently.
  * There is no "strengths" field in the API.
  */
 const reportDtoSchema = z.looseObject({
@@ -46,8 +48,24 @@ export function mapReport(dto: z.infer<typeof reportDtoSchema>): ChildReport {
 export const reportListSchema = z.array(reportDtoSchema);
 export { reportDtoSchema };
 
-/** `GET Reports/child/{childId}` */
+/** VERIFIED LIVE: a child without reports answers `404 { message: " لا يوجد تقرير ." }`. */
+const NO_REPORTS_MESSAGE = 'لا يوجد تقرير';
+
+export function isNoReportsError(error: unknown): boolean {
+  return (
+    error instanceof AppError &&
+    error.status === HTTP_STATUS.NOT_FOUND &&
+    error.message.includes(NO_REPORTS_MESSAGE)
+  );
+}
+
+/** `GET Reports/child/{childId}` — an empty list when the backend says there are no reports. */
 export async function fetchChildReports(childId: string): Promise<ChildReport[]> {
-  const { data } = await httpClient.get<unknown>(`Reports/child/${encodeURIComponent(childId)}`);
-  return reportListSchema.parse(data).map(mapReport);
+  try {
+    const { data } = await httpClient.get<unknown>(`Reports/child/${encodeURIComponent(childId)}`);
+    return reportListSchema.parse(data).map(mapReport);
+  } catch (error) {
+    if (isNoReportsError(error)) return [];
+    throw error;
+  }
 }

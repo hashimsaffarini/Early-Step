@@ -44,9 +44,10 @@ export const reportsHandlers: HttpHandler[] = [
     if (!child) return notFound('الطفل غير موجود.');
     if (user.role === 'Parent' && child.parentId !== user.id) return forbidden();
     if (user.role === 'Teacher' && child.teacherId !== user.id) return forbidden();
-    return HttpResponse.json(
-      mockReports.filter((report) => report.childId === child.id).map(toDto),
-    );
+    const reports = mockReports.filter((report) => report.childId === child.id);
+    // Live: no reports → 404 with this message (not an empty array).
+    if (reports.length === 0) return notFound(' لا يوجد تقرير .');
+    return HttpResponse.json(reports.map(toDto));
   }),
 
   http.get(apiUrl('Reports/:reportId/download'), ({ request, params }) => {

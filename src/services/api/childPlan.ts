@@ -5,11 +5,17 @@ import { httpClient } from '@/services/http/httpClient';
 import { normalizeActivityType, type ActivityType } from './activityType';
 
 /**
- * Training-plan activities of a child (shared by children, activities, training-plans).
- * Shape from the Apidog example of the add-activity response; NOT LIVE-VERIFIED.
+ * Training-plan activity (shared by children, activities, training-plans). VERIFIED LIVE
+ * (2026-10-06) in three shapes that differ only in the row-id name and in optional fields:
+ * - `GET TrainingPlan/children/{id}/activities?type=` → `{ planActivityId, activityId, title, iconUrl, type, isCompleted }`
+ * - `GET TrainingPlan/children/{id}/activities/{activityId}` → the above + `description`, `questions`
+ * - `GET TrainingPlan/specialist/children/{id}` → `activities[]` with `trainingPlanActivityId`,
+ *   `description, order, assignedAt, score, correctAnswers, wrongAnswers, completedAt`
+ * `type` is the Arabic label (`اختبارات`); `iconUrl` is server-relative (`/uploads/...`).
  */
 export const planActivityDtoSchema = z.looseObject({
-  id: z.string(),
+  planActivityId: z.string().optional(),
+  trainingPlanActivityId: z.string().optional(),
   activityId: z.string(),
   title: z.string().nullish(),
   description: z.string().nullish(),
@@ -41,7 +47,7 @@ export interface PlanActivity {
 
 export function mapPlanActivity(dto: z.infer<typeof planActivityDtoSchema>): PlanActivity {
   return {
-    id: dto.id,
+    id: dto.planActivityId ?? dto.trainingPlanActivityId ?? dto.activityId,
     activityId: dto.activityId,
     title: dto.title ?? '',
     description: dto.description ?? '',
@@ -64,19 +70,28 @@ const summarySchema = z.looseObject({
 
 export type PlanSummary = z.infer<typeof summarySchema>;
 
-/** `GET TrainingPlan/children/{childId}/activities[?type=]` */
+/**
+ * `GET TrainingPlan/children/{childId}/activities?type=test|game`. VERIFIED LIVE: `type` is
+ * **required** (400 without it), so "all activities" = tests + games, fetched in parallel.
+ */
 export async function fetchChildPlanActivities(
   childId: string,
   type?: ActivityType,
 ): Promise<PlanActivity[]> {
-  const { data } = await httpClient.get<unknown>(
-    `TrainingPlan/children/${encodeURIComponent(childId)}/activities`,
-    { params: type ? { type } : undefined },
+  const types: readonly ActivityType[] = type ? [type] : ['test', 'game'];
+  const lists = await Promise.all(
+    types.map(async (activityType) => {
+      const { data } = await httpClient.get<unknown>(
+        `TrainingPlan/children/${encodeURIComponent(childId)}/activities`,
+        { params: { type: activityType } },
+      );
+      return z.array(planActivityDtoSchema).parse(data).map(mapPlanActivity);
+    }),
   );
-  return z.array(planActivityDtoSchema).parse(data).map(mapPlanActivity);
+  return lists.flat();
 }
 
-/** `GET TrainingPlan/children/{childId}/activities/summary` → `{ gamesCount, testsCount, totalCount }` */
+/** `GET TrainingPlan/children/{childId}/activities/summary` → `{ gamesCount, testsCount, totalCount }` (VERIFIED LIVE). */
 export async function fetchChildPlanSummary(childId: string): Promise<PlanSummary> {
   const { data } = await httpClient.get<unknown>(
     `TrainingPlan/children/${encodeURIComponent(childId)}/activities/summary`,

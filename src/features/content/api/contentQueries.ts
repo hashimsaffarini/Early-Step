@@ -28,6 +28,7 @@ import {
   type OptionUpdateInput,
   type QuestionInfoInput,
   type QuestionInput,
+  fetchAssessmentCategoryIds,
 } from './contentApi';
 
 export function useCategories() {
@@ -38,6 +39,14 @@ export function useCategoriesWithCounts(type: ActivityType) {
   return useQuery({
     queryKey: queryKeys.content.categoriesWithCounts(type),
     queryFn: () => fetchCategoriesWithCounts(type),
+  });
+}
+
+/** Ids of the categories in the initial assessment (authoritative membership). */
+export function useAssessmentCategoryIds() {
+  return useQuery({
+    queryKey: queryKeys.content.initialAssessmentCategories(),
+    queryFn: fetchAssessmentCategoryIds,
   });
 }
 

@@ -6,7 +6,9 @@ import {
   planActivityDtoSchema,
   type PlanActivity,
 } from '@/services/api/childPlan';
+import { AppError } from '@/services/http/apiError';
 import { httpClient } from '@/services/http/httpClient';
+import { HTTP_STATUS } from '@/services/http/httpStatus';
 
 const childBase = (childId: string) =>
   `TrainingPlan/specialist/children/${encodeURIComponent(childId)}`;
@@ -20,39 +22,67 @@ export const TRAINING_PLAN_PATHS = {
 } as const;
 
 export interface SpecialistPlan {
-  /** False when the backend answers "لا توجد خطة تدريبية لهذا الطفل." (no plan yet). */
+  /** False when the backend answers 404 "لا توجد خطة تدريبية لهذا الطفل." (no plan yet). */
   hasPlan: boolean;
+  /** Plan status as sent by the backend (live value: `Active`). */
+  status: string | null;
+  teacherId: string | null;
+  teacherName: string | null;
   activities: PlanActivity[];
 }
 
-const activityList = z.array(planActivityDtoSchema);
-const planObjectSchema = z.looseObject({
-  activities: activityList.nullish(),
-  trainingPlanActivities: activityList.nullish(),
+/** VERIFIED LIVE (2026-10-06): the specialist plan object. */
+const planSchema = z.looseObject({
+  id: z.string(),
+  childId: z.string(),
+  childName: z.string().nullish(),
+  specialistId: z.string().nullish(),
+  specialistName: z.string().nullish(),
+  teacherId: z.string().nullish(),
+  teacherName: z.string().nullish(),
+  status: z.string().nullish(),
+  activities: z.array(planActivityDtoSchema),
 });
 
-/**
- * `GET TrainingPlan/specialist/children/{childId}`. Response undocumented except the
- * "no plan" message (Apidog). Accepted shapes (NOT LIVE-VERIFIED): an array of plan activities,
- * or an object with an `activities` array; a `{ message }` body means "no plan yet".
- */
+const NO_PLAN: SpecialistPlan = {
+  hasPlan: false,
+  status: null,
+  teacherId: null,
+  teacherName: null,
+  activities: [],
+};
+
 export function parseSpecialistPlan(data: unknown): SpecialistPlan {
-  const asList = activityList.safeParse(data);
-  if (asList.success) return { hasPlan: true, activities: asList.data.map(mapPlanActivity) };
-  const asObject = planObjectSchema.safeParse(data);
-  const items = asObject.success
-    ? (asObject.data.activities ?? asObject.data.trainingPlanActivities ?? null)
-    : null;
-  if (items) return { hasPlan: true, activities: items.map(mapPlanActivity) };
-  return { hasPlan: false, activities: [] };
+  const plan = planSchema.parse(data);
+  return {
+    hasPlan: true,
+    status: plan.status ?? null,
+    teacherId: plan.teacherId ?? null,
+    teacherName: plan.teacherName ?? null,
+    activities: plan.activities.map(mapPlanActivity),
+  };
 }
 
+const NO_PLAN_MESSAGE = 'لا توجد خطة تدريبية';
+
+/** `GET TrainingPlan/specialist/children/{childId}` — 404 + "no plan" message → `hasPlan: false`. */
 export async function fetchSpecialistPlan(childId: string): Promise<SpecialistPlan> {
-  const { data } = await httpClient.get<unknown>(TRAINING_PLAN_PATHS.specialistPlan(childId));
-  return parseSpecialistPlan(data);
+  try {
+    const { data } = await httpClient.get<unknown>(TRAINING_PLAN_PATHS.specialistPlan(childId));
+    return parseSpecialistPlan(data);
+  } catch (error) {
+    if (
+      error instanceof AppError &&
+      error.status === HTTP_STATUS.NOT_FOUND &&
+      error.message.includes(NO_PLAN_MESSAGE)
+    ) {
+      return NO_PLAN;
+    }
+    throw error;
+  }
 }
 
-/** Available-activity item (Apidog example shape). */
+/** Available-activity item — VERIFIED LIVE (2026-10-06). */
 const availableActivitySchema = z.looseObject({
   id: z.string(),
   title: z.string().nullish(),
@@ -112,4 +142,25 @@ export async function assignActivity(childId: string, activityId: string): Promi
 /** `DELETE …/activities/{activityId}` — the catalogue activity id (Apidog example). */
 export async function removeActivity(childId: string, activityId: string): Promise<void> {
   await httpClient.delete(TRAINING_PLAN_PATHS.activity(childId, activityId));
+}
+
+/** `GET specialist/teachers` — VERIFIED LIVE (2026-10-06): `[{ id, fullName }]`. */
+const teacherSchema = z.looseObject({ id: z.string(), fullName: z.string().nullish() });
+
+export interface TeacherOption {
+  id: string;
+  name: string;
+}
+
+export async function fetchTeachers(): Promise<TeacherOption[]> {
+  const { data } = await httpClient.get<unknown>('specialist/teachers');
+  return z
+    .array(teacherSchema)
+    .parse(data)
+    .map((teacher) => ({ id: teacher.id, name: teacher.fullName?.trim() ?? '' }));
+}
+
+/** `POST specialist/assign-teacher { teacherId, childIds }` (Swagger). Response not verified (write). */
+export async function assignTeacher(teacherId: string, childIds: readonly string[]): Promise<void> {
+  await httpClient.post('specialist/assign-teacher', { teacherId, childIds });
 }

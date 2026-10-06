@@ -93,11 +93,21 @@ export const planActivityDetailHandler = http.get(
     if (!child) return HttpResponse.json({ message: 'النشاط غير موجود في الخطة التدريبية.' });
     if (user.role === 'Parent' && child.parentId !== user.id) return forbidden();
     const id = String(params.activityId);
+    // Live: addressed by the catalogue `activityId`; response shape verified 2026-10-06.
     const row = mockPlanActivities.find(
-      (item) => item.childId === child.id && (item.id === id || item.activityId === id),
+      (item) => item.childId === child.id && item.activityId === id,
     );
     if (!row) return HttpResponse.json({ message: 'النشاط غير موجود في الخطة التدريبية.' });
-    return HttpResponse.json({ ...row, questions: MOCK_ACTIVITY_QUESTIONS[row.activityId] ?? [] });
+    return HttpResponse.json({
+      planActivityId: row.id,
+      activityId: row.activityId,
+      title: row.title,
+      description: row.description,
+      iconUrl: row.iconUrl,
+      type: row.type,
+      isCompleted: row.isCompleted,
+      questions: MOCK_ACTIVITY_QUESTIONS[row.activityId] ?? [],
+    });
   },
 );
 

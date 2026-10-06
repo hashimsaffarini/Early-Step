@@ -5,10 +5,33 @@ import { queryKeys } from '@/services/api/queryKeys';
 
 import {
   assignActivity,
+  assignTeacher,
   fetchAvailableActivities,
   fetchSpecialistPlan,
+  fetchTeachers,
   removeActivity,
 } from './trainingPlansApi';
+
+const TEACHERS_KEY = [...queryKeys.trainingPlans.all, 'teachers'] as const;
+
+export function useTeachers(enabled: boolean) {
+  return useQuery({ queryKey: TEACHERS_KEY, queryFn: fetchTeachers, enabled });
+}
+
+/** Assigns a teacher to children; refreshes the plans and the children lists (teacher names). */
+export function useAssignTeacherMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ teacherId, childIds }: { teacherId: string; childIds: readonly string[] }) =>
+      assignTeacher(teacherId, childIds),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.trainingPlans.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.children.all }),
+      ]);
+    },
+  });
+}
 
 export function useSpecialistPlan(childId: string, enabled: boolean) {
   return useQuery({

@@ -151,6 +151,22 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 /** Categories with activity counts and initial-assessment membership (deleted ones hidden). */
+/**
+ * `GET initial-assessment/categories` — VERIFIED LIVE: `{ categories: [{ id, name, order }] }`.
+ * This dedicated endpoint is the source of truth for membership: live, its ids did not match the
+ * `isInInitialAssessment` flags of `categoriesActivity` (inconsistency reported to the backend).
+ */
+const assessmentCategoriesSchema = z.looseObject({
+  categories: z.array(
+    z.looseObject({ id: z.string(), name: z.string().nullish(), order: z.number().nullish() }),
+  ),
+});
+
+export async function fetchAssessmentCategoryIds(): Promise<string[]> {
+  const { data } = await httpClient.get<unknown>(CONTENT_PATHS.assessmentCategories);
+  return assessmentCategoriesSchema.parse(data).categories.map((category) => category.id);
+}
+
 export async function fetchCategoriesWithCounts(type: ActivityType): Promise<CategoryWithCounts[]> {
   const { data } = await httpClient.get<unknown>(CONTENT_PATHS.categoriesActivity, {
     params: { type },

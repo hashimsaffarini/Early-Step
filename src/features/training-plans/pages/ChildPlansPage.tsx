@@ -18,6 +18,7 @@ import type { AppError } from '@/services/http/apiError';
 
 import { useRemoveActivityMutation, useSpecialistPlan } from '../api/trainingPlansQueries';
 import { AssignActivityDialog } from '../components/AssignActivityDialog';
+import { AssignTeacherCard } from '../components/AssignTeacherCard';
 import { PlanActivityList } from '../components/PlanActivityList';
 import { PlanProgress } from '../components/PlanProgress';
 import cardStyles from '../components/plans.module.css';
@@ -136,6 +137,11 @@ function SpecialistPlanEditor({ child }: { child: PlanChild }) {
 
   return (
     <>
+      <AssignTeacherCard
+        childId={child.id}
+        childName={child.name}
+        currentTeacherName={plan.data.teacherName}
+      />
       <ApiErrorAlert error={removeMutation.error} />
       <PlanSection
         activities={plan.data.activities}

@@ -1,6 +1,6 @@
 import { http, HttpResponse, type HttpHandler } from 'msw';
 
-import { mockId, type MockUser } from '../db';
+import { MOCK_USERS, mockId, type MockUser } from '../db';
 import { findMockChild, type MockChildRow } from '../fixtures/children';
 import {
   MOCK_CATALOG_ACTIVITIES,
@@ -44,7 +44,25 @@ function specialistChild(request: Request, childId: unknown): MockChildRow | Res
   return child;
 }
 
-/** Training plans. Shapes from Apidog examples; NOT LIVE-VERIFIED. */
+/** Child-facing list item (VERIFIED LIVE shape). */
+function childListItem(row: MockPlanActivityRow) {
+  return {
+    planActivityId: row.id,
+    activityId: row.activityId,
+    title: row.title,
+    iconUrl: row.iconUrl,
+    type: row.type,
+    isCompleted: row.isCompleted,
+  };
+}
+
+/** Specialist plan activity (VERIFIED LIVE shape). */
+function specialistItem(row: MockPlanActivityRow) {
+  const { id, childId: _childId, ...rest } = row;
+  return { trainingPlanActivityId: id, ...rest };
+}
+
+/** Training plans — response shapes mirror the live backend (verified 2026-10-06). */
 export const trainingPlansHandlers: HttpHandler[] = [
   http.get(apiUrl('TrainingPlan/children/:childId/activities/summary'), ({ request, params }) => {
     const user = currentUser(request);
@@ -67,7 +85,19 @@ export const trainingPlansHandlers: HttpHandler[] = [
     const child = findMockChild(String(params.childId));
     if (!child) return notFound('الطفل غير موجود.');
     if (!canRead(user, child)) return forbidden();
-    return HttpResponse.json(rowsFor(child.id, new URL(request.url).searchParams.get('type')));
+    const type = new URL(request.url).searchParams.get('type');
+    // Live: `type` is required.
+    if (!type) {
+      return HttpResponse.json(
+        {
+          title: 'One or more validation errors occurred.',
+          status: 400,
+          errors: { type: ['The type field is required.'] },
+        },
+        { status: 400 },
+      );
+    }
+    return HttpResponse.json(rowsFor(child.id, type.toLowerCase()).map(childListItem));
   }),
 
   http.get(
@@ -99,9 +129,19 @@ export const trainingPlansHandlers: HttpHandler[] = [
     const child = specialistChild(request, params.childId);
     if (child instanceof Response) return child;
     const rows = rowsFor(child.id, null);
-    // Live backend (Apidog example) answers with a message when the child has no plan.
-    if (rows.length === 0) return HttpResponse.json({ message: 'لا توجد خطة تدريبية لهذا الطفل.' });
-    return HttpResponse.json({ childId: child.id, activities: rows });
+    // Live: a child without a plan answers 404 with this message.
+    if (rows.length === 0) return notFound('لا توجد خطة تدريبية لهذا الطفل.');
+    return HttpResponse.json({
+      id: `plan-${child.id}`,
+      childId: child.id,
+      childName: child.fullName,
+      specialistId: child.specialistId,
+      specialistName: child.specialistName,
+      teacherId: child.teacherId,
+      teacherName: child.teacherName,
+      status: 'Active',
+      activities: rows.map(specialistItem),
+    });
   }),
 
   http.post(
@@ -132,10 +172,9 @@ export const trainingPlansHandlers: HttpHandler[] = [
         completedAt: null,
       };
       mockPlanActivities.push(row);
-      const { childId: _childId, ...activityDto } = row;
       return HttpResponse.json({
         message: 'تمت إضافة النشاط إلى الخطة التدريبية بنجاح.',
-        activity: activityDto,
+        activity: specialistItem(row),
       });
     },
   ),
@@ -154,3 +193,31 @@ export const trainingPlansHandlers: HttpHandler[] = [
     },
   ),
 ];
+
+/** Teachers a specialist can assign (VERIFIED LIVE shape: `[{ id, fullName }]`). */
+trainingPlansHandlers.push(
+  http.get(apiUrl('specialist/teachers'), ({ request }) => {
+    const user = requireRole(request, ['Specialist']);
+    if (user instanceof Response) return user;
+    return HttpResponse.json(
+      MOCK_USERS.filter((candidate) => candidate.role === 'Teacher').map((teacher) => ({
+        id: teacher.id,
+        fullName: teacher.fullName,
+      })),
+    );
+  }),
+  http.post(apiUrl('specialist/assign-teacher'), async ({ request }) => {
+    const user = requireRole(request, ['Specialist']);
+    if (user instanceof Response) return user;
+    const body = (await request.json()) as { teacherId?: string; childIds?: string[] };
+    const teacher = MOCK_USERS.find((c) => c.id === body.teacherId && c.role === 'Teacher');
+    if (!teacher) return notFound('المعلم غير موجود.');
+    for (const childId of body.childIds ?? []) {
+      const child = findMockChild(childId);
+      if (child?.specialistId !== user.id) return forbidden();
+      child.teacherId = teacher.id;
+      child.teacherName = teacher.fullName;
+    }
+    return HttpResponse.json({ message: 'تم تعيين المعلم بنجاح.' });
+  }),
+);

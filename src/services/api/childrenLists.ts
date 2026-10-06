@@ -5,9 +5,11 @@ import { httpClient } from '@/services/http/httpClient';
 
 /**
  * Children visible to the signed-in role (shared by children, dashboards, reports, chat…).
- * Endpoints from Swagger; item shapes undocumented except Apidog examples
- * (`{ id, fullName, birthDate|age, gender, parentId, parentName, specialistId, specialistName }`).
- * Read leniently. NOT LIVE-VERIFIED. Admin has no children-list endpoint (BLOCKED BY BACKEND).
+ * VERIFIED LIVE (2026-10-06):
+ * - `GET Parent/GetMyChildren` → `{ id, fullName, age, gender, parentId }`
+ * - `GET specialist/children` → `{ id, fullName, parentId, parentName, age, gender, progressPercentage }`
+ * - `Teacher/children` — not verified (no teacher demo account yet).
+ * Gender values are Arabic (`بنت` / `ولد`). Admin has no children-list endpoint (BLOCKED BY BACKEND).
  */
 export const childListItemSchema = z.looseObject({
   id: z.string(),
@@ -21,6 +23,7 @@ export const childListItemSchema = z.looseObject({
   specialistName: z.string().nullish(),
   teacherId: z.string().nullish(),
   teacherName: z.string().nullish(),
+  progressPercentage: z.number().nullish(),
 });
 
 export type ChildGenderValue = 'ولد' | 'بنت';
@@ -35,6 +38,8 @@ export interface ChildSummary {
   parentName: string | null;
   specialistName: string | null;
   teacherName: string | null;
+  /** Server-computed plan progress (specialist list only). */
+  progressPercentage: number | null;
 }
 
 /** Backend gender values are Arabic (`ولد`/`بنت`); some responses use `Male`/`Female`. */
@@ -54,6 +59,7 @@ export function mapChildSummary(dto: z.infer<typeof childListItemSchema>): Child
     parentName: dto.parentName ?? null,
     specialistName: dto.specialistName ?? null,
     teacherName: dto.teacherName ?? null,
+    progressPercentage: dto.progressPercentage ?? null,
   };
 }
 
