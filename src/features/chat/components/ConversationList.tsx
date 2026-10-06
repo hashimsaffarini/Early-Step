@@ -1,13 +1,15 @@
 import { MessageCircle, SquarePen } from 'lucide-react';
 
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { IconButton } from '@/components/ui/IconButton';
 import { cx } from '@/utils/classNames';
 
-import type { Conversation } from '../types';
+import type { ConversationSummary } from '../types';
 import { getConversationButtonId } from '../utils/chatIds';
 import { formatMessageDay } from '../utils/chatTime';
 
@@ -16,7 +18,10 @@ import styles from './ConversationList.module.css';
 const NEW_CONVERSATION = 'محادثة جديدة';
 
 export interface ConversationListProps {
-  conversations: readonly Conversation[];
+  conversations: readonly ConversationSummary[];
+  isLoading: boolean;
+  error: Error | null;
+  onRetry: () => void;
   activeId: string | null;
   onSelect: (conversationId: string) => void;
   onNewConversation: () => void;
@@ -26,6 +31,9 @@ export interface ConversationListProps {
 /** Replit conversation list, plus a per-conversation unread badge (missing in Replit). */
 export function ConversationList({
   conversations,
+  isLoading,
+  error,
+  onRetry,
   activeId,
   onSelect,
   onNewConversation,
@@ -51,7 +59,24 @@ export function ConversationList({
         />
       </div>
 
-      {conversations.length === 0 ? (
+      {isLoading ? (
+        <div className={styles.empty}>
+          <LoadingState label="جارٍ تحميل المحادثات…" />
+        </div>
+      ) : error ? (
+        <div className={styles.empty}>
+          <ErrorState
+            isBoxed={false}
+            title="تعذّر تحميل المحادثات"
+            description={error.message}
+            action={
+              <Button variant="soft" onClick={onRetry}>
+                إعادة المحاولة
+              </Button>
+            }
+          />
+        </div>
+      ) : conversations.length === 0 ? (
         <div className={styles.empty}>
           <EmptyState
             isBoxed={false}
@@ -67,7 +92,7 @@ export function ConversationList({
       ) : (
         <ul className={styles.list}>
           {conversations.map((conversation) => {
-            const last = conversation.messages.at(-1);
+            const last = conversation.lastMessage;
             const isActive = conversation.id === activeId;
             return (
               <li key={conversation.id}>
@@ -80,10 +105,10 @@ export function ConversationList({
                     onSelect(conversation.id);
                   }}
                 >
-                  <Avatar name={conversation.contact.name} shape="circle" />
+                  <Avatar name={conversation.contactName} shape="circle" />
                   <span className={styles.body}>
                     <span className={styles.row}>
-                      <span className={styles.name}>{conversation.contact.name}</span>
+                      <span className={styles.name}>{conversation.contactName}</span>
                       {last ? (
                         <time className={styles.time} dateTime={last.sentAt}>
                           {formatMessageDay(last.sentAt)}

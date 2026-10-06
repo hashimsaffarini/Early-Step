@@ -1,23 +1,36 @@
 import type { UserRole } from '@/types/roles';
 
+/** A user the signed-in user can chat with (`GET Chats/users`). */
 export interface ChatContact {
   id: string;
   name: string;
-  role: UserRole;
+  /** Normalized role; null when the backend value is unknown. */
+  role: UserRole | null;
 }
 
+/** A message (`MessageResponse`). `pending` = optimistic, not yet confirmed by the server. */
 export interface ChatMessage {
   id: string;
+  conversationId: string | null;
+  senderId: string;
+  receiverId: string;
   text: string;
-  /** ISO date-time. */
+  /** ISO date-time (`createdAt`). */
   sentAt: string;
-  /** Sent by the signed-in (mock) user — shown on the inline-end. */
-  isOwn: boolean;
+  status: string | null;
+  pending?: boolean;
 }
 
-export interface Conversation {
+/** A conversation row (`ConversationResponse`). `contactId` = the other participant. */
+export interface ConversationSummary {
   id: string;
-  contact: ChatContact;
-  messages: readonly ChatMessage[];
+  contactId: string;
+  contactName: string;
+  lastMessage: ChatMessage | null;
   unreadCount: number;
 }
+
+/** The thread on screen: an existing conversation, or a new one not created yet (no id). */
+export type ActiveThread =
+  | { kind: 'conversation'; conversationId: string; contactId: string; contactName: string }
+  | { kind: 'draft'; contactId: string; contactName: string };
