@@ -1,19 +1,17 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router';
 
 import { CategoryTile } from '@/components/shared/CategoryTile';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PageBanner, type PageBannerTone } from '@/components/shared/PageBanner';
-import { Alert } from '@/components/ui/Feedback';
 import { ACTIVITY_CATEGORY_DISPLAY } from '@/constants/activityCategories';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { cx } from '@/utils/classNames';
 
-import { getAssignableChildren, type AssignableChild } from '../mock/assignableChildren.mock';
-
 import styles from './ActivityCatalog.module.css';
-import { AssignToChildDialog } from './AssignToChildDialog';
 import { CatalogCard } from './CatalogCard';
 import { CategoryFilter } from './CategoryFilter';
+import { PracticeNotice } from './PracticeNotice';
 import {
   formatActivityCount,
   type ActivityKind,
@@ -36,8 +34,10 @@ export interface ActivityCatalogProps {
 }
 
 /**
- * Tests/games catalogue body (Replit): gradient hero with real local counts, category
- * chips, card grid, assign-to-child dialog (local confirmation only).
+ * Tests/games catalogue body (Replit): gradient hero with local counts, category chips and a
+ * card grid. Local practice content only — there is no non-admin activities endpoint, and the
+ * Replit "assign to child" dialog is not offered here because nothing would be saved; staff
+ * assign real activities from a child's training plan.
  */
 export function ActivityCatalog({
   kind,
@@ -47,10 +47,8 @@ export function ActivityCatalog({
   emptyIcon,
   emptyTitle,
 }: ActivityCatalogProps) {
-  const { role } = useRoleArea();
+  const { role, paths } = useRoleArea();
   const [category, setCategory] = useState<CategoryFilterValue>('all');
-  const [assigning, setAssigning] = useState<CatalogItem | null>(null);
-  const [confirmation, setConfirmation] = useState<string | null>(null);
 
   const counts = useMemo(() => {
     const result: Partial<Record<CategoryFilterValue, number>> = { all: items.length };
@@ -60,13 +58,6 @@ export function ActivityCatalog({
 
   const categoryCount = Object.keys(counts).length - 1;
   const visible = category === 'all' ? items : items.filter((item) => item.category === category);
-  const childrenList = getAssignableChildren(role);
-
-  const handleAssign = (child: AssignableChild) => {
-    if (!assigning) return;
-    setConfirmation(`تم تعيين «${assigning.title}» لـ ${child.name}.`);
-    setAssigning(null);
-  };
 
   return (
     <div className={styles.page}>
@@ -89,7 +80,13 @@ export function ActivityCatalog({
         }
       />
 
-      {confirmation ? <Alert tone="success">{confirmation}</Alert> : null}
+      <PracticeNotice />
+      {role !== 'Parent' ? (
+        <p className={styles.staffHint}>
+          {'لتعيين أنشطة معتمدة لطفل، افتح ملفه من '}
+          <Link to={paths.children}>قائمة الأطفال</Link>.
+        </p>
+      ) : null}
 
       <CategoryFilter value={category} onChange={setCategory} counts={counts} />
 
@@ -120,22 +117,11 @@ export function ActivityCatalog({
         >
           {visible.map((item) => (
             <li key={item.id}>
-              <CatalogCard item={item} playLabel={playLabel} onAssign={setAssigning} />
+              <CatalogCard item={item} playLabel={playLabel} />
             </li>
           ))}
         </ul>
       )}
-
-      <AssignToChildDialog
-        isOpen={assigning !== null}
-        onClose={() => {
-          setAssigning(null);
-        }}
-        activityTitle={assigning?.title ?? ''}
-        kind={kind}
-        childrenList={childrenList}
-        onAssign={handleAssign}
-      />
     </div>
   );
 }

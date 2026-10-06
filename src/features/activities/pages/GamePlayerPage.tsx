@@ -21,6 +21,8 @@ import { GAME_COMPONENTS } from '@/features/activities/games/registry';
 import type { GameResult } from '@/features/activities/games/types';
 import { useRoleArea } from '@/hooks/useRoleArea';
 
+import { PracticeNotice } from '../components/PracticeNotice';
+
 import styles from './GamePlayerPage.module.css';
 import { getResultSummary, getResultTitle } from './gameResultText';
 
@@ -100,6 +102,7 @@ function GameSession({ game, gamesPath, sound }: GameSessionProps) {
     return (
       <>
         <Confetti />
+        <PracticeNotice />
         <ResultPanel
           category={game.category}
           title={getResultTitle(result)}

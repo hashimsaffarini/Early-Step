@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { RoleAreaContext } from '@/hooks/useRoleArea';
@@ -87,25 +87,18 @@ describe('GamesCatalogPage', () => {
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
   });
 
-  it('assigns a game to a child visible to the role (local confirmation)', async () => {
+  it('labels the content as practice and offers no fake assignment', () => {
     renderInRouter(
-      <RoleAreaContext value="Teacher">
+      <RoleAreaContext value="Specialist">
         <GamesCatalogPage />
       </RoleAreaContext>,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'تعيين «مطابقة البطاقات» لطفل' }));
-    const dialog = screen.getByRole('dialog', { name: /مطابقة البطاقات/ });
-    const confirm = within(dialog).getByRole('button', { name: 'تعيين' });
-    expect(confirm).toBeDisabled();
-    expect(within(dialog).queryByText('ريم')).not.toBeInTheDocument();
-
-    await userEvent.click(within(dialog).getByRole('radio', { name: /سلمى/ }));
-    await userEvent.click(confirm);
-
-    await waitFor(() => {
-      expect(dialog).not.toHaveAttribute('open');
-    });
-    expect(screen.getByRole('status')).toHaveTextContent('تم تعيين «مطابقة البطاقات» لـ سلمى.');
+    expect(screen.getByText(/تدريب — لا تُحفظ النتائج/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /تعيين/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'قائمة الأطفال' })).toHaveAttribute(
+      'href',
+      '/specialist/children',
+    );
   });
 });

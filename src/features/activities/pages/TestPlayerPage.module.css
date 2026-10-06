@@ -62,3 +62,12 @@
   align-self: center;
   min-inline-size: 12rem;
 }
+
+.questionImage {
+  display: block;
+  max-inline-size: 100%;
+  max-block-size: 14rem;
+  margin: var(--space-4) auto 0;
+  border-radius: var(--radius-card);
+  object-fit: contain;
+}

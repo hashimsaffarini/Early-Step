@@ -1,9 +1,8 @@
-import { ChevronLeft, Play, Star, UserPlus } from 'lucide-react';
+import { ChevronLeft, Play, Star } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { getCategoryGradientClass } from '@/components/shared/CategoryTile';
 import { Badge } from '@/components/ui/Badge';
-import { IconButton } from '@/components/ui/IconButton';
 import {
   ACTIVITY_CATEGORY_DISPLAY,
   ACTIVITY_DIFFICULTIES,
@@ -17,13 +16,12 @@ import type { CatalogItem } from './catalogTypes';
 export interface CatalogCardProps {
   item: CatalogItem;
   playLabel: string;
-  onAssign: (item: CatalogItem) => void;
 }
 
 const MAX_LEVEL = ACTIVITY_DIFFICULTIES.length;
 
-/** Catalogue card (Replit): gradient header with emoji and difficulty, meta, play + assign. */
-export function CatalogCard({ item, playLabel, onAssign }: CatalogCardProps) {
+/** Catalogue card (Replit): gradient header with emoji and difficulty, meta, play link. */
+export function CatalogCard({ item, playLabel }: CatalogCardProps) {
   const difficulty = ACTIVITY_DIFFICULTY_DISPLAY[item.difficulty];
   const level = ACTIVITY_DIFFICULTIES.indexOf(item.difficulty) + 1;
 
@@ -71,14 +69,6 @@ export function CatalogCard({ item, playLabel, onAssign }: CatalogCardProps) {
             {playLabel}
             <ChevronLeft aria-hidden="true" />
           </Link>
-          <IconButton
-            label={`تعيين «${item.title}» لطفل`}
-            icon={UserPlus}
-            variant="outline"
-            onClick={() => {
-              onAssign(item);
-            }}
-          />
         </div>
       </div>
     </article>
