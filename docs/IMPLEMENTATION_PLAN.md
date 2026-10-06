@@ -34,6 +34,13 @@ notifications, super admin panel. See `UI_COMPLETENESS_AUDIT.md`. **Backend inte
 authentication, guards and persistence have not started**; the stages below keep their API
 scope and now start from existing screens (replace each mock with API hooks).
 
+## Backend integration — in progress on `feature/backend-integration` (2026-10-06, ADR-020)
+
+Every backend-supported feature is integrated against the Swagger contracts and tested with MSW;
+**nothing is live-verified** (demo accounts fail to sign in; live testing paused for the Admin
+authorization issue). Status per feature: `BACKEND_INTEGRATION_STATUS.md`. Next: working accounts
+for all roles → verify the lenient response schemas → live E2E.
+
 ## Stage 0 — Foundation ✅
 
 Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `10c12f9`.

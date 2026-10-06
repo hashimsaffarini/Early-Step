@@ -1,5 +1,11 @@
 # User Flows
 
+> **Update 2026-10-06:** the flows below are now wired to the backend endpoints with mocked HTTP
+> (not live-verified). Differences from the original flows: the parent enters the child's **age**
+> (no birth date in the API); assessment results, training-plan result submission, teacher
+> listing for specialists and teacher-note history are **blocked by the backend**, so those steps
+> end in honest "not available yet" states. See `BACKEND_INTEGRATION_STATUS.md`.
+
 Discovery mapping (2026-09-28). Each step is tagged:
 
 - **API** — supported by a documented endpoint (`docs/API_ENDPOINTS.md`; not yet verified live)

@@ -42,10 +42,17 @@ exist — ADR required; credentials only via CI secrets.
 - Query by role/label/text (as users do), not by class names or test IDs, unless necessary.
 - Test behavior and outcomes, not implementation details.
 - Arabic text in assertions is fine and expected.
-- When API mocking is needed, add **MSW** (record an ADR) and build handlers from the
-  **documented** API contracts only — never invented shapes.
-- Create a shared `renderWithProviders` helper in `src/test/` when the first test needs
-  providers beyond `<App />`.
+- **Mocked HTTP (MSW, ADR-020):** `src/test/setup.ts` starts the MSW server with
+  `onUnhandledRequest: 'error'`, resets the in-memory mock DB before each test, wires the auth
+  hooks (requests carry the signed-in test user's token) and signs out after each test. Handlers
+  live in `src/mocks/handlers/<domain>.ts` (built from the Swagger contracts; mock authorization
+  mirrors the intended backend rules). Override per test with `server.use(...)`.
+- Helpers: `renderWithRouter(routes, path)` / `renderInRouter(element)` (fresh QueryClient, no
+  retries), `signInAs(role)` / `signInForPath(path)` (`src/test/session.ts`).
+- Assert request methods, URLs, query params and bodies (JSON or multipart `FormData`) in
+  `server.use` handlers; assert cache refresh by the UI updating after mutations.
+- The unit/integration suite never calls the live backend. Live E2E (Playwright) is deferred
+  until working demo accounts exist; it must read accounts from the gitignored `.env.e2e.local`.
 
 ## Don't
 
@@ -53,56 +60,22 @@ exist — ADR required; credentials only via CI secrets.
 - Don't snapshot whole pages.
 - Don't commit real credentials or real children's data as fixtures.
 
-## Current tests
+## Current tests (2026-10-06)
 
-224 tests in 45 files (`npm run test`). Pages that differ per role are also rendered inside
-`RoleAreaContext` for a non-parent role to check role-scoped links and role-only UI.
+**302 tests in 61 files** (`npm run test`), all against MSW:
 
-**App & shell**
-
-- `App.test.tsx` — smoke test: app boots and renders the landing page.
-- `areaRoutes.test.tsx` (real route tree) — `/parent` → dashboard redirect, active nav item,
-  `/parent/children` with "أطفالي" active, every parent sidebar item is a real route (no
-  "قريباً"), teacher/specialist/admin roots redirect to their dashboards, super admin has one nav item.
-- `DashboardLayout.test.tsx` — nav + active link, capped/labelled badge, mobile drawer.
-- `Button`, `FormField`, `Tabs`, `ConfirmDialog` tests — primitives (loading, label associations,
-  RTL arrow keys, confirm/cancel).
-- `players.test.tsx` — `starsForScore`, StarRating label, AnswerTile states in words, progress
-  value text, FeedbackMessage, PlayerShell heading + exit link, SoundToggle pressed state.
-- `age.test.ts`, `initials.test.ts` — age phrasing; avatar initials skip honorifics ("أ.", "د.").
-
-**Public & auth** — `LandingPage`, `LoginPage`, `RegisterPage`, `ForgotPasswordPage`,
-`ResetPasswordPage`, `password.test.ts` (validation, UI-only notices, strength scoring).
-
-**Dashboards** — `ParentDashboardPage` (banner, stats, child cards linking to profiles, no %),
-`format.test.ts` (greeting), `TeacherDashboardPage`, `SpecialistDashboardPage` ("تقرير جديد"
-link), `AdminDashboardPage` (heading, stats, role-scoped links, search + empty/no-results),
-`SuperAdminPanelPage` (tabs, user search + role filter, delete confirm/cancel, self-delete
-disabled, no %).
-
-**Children & plans** — `ChildrenListPage` (parent list/add/validation/empty; staff roster with
-parent names and no add button), `ChildProfilePage` (known/unknown/not-visible child, header, tabs
-
-- keyboard, summaries, empty states, "بدء التقييم" link, staff assign-activity dialog, play links
-  and report links scoped to the role), `ChildPlansPage` (plan sections + progress, parent has no
-  create button, specialist creates a plan with validation, empty and not-found states).
-
-**Activities** — `ActivityCatalogs.test.tsx` (all items, category filter + `aria-pressed`, role-scoped
-play links, assign dialog, empty category, no %/AI), `TestPlayerPage` (full run to "X من Y", wrong
-answer reveals the correct one, math inside `<bdi dir="ltr">`, restart, unknown id),
-`GamePlayerPage` (start → play → result → play again, unknown id, every game starts), game logic
-(`memoryLogic`, `colorLogic`, `spotLogic`, `storyLogic`, `tapToPlace`) and playthroughs
-(`WordReadingGame`, `StorySequenceGame`, `SentenceBuilderGame`).
-
-**Assessment** — `assessmentFlow.test.ts` (state machine), `format.test.ts`, `AssessmentPage`
-(greeting + 4 sections, unknown child, choice enables "التالي", section completion, memory
-"show again", play-all reaches neutral results with no "%", exit link for a teacher).
-
-**Reports, chat, notifications** — `ReportsListPage` (per-role visibility, search, type filter,
-create link only for Specialist/Admin), `ReportDetailPage` (sections, numbered recommendations,
-no %, unknown/not-visible id), `CreateReportPage` + `createReport.test.ts` (schema, validation,
-local success), `MessagesPage` (select, send, unread clears, mobile back, new conversation),
-`NotificationsMenu` (open/close + Escape, mark all read, delete, empty state).
+| Area                                                  | Files | Covers                                                                                                                                                                                       |
+| ----------------------------------------------------- | ----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Core (`services`, `constants`, `utils`, `components`) |    12 | error normalization, multipart builder, media URLs, role normalization, players, primitives                                                                                                  |
+| App (`app`)                                           |     3 | route guards (signed-out → login with return path, wrong role → unauthorized, signed-in away from login), logout clears session + cache, role navigation, shell unread badge                 |
+| Auth                                                  |     6 | login (multipart fields, session stored, wrong password, unknown role refused), register (role value, server errors), forgot (neutral for unknown email), reset (email + code, invalid code) |
+| Children                                              |     3 | list states, add/edit (multipart, age), delete with confirm, parent vs staff profile, 403/404 → not found, admin blocked                                                                     |
+| Assessment & activities                               |    16 | start → answer → complete bodies, unsupported types, errors, plan-activity player + "not saved", practice labels, game logic                                                                 |
+| Content (admin)                                       |     6 | categories/activities/questions/options CRUD, multipart per question type, initial-assessment composition                                                                                    |
+| Plans & reports                                       |     5 | plan add/remove, read-only views, reports per role, create/edit/delete, PDF download                                                                                                         |
+| Dashboards, users, notes                              |     8 | server-only stats, admin users params + assign specialist, super admin tabs, teacher notes CRUD                                                                                              |
+| Chat                                                  |     1 | conversations, seen, send without duplicates, polling, older messages, new conversation                                                                                                      |
+| Landing                                               |     1 | hero, CTAs, no fabricated stats                                                                                                                                                              |
 
 Helpers: `src/test/renderWithRouter.tsx`. `src/test/setup.ts` stubs
 `HTMLDialogElement.showModal/close` (missing in jsdom).

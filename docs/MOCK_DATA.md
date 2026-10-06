@@ -1,5 +1,10 @@
 # Temporary mock data (UI migration phase)
 
+> **Update 2026-10-06:** feature-level mock files were removed from production code. Mock data
+> now lives only in `src/mocks/fixtures/*` behind the MSW handlers (tests + development mock
+> mode). Mock children use **age** (API model) and GUID-like ids; mock sign-in accounts are listed
+> in `src/mocks/README.md` (fictional, mock mode only).
+
 The UI is built before the backend is integrated. Every screen uses **local, clearly labelled
 mock data** (`TEMPORARY UI MOCK DATA` / `TEMPORARY UI DEMO CONTENT` file headers). There are no
 fake API services. When a screen is connected to the API, delete its mock file.

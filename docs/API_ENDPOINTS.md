@@ -1,5 +1,14 @@
 # API Endpoints
 
+> **Update 2026-10-06 — the live Swagger supersedes this catalogue.** The backend publishes
+> `https://earlystep22.runasp.net/swagger/v1/swagger.json` (snapshot: `api/swagger.json`):
+> **74 operations, all under `/api/`, consistent casing** — the "inconsistent `/api` prefix" below
+> was an Apidog artefact. Differences from the list below: activities use a `{type}` path segment
+> (`Admin/activities/{type}` with `test` / `game`); `GET Auth/confirmEmail?userId&token` exists;
+> question types include `Matching`; child bodies use `Age` (int32) and Arabic `Gender`; report
+> edit is multipart. Swagger has response schemas **only for chat**. Integration status per
+> endpoint: `BACKEND_INTEGRATION_STATUS.md` and `integration/*.md`.
+
 Source: Apidog documentation — <https://e3mockwfb7.apidog.io/> (machine index:
 `https://e3mockwfb7.apidog.io/llms.txt`). Inspected 2026-09-28. **77 endpoints** (76 HTTP + 1
 WebSocket hub) in 13 Apidog folders.

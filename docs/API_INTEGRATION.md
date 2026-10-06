@@ -4,32 +4,32 @@
 > [`API_ENDPOINTS.md`](API_ENDPOINTS.md). **Never invent endpoints, fields, or response
 > formats.** The Replit prototype has its own unrelated backend and is **not** a contract source.
 
-## Discovery findings (2026-09-28, documentation only — not yet verified live)
+## Live backend (verified 2026-10-06)
 
-| Topic                           | Finding                                                                                                      | Consequence for the frontend                                                                                                                 |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Base URL                        | Not documented (`servers: []`); chat hub example is `wss://localhost:7256/chatHub`                           | `VITE_API_BASE_URL` stays empty until provided; a separate hub URL may be needed (TBD)                                                       |
-| `/api` prefix                   | Only on register, login and 4 chat routes                                                                    | Keep full paths per endpoint in request functions; verify live before assuming a typo                                                        |
-| Auth scheme                     | `bearer` (HTTP) on protected routes; format (JWT/opaque) undocumented                                        | Interceptor already supports bearer injection                                                                                                |
-| Login                           | `POST /api/Auth/login`, `multipart/form-data` (`email`, `password`, `rememberMe`); **response undocumented** | Token field, user/role payload, expiry: **TBD — blocking for Stage 2**                                                                       |
-| Register                        | `POST /api/Auth/register`, multipart, `role` is an Arabic string (e.g. `ولي أمر`)                            | Role values must be confirmed                                                                                                                |
-| Current user / logout / refresh | **Not documented**                                                                                           | Session restore strategy TBD (decode JWT? store user from login response?)                                                                   |
-| Password                        | change (bearer), forgot (email), reset (email + code)                                                        | JSON bodies                                                                                                                                  |
-| Content types                   | Mixed multipart (auth, child add/edit, activity, question, option, report edit) and JSON                     | Request functions must send `FormData` where documented; Axios sets the multipart boundary automatically — don't set `Content-Type` manually |
-| File uploads                    | Activity `Icon`, `QuestionImage`, `Options[i].OptionImage`                                                   | Indexed multipart keys (`Options[0].OptionText`) — ASP.NET model binding                                                                     |
-| Media URLs                      | Relative (`/uploads/...`)                                                                                    | Build absolute URLs from the API origin in one helper                                                                                        |
-| Response envelopes              | Inconsistent: bare string, `{ message }`, `string[]`, entity                                                 | Normalize per endpoint in the feature API layer                                                                                              |
-| Errors                          | No status codes documented; Arabic messages; some failures shown with 200                                    | `extractBackendDetails()` must handle string / `{message}` / `string[]` / ProblemDetails — **verify live**                                   |
-| Pagination                      | Only chat (`take`, `beforeId`, `afterId`)                                                                    | Infinite queries for chat only                                                                                                               |
-| Enum values                     | Arabic strings (role, gender, activity type) mixed with English (question types, `type=test`)                | Keep backend values as-is; map for display; single mapping module per enum                                                                   |
-| Real-time                       | SignalR-style hub `/chatHub`; methods/events undocumented                                                    | `@microsoft/signalr` may be needed (ADR at Stage "Chat")                                                                                     |
-| PDF                             | `GET /Reports/{id}/download` returns PDF bytes                                                               | `responseType: 'blob'`                                                                                                                       |
+| Topic          | Verified fact                                                                                                                                        | Frontend handling                                                                                                               |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Base URL       | `https://earlystep22.runasp.net/api/` (root `/` answers "API is running")                                                                            | `VITE_API_BASE_URL` (must end with `/api/`); request paths are **relative** (`Parent/GetMyChildren`) so `/api/api` can't happen |
+| Contract       | Public Swagger at `/swagger/v1/swagger.json` — 74 operations, **all under `/api/`**, consistent casing                                               | Snapshot in `docs/api/swagger.json`; Swagger is the contract source (Apidog is outdated)                                        |
+| Auth           | `Bearer` scheme; 401 = ProblemDetails                                                                                                                | Interceptor adds the token; 401 → sign out + clear cache                                                                        |
+| Errors         | ProblemDetails (`title`, `status`, `errors{Field:[…]}`), `{ message }`, string, string[]                                                             | `extractBackendDetails()` in `services/http/apiError.ts`                                                                        |
+| CORS           | Preflight from `http://localhost:5173` allowed (`*`)                                                                                                 | Dev server talks to the API directly                                                                                            |
+| Login response | **Unknown** — no demo account could sign in                                                                                                          | Lenient parser, NOT LIVE-VERIFIED                                                                                               |
+| Enums          | Roles `ولي أمر`, `معلم/ة`, `أخصائي/ة` (observed); gender `ولد`/`بنت` (Swagger); question types `SingleChoice`, `MultiSelect`, `Sequence`, `Matching` | `constants/backendRoles.ts`, `services/api/childrenLists.ts`, `services/api/activityType.ts`                                    |
+| Child model    | `FullName`, **`Age` (int)**, `Gender` — no birth date                                                                                                | Add/edit child asks for age                                                                                                     |
+| Responses      | Swagger documents response schemas **only for chat**; everything else is read leniently with Zod                                                     | Each schema is marked NOT LIVE-VERIFIED in `BACKEND_INTEGRATION_STATUS.md`                                                      |
+
+## Mocked API (tests + development mock mode)
+
+`src/mocks/` (MSW) implements the Swagger contracts with fictional data. Vitest runs every test
+against it (unhandled requests fail). `VITE_USE_MOCKS=true` (local `.env`, dev only) serves the
+whole app from it with a "وضع المحاكاة" banner; the worker is stripped from production builds.
 
 ## Environment
 
-| Variable            | Required | Description                      |
-| ------------------- | -------- | -------------------------------- |
-| `VITE_API_BASE_URL` | yes*     | Absolute base URL of the backend |
+| Variable            | Required | Description                                                                  |
+| ------------------- | -------- | ---------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL` | yes*     | Backend base URL ending with `/api/` (`https://earlystep22.runasp.net/api/`) |
+| `VITE_USE_MOCKS`    | no       | `true` = development mock mode (ignored in production builds)                |
 
 \* Validated lazily by `getEnv()` (`src/config/env.ts`) the first time a request is made. A
 missing/invalid value throws a descriptive error. All `VITE_*` values are **public** (bundled
@@ -39,8 +39,9 @@ into the client) — never put secrets in them.
 
 ```text
 Component
-  └─ feature hook       features/<x>/api/use<Thing>.ts   (useQuery / useMutation)
-       └─ request fn    features/<x>/api/<x>Api.ts       (typed, uses httpClient)
+  └─ feature hook       features/<x>/api/*Queries.ts     (useQuery / useMutation, keys from services/api/queryKeys.ts)
+       └─ request fn    features/<x>/api/<x>Api.ts       (Zod-validated DTO → mapped domain model)
+            (shared cross-feature reads: services/api/* + hooks/api/childResources.ts)
             └─ httpClient   services/http/httpClient.ts
                  └─ interceptors  base URL · auth header · error normalization · 401 hook
 ```
@@ -56,13 +57,12 @@ Components only call feature hooks. They never import `httpClient` or Axios.
 
 ## Auth token handling
 
-- The auth feature (future) calls `registerHttpAuthHooks({ getAccessToken, onUnauthorized })`
-  once at startup. This keeps `services/` independent of `features/`.
-- Token storage strategy is **TBD** — depends on the backend (httpOnly cookie vs bearer token,
-  refresh tokens, expiry). Decide after reading the API docs and record an ADR.
-- Refresh tokens (if supported): implement in the response interceptor with a single in-flight
-  refresh promise, queued retries, and logout on refresh failure. Not implemented until the
-  API confirms the flow.
+- `AuthHttpBridge` (`app/providers`) registers `registerHttpAuthHooks({ getAccessToken, onUnauthorized })`
+  at startup, keeping `services/http` independent of features.
+- Session = `services/session` (Zustand): token + user (name, role, id/email if present) +
+  expiry; sessionStorage, or localStorage with "تذكّرني". Details and limits: `SECURITY.md`.
+- No refresh token, `me` or logout endpoint exists: on expiry/401 the user signs in again;
+  logout is local (drop token, clear cache).
 
 ## Error normalization
 

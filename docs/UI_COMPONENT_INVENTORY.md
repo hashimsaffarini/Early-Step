@@ -1,5 +1,10 @@
 # UI Component Inventory
 
+> **Update 2026-10-06 (backend integration branch):** the notifications menu was removed — the
+> backend has no notifications API, so the bell is disabled ("قريباً"). Several screens now show
+> only real API fields (no report strengths/types, no free-text plans, age instead of birth date).
+> See `BACKEND_INTEGRATION_STATUS.md`.
+
 Derived from the Replit UI audit (`REPLIT_AUDIT.md`, `DESIGN_SYSTEM.md`). The tables at the top
 list what is **implemented**; the sections below are the original plan (kept for reference). Each entry lists where the pattern appears in Replit and the key visual
 spec. Placement follows `ARCHITECTURE.md`: primitives in `src/components/ui/`, shared product

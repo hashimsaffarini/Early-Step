@@ -91,3 +91,20 @@ permissions and business rules are not evidence of real backend behaviour.
 - User management mutations (if required)
 - Chat hub protocol (methods/events, auth)
 - Parent dashboard data
+
+## Backend integration findings (2026-10-06)
+
+Confirmed while integrating against the live Swagger (details and status per capability in
+`BACKEND_INTEGRATION_STATUS.md`; security issues in `SECURITY.md`):
+
+- **Resolved:** base URL, `/api` prefix (all paths), error formats, child model (age, not birth
+  date), gender values, three role values.
+- **Still missing on the backend:** login response contract and `me`/refresh/logout; assessment
+  results; non-single-choice answer payloads; training-plan result submission; activities list
+  for non-admin roles; admin children list and staff child detail; teacher list for specialists;
+  teacher-note listing; user management; admin/super-admin reports; report by id; adding one
+  option to a question; listing initial-assessment questions; activity feeds; real-time hub;
+  notifications.
+- **Product decisions taken (documented, reversible):** report authors = Specialists; only parents
+  start the initial assessment; tests/games catalogues for non-admin roles are local practice;
+  Replit's free-text plans and report "strengths" removed (no API fields).

@@ -1,5 +1,13 @@
 # Roles and Permissions
 
+> **Update 2026-10-06 (backend integration):** role values observed on the live backend's user
+> list: `ولي أمر` (Parent), `معلم/ة` (Teacher), `أخصائي/ة` (Specialist). They are normalized in one
+> place (`src/constants/backendRoles.ts`, unknown → no access). Admin/SuperAdmin wire values are
+> still unknown (no admin account could sign in). `RequireRole` guards protect each area as **UX
+> only** — the live Admin controller was found answering without authentication (`SECURITY.md`).
+> Report write endpoints are `/specialist/*` → report authors are Specialists only. Per-feature
+> status: `BACKEND_INTEGRATION_STATUS.md`. The tables below are the original discovery audit.
+
 Discovery audit, 2026-09-28. Frontend checks are **UX only** — the backend enforces access.
 
 ## Status legend

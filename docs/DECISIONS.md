@@ -442,3 +442,38 @@ before backend integration. In Replit most screens are shared by four roles at f
 Every Replit screen has a route in each role that can use it, with no dead links. When auth
 arrives, guards wrap each area route and `useRoleArea` keeps working; the mock sessions and
 mock files are deleted as screens are connected to the API.
+
+## ADR-020 — Backend integration approach
+
+### Status
+
+Accepted (2026-10-06)
+
+### Context
+
+The live backend (`https://earlystep22.runasp.net/api/`) publishes a Swagger document whose paths
+are all under `/api/` with consistent casing, but it documents response schemas only for chat. No
+demo account could sign in, and the Admin controller was found unauthenticated (see
+`SECURITY.md`); live testing is paused at the user's request.
+
+### Decision
+
+- **Contract source:** the Swagger snapshot (`docs/api/swagger.json`). Apidog examples fill gaps;
+  every inferred response shape is parsed leniently with Zod and marked NOT LIVE-VERIFIED.
+- **Paths:** relative to `VITE_API_BASE_URL` (which must end with `/api/`) — no duplicated prefix.
+- **Session:** shared Zustand store (`services/session`), sessionStorage by default, localStorage
+  with "remember me"; login response parsed leniently (token + role from body or JWT claims,
+  unknown role → refused). No refresh/logout/me endpoints → local logout, clear cache on 401.
+- **Roles:** one normalization module; observed Arabic values mapped; unknown → no access.
+- **Query keys:** one central factory module; cross-feature reads (children lists, child reports,
+  child plan activities) live in shared `services/api` + `hooks/api`.
+- **Mocked HTTP:** MSW (`msw@2`, dev dependency) for all tests (unhandled requests fail) and an
+  opt-in development mock mode (`VITE_USE_MOCKS=true`, dev only, banner shown, worker removed from
+  production builds) so the integrated UI can be reviewed without backend accounts.
+- **Honesty:** missing backend capabilities are BLOCKED BY BACKEND in the UI and docs — no fake
+  persistence, results, pickers or history.
+
+### Consequences
+
+Every integration is testable deterministically; going live requires only working accounts to
+verify the lenient schemas (`BACKEND_INTEGRATION_STATUS.md` lists each one).

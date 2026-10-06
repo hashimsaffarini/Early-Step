@@ -14,25 +14,26 @@ High-level flow: Parent registers → adds children → child completes initial 
 plan → Specialist assigns Teacher → Teacher follows progress and gives feedback →
 Specialist monitors progress.
 
-Current status: foundation, discovery, UI foundation, public landing + auth UI, and the
-**complete Replit UI migration** are implemented (ADR-019, `docs/UI_COMPLETENESS_AUDIT.md`): role
-areas `/parent`, `/teacher`, `/specialist`, `/admin` (dashboard, children, child profile,
-education plans, tests, games, reports, messages, full-screen test/game players and initial
-assessment) and `/super-admin`. Everything is **UI only with local mock data**
-(`docs/MOCK_DATA.md`) — **no backend integration, no real authentication, no guards, no
-persistence**; role areas are temporarily open for UI development (mock session users in
-`src/app/dev/mockSessions.ts`). Unfinished actions inside screens are disabled "قريباً" buttons —
-never links to empty pages.
+Current status: the complete Replit UI (ADR-019) is on `main`. On the branch
+`feature/backend-integration` (ADR-020) every backend-supported feature is integrated with the
+real API contracts (live Swagger) — real login/registration, route guards, children CRUD,
+assessment, admin content, plans, reports, dashboards, users, teacher notes, chat (REST +
+polling) — and tested with MSW. **Nothing is live-verified yet**: the provided demo accounts fail
+to sign in, and live testing is paused because the backend's Admin endpoints are open
+(`docs/SECURITY.md`). Missing backend capabilities are shown as honest "not available" states.
+Status per feature: `docs/BACKEND_INTEGRATION_STATUS.md`. Development mock mode
+(`VITE_USE_MOCKS=true`, dev only) lets you review the integrated UI without accounts.
 Next steps: `docs/IMPLEMENTATION_PLAN.md`.
 
 ## External references
 
-| Reference        | Location                                                 | Role                                                                    |
-| ---------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- |
-| GitHub           | <https://github.com/hashimsaffarini/Early-Step> (`main`) | Official repo                                                           |
-| Backend API docs | <https://e3mockwfb7.apidog.io/> (index: `/llms.txt`)     | **Source of truth for contracts**                                       |
-| Replit prototype | <https://replit.com/@Zainmoneer04/Earlysteps> (private)  | **Visual/UX reference only** — it has its own unrelated Express backend |
-| Backend base URL | not yet provided (TBD)                                   | `VITE_API_BASE_URL`                                                     |
+| Reference        | Location                                                                                    | Role                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| GitHub           | <https://github.com/hashimsaffarini/Early-Step> (`main`)                                    | Official repo                                                           |
+| Backend Swagger  | <https://earlystep22.runasp.net/swagger/v1/swagger.json> (snapshot `docs/api/swagger.json`) | **Source of truth for contracts** (all paths under `/api/`)             |
+| Apidog docs      | <https://e3mockwfb7.apidog.io/> (index: `/llms.txt`)                                        | Older docs; useful examples — contain example credentials, never copy   |
+| Replit prototype | <https://replit.com/@Zainmoneer04/Earlysteps> (private)                                     | **Visual/UX reference only** — it has its own unrelated Express backend |
+| Backend base URL | `https://earlystep22.runasp.net/api/`                                                       | `VITE_API_BASE_URL` (must end with `/api/`)                             |
 
 ## Source-of-truth hierarchy
 
@@ -86,10 +87,11 @@ written in Arabic directly. Backend enum values are kept exactly as the API send
 mapped to Arabic labels for display (e.g. `ROLE_LABELS` in `src/constants/roleLabels.ts`).
 Never rename or translate values sent to/received from the API.
 
-⚠️ The API docs show **Arabic enum values on the wire** for some fields (role `ولي أمر`, gender
-`بنت`/`ولد`, activity type `اختبارات`) and English for others (question types, `type=test`).
-`src/types/roles.ts` assumes English keys — **verify live before building auth** (see
-`docs/ROLES_AND_PERMISSIONS.md`).
+The API sends **Arabic enum values** for some fields (roles `ولي أمر` / `معلم/ة` / `أخصائي/ة`
+observed live, gender `ولد`/`بنت`, activity type `اختبارات`) and English for others (question
+types, `type=test`). Normalize at the boundary only: `constants/backendRoles.ts`
+(`normalizeRole`, fail-closed), `services/api/childrenLists.ts` (`normalizeGender`),
+`services/api/activityType.ts`.
 
 ## 7. API integration rules
 
@@ -100,10 +102,14 @@ Never rename or translate values sent to/received from the API.
 - Base URL comes only from `VITE_API_BASE_URL` via `src/config/env.ts`. Never hardcode URLs.
 - **Never invent endpoints, payloads, response shapes, or error formats.** If the API docs
   don't say it, it's TBD — ask.
-- Known API traits: bearer auth; GUID ids; mixed `multipart/form-data` and JSON bodies (send
-  `FormData` where documented); inconsistent `/api` prefix and casing (use documented paths
-  verbatim); relative media URLs (`/uploads/...`); Arabic message strings; response schemas
-  mostly undocumented — verify live.
+- Known API traits: bearer auth; GUID ids; mixed `multipart/form-data` (use `toFormData`) and JSON
+  bodies; request paths are **relative** to the base URL (`Parent/GetMyChildren` — never a second
+  `/api`); relative media URLs (`resolveMediaUrl`); Arabic messages; response schemas mostly
+  undocumented → lenient Zod schemas + mappers, marked NOT LIVE-VERIFIED.
+- Query keys come from `src/services/api/queryKeys.ts` (one key = one cached shape); reads used by
+  several features live in `src/services/api/*` + `src/hooks/api/*`.
+- Tests and development mock mode use MSW (`src/mocks/`); unit tests never call the live backend.
+- Integration status per feature: `docs/BACKEND_INTEGRATION_STATUS.md`.
 - Details: `docs/API_INTEGRATION.md`, catalogue: `docs/API_ENDPOINTS.md`.
 
 ## 8. State management rules
@@ -112,7 +118,8 @@ Never rename or translate values sent to/received from the API.
 - **React state** = local UI state.
 - **Zustand** = only genuinely global client state (e.g. session token, if needed). Never put
   server responses in Zustand.
-- Query keys are typed factories per feature. Details: `docs/STATE_MANAGEMENT.md`.
+- Query keys: central factories in `src/services/api/queryKeys.ts`. The session (token + user) is
+  the one Zustand store (`src/services/session`). Details: `docs/STATE_MANAGEMENT.md`.
 
 ## 9. Code quality rules
 
@@ -134,8 +141,9 @@ Never rename or translate values sent to/received from the API.
 
 - **Never commit secrets**: passwords, tokens, API keys, demo account credentials, real
   `.env` files. Not in code, not in docs, not in this file, not in commit messages.
-- Demo accounts provided by the user are for local manual testing only; keep them out of
-  the repo (e.g. a gitignored `*.local` file or just the conversation).
+- Demo accounts live only in the gitignored `.env.e2e.local`; never print or copy them.
+- The live backend has open Admin endpoints (see `docs/SECURITY.md`); do not probe further or read
+  exposed records until the backend team confirms a fix.
 - `.env` is gitignored; `.env.example` holds placeholders only.
 - Frontend authorization is UX only — the backend enforces security.
 - No `dangerouslySetInnerHTML` with untrusted content. Details: `docs/SECURITY.md`.
