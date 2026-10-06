@@ -1,5 +1,6 @@
-import { FileText, Target, UserRound, Users } from 'lucide-react';
+import { FileText, Target, UserRound, Users, UsersRound } from 'lucide-react';
 
+import { SectionHeader } from '@/components/shared/SectionHeader';
 import { DashboardStatsGrid } from '@/features/dashboards/components/DashboardStatsGrid';
 import { countByStatus, countUsersByRole } from '@/features/dashboards/roster';
 import type {
@@ -37,9 +38,7 @@ export function OverviewTab({ users, roster, reports }: OverviewTabProps) {
     <div className={styles.tab}>
       <DashboardStatsGrid stats={stats} label="ملخص النظام" />
       <section className={styles.tab} aria-labelledby="users-by-role-title">
-        <h2 id="users-by-role-title" className={styles.sectionTitle}>
-          المستخدمون حسب الدور
-        </h2>
+        <SectionHeader id="users-by-role-title" title="المستخدمون حسب الدور" icon={UsersRound} />
         <ul className={styles.roleTiles}>
           {ROLE_ORDER.map((role) => {
             const display = ROLE_DISPLAY[role];

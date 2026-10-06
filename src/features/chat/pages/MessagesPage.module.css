@@ -7,7 +7,7 @@
 .layout {
   display: grid;
   gap: var(--space-4);
-  block-size: clamp(30rem, calc(100dvh - 16rem), 52rem);
+  block-size: clamp(30rem, calc(100dvh - 11rem), 56rem);
 }
 
 .pane {

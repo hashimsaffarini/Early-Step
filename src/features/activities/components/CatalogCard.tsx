@@ -49,9 +49,12 @@ export function CatalogCard({ item, playLabel, onAssign }: CatalogCardProps) {
           <li>
             <Badge tone={difficulty.tone}>{`الصعوبة: ${difficulty.label}`}</Badge>
           </li>
-          <li>
-            <Badge>{ACTIVITY_CATEGORY_DISPLAY[item.category].label}</Badge>
-          </li>
+          {/* Replit test cards show difficulty + questions + time; games show the category instead. */}
+          {item.meta.length === 0 ? (
+            <li>
+              <Badge>{ACTIVITY_CATEGORY_DISPLAY[item.category].label}</Badge>
+            </li>
+          ) : null}
           {item.meta.map((entry) => (
             <li key={entry}>
               <Badge>{entry}</Badge>

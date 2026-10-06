@@ -4,13 +4,6 @@
   gap: var(--space-6);
 }
 
-.sectionTitle {
-  margin: 0;
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-extrabold);
-}
-
 /* ── Users by role tiles ─────────────────────────────── */
 .roleTiles {
   display: grid;
@@ -162,6 +155,8 @@
 }
 
 .email {
+  align-self: flex-start; /* LTR text, but anchored to the row's inline-start (right in RTL) */
+  max-inline-size: 100%;
   overflow: hidden;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
@@ -263,4 +258,9 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
+}
+
+/* Empty live region: keep it in the accessibility tree without adding a flex gap. */
+.statusMessage:empty {
+  position: absolute;
 }
