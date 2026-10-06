@@ -54,6 +54,8 @@ export const AREA_SEGMENTS = {
   children: 'children',
   childProfile: 'children/:childId',
   childPlans: 'children/:childId/plans',
+  /** Teacher feedback notes for a child (Teacher only). */
+  childNotes: 'children/:childId/notes',
   tests: 'tests',
   testPlay: 'tests/:testId/play',
   games: 'games',
@@ -109,6 +111,7 @@ export interface AreaPaths {
   messages: string;
   childProfile: (childId: string) => string;
   childPlans: (childId: string) => string;
+  childNotes: (childId: string) => string;
   testPlay: (testId: string) => string;
   gamePlay: (gameId: string) => string;
   assessment: (childId: string) => string;
@@ -134,6 +137,7 @@ export function getAreaPaths(role: AreaRole): AreaPaths {
     messages: at(AREA_SEGMENTS.messages),
     childProfile: withId(AREA_SEGMENTS.childProfile, ':childId'),
     childPlans: withId(AREA_SEGMENTS.childPlans, ':childId'),
+    childNotes: withId(AREA_SEGMENTS.childNotes, ':childId'),
     testPlay: withId(AREA_SEGMENTS.testPlay, ':testId'),
     gamePlay: withId(AREA_SEGMENTS.gamePlay, ':gameId'),
     assessment: withId(AREA_SEGMENTS.assessment, ':childId'),

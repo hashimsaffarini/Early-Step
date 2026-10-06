@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 
+import type { AreaRole } from '@/constants/routes';
+
 import { fetchChildPlanActivities, fetchChildPlanSummary } from '@/services/api/childPlan';
 import { fetchChildReports } from '@/services/api/childReports';
+import { CHILDREN_LIST_PATH, fetchChildrenForRole } from '@/services/api/childrenLists';
 import { queryKeys } from '@/services/api/queryKeys';
 
 /** Shared reads used by several features (same key → same cached shape everywhere). */
@@ -26,5 +29,14 @@ export function useChildPlanSummary(childId: string | undefined) {
     queryKey: queryKeys.trainingPlans.childSummary(childId ?? ''),
     queryFn: () => fetchChildPlanSummary(childId ?? ''),
     enabled: Boolean(childId),
+  });
+}
+
+/** Children visible to a role (`queryKeys.children.byRole`). Admin has no endpoint → disabled. */
+export function useChildrenForRole(role: AreaRole) {
+  return useQuery({
+    queryKey: queryKeys.children.byRole(role),
+    queryFn: () => fetchChildrenForRole(role),
+    enabled: CHILDREN_LIST_PATH[role] !== null,
   });
 }

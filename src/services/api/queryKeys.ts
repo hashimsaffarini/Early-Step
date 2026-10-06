@@ -7,7 +7,6 @@
 export const queryKeys = {
   children: {
     all: ['children'] as const,
-    mine: () => ['children', 'mine'] as const,
     detail: (childId: string) => ['children', 'detail', childId] as const,
     byRole: (role: string) => ['children', 'role', role] as const,
   },

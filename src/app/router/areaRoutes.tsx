@@ -122,6 +122,16 @@ function buildAreaRoute(role: AreaRole): RouteObject {
         ]
       : []),
     ...(role === 'Admin' ? adminOnlyPages : []),
+    ...(role === 'Teacher'
+      ? [
+          {
+            path: AREA_SEGMENTS.childNotes,
+            lazy: async () => ({
+              Component: (await import('@/features/feedback')).ChildNotesPage,
+            }),
+          },
+        ]
+      : []),
     {
       path: AREA_SEGMENTS.messages,
       lazy: async () => ({ Component: (await import('@/features/chat')).MessagesPage }),
