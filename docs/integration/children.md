@@ -1,5 +1,9 @@
 # Integration — Children & Parent (fork I-A)
 
+> **Superseded statuses (2026-10-06 live round):** current statuses are in
+> `../BACKEND_INTEGRATION_STATUS.md` and verified shapes in `../api/LIVE_CONTRACTS.md`. This file
+> keeps the per-feature design notes and assumptions.
+
 Nothing here is VERIFIED WORKING: no demo account can sign in yet, so every row is tested only
 against MSW mocks that follow the Swagger contracts. Response shapes are undocumented in Swagger
 and are read leniently (`childListItemSchema`).

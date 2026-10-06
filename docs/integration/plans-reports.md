@@ -1,5 +1,9 @@
 # Integration status — Training plans & Reports
 
+> **Superseded statuses (2026-10-06 live round):** current statuses are in
+> `../BACKEND_INTEGRATION_STATUS.md` and verified shapes in `../api/LIVE_CONTRACTS.md`. This file
+> keeps the per-feature design notes and assumptions.
+
 Branch `feature/backend-integration`. Contracts from `docs/api/swagger.json` (+ Apidog examples).
 Nothing here has been verified against the live backend (no working demo account yet), so every
 connected item is **IMPLEMENTED, NOT LIVE-VERIFIED**. Tests use MSW (`src/mocks/handlers/

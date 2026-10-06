@@ -1,5 +1,10 @@
 # API Endpoints
 
+> **Live verification 2026-10-06:** verified response shapes per endpoint are in
+> `api/LIVE_CONTRACTS.md` (new: `GET specialist/teachers`; `type` is required on
+> `TrainingPlan/children/{id}/activities` and `Admin/categoriesActivity`; "no data" is a 404 with a
+> message for reports and specialist plans; no assessment-results endpoint exists yet).
+>
 > **Update 2026-10-06 — the live Swagger supersedes this catalogue.** The backend publishes
 > `https://earlystep22.runasp.net/swagger/v1/swagger.json` (snapshot: `api/swagger.json`):
 > **74 operations, all under `/api/`, consistent casing** — the "inconsistent `/api` prefix" below

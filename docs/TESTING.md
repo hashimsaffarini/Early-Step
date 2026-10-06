@@ -51,8 +51,13 @@ exist — ADR required; credentials only via CI secrets.
   retries), `signInAs(role)` / `signInForPath(path)` (`src/test/session.ts`).
 - Assert request methods, URLs, query params and bodies (JSON or multipart `FormData`) in
   `server.use` handlers; assert cache refresh by the UI updating after mutations.
-- The unit/integration suite never calls the live backend. Live E2E (Playwright) is deferred
-  until working demo accounts exist; it must read accounts from the gitignored `.env.e2e.local`.
+- The unit/integration suite never calls the live backend.
+- **Live contract tests** (`npm run test:live`, `vitest.live.config.ts`, `src/test/live/`): the app's
+  own login + GET fetchers + Zod schemas against the real API for Parent, Specialist, Admin and
+  Super Admin, credentials from the gitignored `.env.e2e.local`. Read-only, no data printed,
+  excluded from `npm run test`/`validate`. Result 2026-10-06: **6/6 pass**. Write flows wait for
+  authorized disposable test records; browser E2E with real logins is run by a person (the
+  assistant does not type real passwords into the browser).
 
 ## Don't
 
@@ -62,7 +67,7 @@ exist — ADR required; credentials only via CI secrets.
 
 ## Current tests (2026-10-06)
 
-**302 tests in 61 files** (`npm run test`), all against MSW:
+**305 tests in 61 files** (`npm run test`), all against MSW:
 
 | Area                                                  | Files | Covers                                                                                                                                                                                       |
 | ----------------------------------------------------- | ----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

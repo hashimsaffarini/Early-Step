@@ -108,3 +108,13 @@ Confirmed while integrating against the live Swagger (details and status per cap
 - **Product decisions taken (documented, reversible):** report authors = Specialists; only parents
   start the initial assessment; tests/games catalogues for non-admin roles are local practice;
   Replit's free-text plans and report "strengths" removed (no API fields).
+
+### Live verification round (2026-10-06)
+
+- **Resolved:** login contract and role values; teacher listing for specialists
+  (`GET specialist/teachers`, assignment UI added); assessment categories now return ids.
+- **Still missing:** assessment results endpoint (backend says it exists — not in Swagger/Apidog,
+  pending clarification); teacher notes list (`Teacher/feedbacks` in Apidog but 404 live); Teacher
+  demo account; authorization to run write flows on disposable records.
+- **Inconsistencies reported:** `initial-assessment/categories` vs `isInInitialAssessment` flags;
+  `parentName` containing emails; `Chats/users` exposing all users.

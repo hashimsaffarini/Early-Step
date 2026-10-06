@@ -1,5 +1,9 @@
 # Integration — Chat & notifications
 
+> **Superseded statuses (2026-10-06 live round):** current statuses are in
+> `../BACKEND_INTEGRATION_STATUS.md` and verified shapes in `../api/LIVE_CONTRACTS.md`. This file
+> keeps the per-feature design notes and assumptions.
+
 Contracts: Swagger `/api/Chats/*` (`ConversationResponse`, `MessageResponse`, `ChatUserResponse`,
 `SendMessageRequest` are documented). Nothing below has been live-verified (no working account).
 

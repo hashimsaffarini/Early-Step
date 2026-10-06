@@ -1,98 +1,148 @@
 # Backend integration status
 
-Branch `feature/backend-integration` · updated 2026-10-06 · backend
-`https://earlystep22.runasp.net/api/` · contract: `docs/api/swagger.json` (live Swagger snapshot).
+Branch `feature/backend-integration` · updated 2026-10-06 (live verification round) · backend
+`https://earlystep22.runasp.net/api/` · contracts: `api/LIVE_CONTRACTS.md` (live, sanitized) and
+`api/swagger.json`.
 
-## Read this first
+## Status values
 
-- **Nothing is VERIFIED WORKING.** None of the provided demo accounts could sign in (all `401`),
-  so no authenticated request has succeeded against the live backend. Every integrated feature
-  is tested against mocked HTTP (MSW) built from the Swagger contracts.
-- Live testing is **paused** (user instruction) until the backend team fixes the open Admin
-  endpoints and provides working accounts — see `SECURITY.md`.
-- Swagger documents request bodies for every endpoint but **response schemas only for chat**.
-  All other responses are parsed leniently with Zod and listed under "Assumptions to verify".
+| Status                       | Meaning                                                                                                                                             |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **VERIFIED LIVE**            | The app's own API function + schema succeeded against the real backend (`npm run test:live`, read-only) and the UI is wired to it                   |
+| **PARTIALLY VERIFIED**       | Endpoint verified live, but part of the response (e.g. list items) or the UI path was not observable with the demo data                             |
+| **IMPLEMENTED, MOCK-TESTED** | Wired and tested against MSW only — typically **write** operations (no authorized disposable records yet) or roles without a demo account (Teacher) |
+| **BLOCKED BY BACKEND**       | No (working) endpoint; the UI shows an honest "not available" state                                                                                 |
 
-Status values: **VERIFIED WORKING** · **IMPLEMENTED, NOT LIVE-VERIFIED** · **PARTIALLY WORKING** ·
-**BLOCKED BY BACKEND** · **NOT STARTED**.
+## How verification was done
 
-## Overview
+- Demo accounts (Parent, Specialist, Admin, SuperAdmin) — all four sign in. No Teacher account.
+- Python (`requests`, scripts outside the repo) for discovery: status codes, shapes, enums,
+  errors — printing structures only.
+- `npm run test:live` (`src/test/live/`) re-runs the **app's own** login and GET fetchers with
+  their Zod schemas against the live API: **6/6 pass**.
+- **No create/update/delete request was sent to the live backend** (waiting for authorized
+  disposable test records). No further unauthenticated requests to personal data.
 
-Rows counted from the matrices (each row = one capability):
+## Matrix
 
-| Area                            | Implemented, not live-verified | Partially | Blocked by backend | Not started |                                  Other | Verified working |
-| ------------------------------- | -----------------------------: | --------: | -----------------: | ----------: | -------------------------------------: | ---------------: |
-| Core & authentication (below)   |                              7 |         0 |                  1 |           2 |                                      0 |                2 |
-| Parent & children               |                              9 |         1 |                  4 |           0 |                                      0 |                0 |
-| Initial assessment & activities |                              4 |         0 |                  4 |           0 | 2 (local practice; staff out of scope) |                0 |
-| Admin content management        |                             15 |         0 |                  2 |           0 |                                      0 |                0 |
-| Training plans & reports        |                             12 |         0 |                  4 |           0 |                                      0 |                0 |
-| Dashboards, users, notes        |                             12 |         0 |                  6 |           0 |                                      0 |                0 |
-| Chat & notifications            |                              8 |         0 |                  2 |           0 |                                      0 |                0 |
-| **Total**                       |                         **67** |     **1** |             **23** |       **2** |                                  **2** |            **2** |
+### Auth & core
 
-"Verified working" = only the error formats and CORS, observed live without signing in.
+| Capability                           | API                                          | Status                            | Notes                                                            |
+| ------------------------------------ | -------------------------------------------- | --------------------------------- | ---------------------------------------------------------------- |
+| Login                                | `POST Auth/login`                            | **VERIFIED LIVE**                 | `{ id, fullName, accessToken, role }`, JWT 120 h, all 4 accounts |
+| Role normalization                   | role values                                  | **VERIFIED LIVE**                 | `ولي أمر`, `معلم/ة`, `أخصائي/ة`, `Admin`, `SuperAdmin`           |
+| Session expiry                       | JWT `exp`                                    | **VERIFIED LIVE**                 | read from the token                                              |
+| Route guards / server authorization  | —                                            | **VERIFIED LIVE** (authenticated) | cross-role calls return 403                                      |
+| Error parsing                        | ProblemDetails, `{ message }`                | **VERIFIED LIVE**                 |                                                                  |
+| Parent registration                  | `POST Auth/register`                         | IMPLEMENTED, MOCK-TESTED          | write — not exercised live                                       |
+| Forgot / reset password              | `Auth/ForgotPassword`, `Auth/reset-password` | IMPLEMENTED, MOCK-TESTED          | would send real emails — not exercised                           |
+| Change password, email confirmation  | —                                            | not implemented                   | no screen yet (NOT STARTED)                                      |
+| Refresh token / `me` / server logout | —                                            | BLOCKED BY BACKEND                |                                                                  |
 
-Detailed per-feature matrices (API, UI, integration, tests, status, assumptions):
-[children](integration/children.md) · [assessment & activities](integration/assessments-activities.md) ·
-[content](integration/content.md) · [plans & reports](integration/plans-reports.md) ·
-[dashboards, users, notes](integration/dashboards-users-notes.md) · [chat](integration/chat.md).
+### Parent & children
 
-## Core and authentication
+| Capability                              | API                                               | Status                   | Notes                                                                         |
+| --------------------------------------- | ------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------- |
+| My children                             | `GET Parent/GetMyChildren`                        | **VERIFIED LIVE**        | age (int), Arabic gender                                                      |
+| Child detail                            | `GET Parent/{id}`                                 | **VERIFIED LIVE**        | includes games/tests/reports counts                                           |
+| Add / edit / delete child               | `POST/PATCH/DELETE Parent`                        | IMPLEMENTED, MOCK-TESTED | writes                                                                        |
+| Plan activities                         | `GET TrainingPlan/children/{id}/activities?type=` | **VERIFIED LIVE**        | `type` required → app fetches tests + games                                   |
+| Plan summary                            | `…/activities/summary`                            | **VERIFIED LIVE**        |                                                                               |
+| Activity detail (player)                | `…/activities/{activityId}`                       | **PARTIALLY VERIFIED**   | shape verified; the sample had no questions, so question play is mock-tested  |
+| Child reports                           | `GET Reports/child/{id}`                          | **PARTIALLY VERIFIED**   | "no reports" = 404 + message (handled → empty); report items not yet observed |
+| Staff child lists                       | `specialist/children`                             | **VERIFIED LIVE**        | `Teacher/children` mock-tested (no teacher account)                           |
+| Admin children list, staff child detail | —                                                 | BLOCKED BY BACKEND       |                                                                               |
 
-| Feature                              | API                                                       | UI                                            | Integration                                                 | Tests                                     | Status                                                  |
-| ------------------------------------ | --------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------- |
-| Base URL / paths                     | `/api/` base, relative paths                              | —                                             | `getEnv()` requires `/api/` suffix                          | env via test config                       | IMPLEMENTED, NOT LIVE-VERIFIED (reachability verified)  |
-| Error normalization                  | ProblemDetails, `{ message }`, string, string[]           | `ApiErrorAlert`                               | `extractBackendDetails`                                     | `apiError.test.ts`                        | **VERIFIED WORKING** (formats observed live)            |
-| CORS                                 | `*`                                                       | —                                             | direct calls from the dev origin                            | —                                         | **VERIFIED WORKING** (preflight observed)               |
-| Login                                | `POST Auth/login` multipart `Email, Password, RememberMe` | login form, errors, remember me               | `parseLoginResponse` (token + role from body or JWT claims) | `LoginPage`, `loginResponse.test.ts`      | IMPLEMENTED, NOT LIVE-VERIFIED (response shape unknown) |
-| Parent registration                  | `POST Auth/register` multipart incl. `Role=ولي أمر`       | register form                                 | `registerParent`                                            | `RegisterPage`                            | IMPLEMENTED, NOT LIVE-VERIFIED                          |
-| Forgot / reset password              | `POST Auth/ForgotPassword`, `POST Auth/reset-password`    | neutral confirmation; reset with email + code | mutations                                                   | `ForgotPasswordPage`, `ResetPasswordPage` | IMPLEMENTED, NOT LIVE-VERIFIED                          |
-| Change password                      | `POST Auth/change-password`                               | — (no account screen yet)                     | —                                                           | —                                         | NOT STARTED                                             |
-| Email confirmation                   | `GET Auth/confirmEmail?userId&token`                      | — (link handled by the backend/email)         | —                                                           | —                                         | NOT STARTED                                             |
-| Session & logout                     | no `me`, refresh or logout endpoint                       | logout button                                 | session store, local logout, clear cache on 401             | `areaRoutes.test.tsx`                     | IMPLEMENTED, NOT LIVE-VERIFIED                          |
-| Role normalization                   | Arabic role values (3 observed)                           | —                                             | `normalizeRole`, fail-closed                                | `backendRoles.test.ts`                    | IMPLEMENTED (Admin/SuperAdmin values unknown)           |
-| Route guards                         | —                                                         | `RequireRole`, `PublicOnly`, `/unauthorized`  | per role area                                               | `areaRoutes.test.tsx`                     | IMPLEMENTED (UX only)                                   |
-| Refresh token / `me` / server logout | none                                                      | —                                             | —                                                           | —                                         | BLOCKED BY BACKEND                                      |
+### Initial assessment
 
-## Blocked by backend (consolidated)
+| Capability                                | API                           | Status                   | Notes                                                                        |
+| ----------------------------------------- | ----------------------------- | ------------------------ | ---------------------------------------------------------------------------- |
+| Start / answer / complete                 | `POST initial-assessment/{…}` | IMPLEMENTED, MOCK-TESTED | writes — creates real assessment records; needs authorized test child        |
+| Results                                   | —                             | **BLOCKED BY BACKEND**   | no results endpoint in Swagger or Apidog — **pending backend clarification** |
+| MultiSelect / Sequence / Matching answers | —                             | BLOCKED BY BACKEND       | answer contract takes one option id                                          |
 
-| Missing capability                                                      | Effect in the app                                                |
-| ----------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Working accounts for all five roles                                     | No live verification at all                                      |
-| Authorization on `/api/Admin/*` (critical)                              | Reported; frontend guards don't fix it                           |
-| Login response contract, `me`, refresh, logout                          | Lenient login parsing; local logout; re-login on expiry          |
-| Assessment status/results read                                          | Profile and assessment show only a neutral completion; no scores |
-| Answer payload for MultiSelect / Sequence / Matching                    | Those assessment questions are shown as "غير مدعوم بعد"          |
-| Submitting training-plan activity results                               | Player shows "لن تُحفظ النتيجة"                                  |
-| Activities list for non-admin roles                                     | Tests/games catalogues are labelled local practice               |
-| Admin children list / child detail; staff child detail                  | Admin uses the users page; staff profiles use list fields        |
-| Teacher list for specialists (assign teacher)                           | No picker; assignment not offered                                |
-| Listing a child's teacher notes; specialist reading notes               | Only notes created in the current session are shown              |
-| User create/edit/delete/role change (Admin, Super Admin)                | Not offered                                                      |
-| Reports for Admin / Super Admin; report by id                           | Blocked states; detail resolved from the role's list             |
-| Plans for Admin                                                         | Blocked state                                                    |
-| Adding one option to an existing question; listing assessment questions | Not offered; info notices                                        |
-| Activity feeds / recent events                                          | Removed from dashboards and profiles                             |
-| Real-time chat hub (only `wss://localhost` documented)                  | Polling                                                          |
-| Notifications API                                                       | Bell disabled ("قريباً")                                         |
+### Admin content
 
-## Assumptions to verify when live testing resumes
+| Capability                                                                            | API                                  | Status                   | Notes                                       |
+| ------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------ | ------------------------------------------- |
+| Categories list                                                                       | `GET Admin/categories`               | **VERIFIED LIVE**        |                                             |
+| Categories with counts                                                                | `GET Admin/categoriesActivity?type=` | **VERIFIED LIVE**        | `type` required                             |
+| Activities list / detail                                                              | `GET Admin/activities/{type}[/{id}]` | **VERIFIED LIVE**        |                                             |
+| Question                                                                              | `GET Admin/questions/{id}`           | **VERIFIED LIVE**        | types seen: SingleChoice, MultiSelect       |
+| Assessment categories                                                                 | `GET initial-assessment/categories`  | **VERIFIED LIVE**        | ids now returned; used as membership source |
+| Create/edit/delete categories, activities, questions, options; assessment composition | various                              | IMPLEMENTED, MOCK-TESTED | writes                                      |
+| Add one option to an existing question; list assessment questions                     | —                                    | BLOCKED BY BACKEND       |                                             |
 
-1. Login response: token field name, user fields, role value for Admin/SuperAdmin, JWT `exp`.
-2. Whether accounts need email confirmation before login.
-3. Response shapes of every non-chat endpoint (children lists, child detail, reports, plans,
-   dashboards, users, notes, content, assessment start/answer/complete).
-4. Whether answer/complete failures return HTTP 200 with `{ message }` (Apidog) or an error status.
-5. Whether `{activityId}` in plan routes is the plan row id or the catalogue activity id.
-6. Which roles may call `TrainingPlan/children/*` and `Reports/child/*`.
-7. Chat: `receiverId` semantics in conversations; message `status` values.
-8. PDF download `Content-Disposition` filename.
+### Admin users & assignment
 
-## Testing summary
+| Capability                                | API                                        | Status                   | Notes |
+| ----------------------------------------- | ------------------------------------------ | ------------------------ | ----- |
+| Dashboard                                 | `GET Admin/dashboard`                      | **VERIFIED LIVE**        |       |
+| Users list (+ Role, Search)               | `GET Admin/users`                          | **VERIFIED LIVE**        |       |
+| User detail with children                 | `GET Admin/users/{id}`                     | **VERIFIED LIVE**        |       |
+| Assign children to specialist             | `POST Admin/assign-children-to-specialist` | IMPLEMENTED, MOCK-TESTED | write |
+| User create / edit / delete / role change | —                                          | BLOCKED BY BACKEND       |       |
 
-- `npm run validate`: typecheck, lint (0 warnings), **302 tests in 61 files**, production build.
-- Every request in tests goes through MSW; unhandled requests fail the test. No test touches the
-  live backend.
-- End-to-end browser checks were run in development mock mode (see `TESTING.md`). Playwright
-  live E2E is deferred until working accounts exist (it would only exercise mocks otherwise).
+### Specialist & training plans
+
+| Capability                         | API                                         | Status                   | Notes                              |
+| ---------------------------------- | ------------------------------------------- | ------------------------ | ---------------------------------- |
+| Dashboard                          | `GET specialist/dashboard`                  | **VERIFIED LIVE**        | Arabic keys                        |
+| Specialist plan                    | `GET TrainingPlan/specialist/children/{id}` | **VERIFIED LIVE**        | no plan = 404 + message            |
+| Available activities               | `…/available-activities?type=`              | **VERIFIED LIVE**        |                                    |
+| Teachers list                      | `GET specialist/teachers`                   | **VERIFIED LIVE**        | new endpoint                       |
+| Assign teacher                     | `POST specialist/assign-teacher`            | IMPLEMENTED, MOCK-TESTED | new UI on the plan page; write     |
+| Add / remove plan activity         | `POST/DELETE …/activities`                  | IMPLEMENTED, MOCK-TESTED | writes                             |
+| Reports list                       | `GET specialist/Reports`                    | **PARTIALLY VERIFIED**   | empty for the demo account         |
+| Create / edit / delete report, PDF | `specialist/*`, `Reports/{id}/download`     | IMPLEMENTED, MOCK-TESTED | writes / no report to download yet |
+| Reading teacher feedback           | —                                           | BLOCKED BY BACKEND       |                                    |
+
+### Teacher
+
+| Capability                            | API                            | Status                   | Notes                                                   |
+| ------------------------------------- | ------------------------------ | ------------------------ | ------------------------------------------------------- |
+| Dashboard, children, notes CRUD       | `Teacher/*`                    | IMPLEMENTED, MOCK-TESTED | **no teacher demo account**                             |
+| Notes list (multiple notes per child) | Apidog `GET Teacher/feedbacks` | BLOCKED BY BACKEND       | 404 live — not deployed; backend says it is in progress |
+
+### Super Admin
+
+| Capability               | API                        | Status             | Notes                  |
+| ------------------------ | -------------------------- | ------------------ | ---------------------- |
+| Dashboard                | `GET SuperAdmin/dashboard` | **VERIFIED LIVE**  | includes `usersByRole` |
+| Users (+ filters)        | `GET SuperAdmin/users`     | **VERIFIED LIVE**  | array, all five roles  |
+| Children                 | `GET SuperAdmin/children`  | **VERIFIED LIVE**  |                        |
+| User management, reports | —                          | BLOCKED BY BACKEND |                        |
+
+### Chat & notifications
+
+| Capability                   | API                       | Status                   | Notes                                    |
+| ---------------------------- | ------------------------- | ------------------------ | ---------------------------------------- |
+| Contacts                     | `GET Chats/users`         | **VERIFIED LIVE**        |                                          |
+| Conversations                | `GET Chats/conversations` | **PARTIALLY VERIFIED**   | empty for the demo parent                |
+| Unread count                 | `GET Chats/unread-count`  | **VERIFIED LIVE**        |                                          |
+| Messages, send, seen         | `Chats`, `Chats/send`, …  | IMPLEMENTED, MOCK-TESTED | send is a write; no conversation to read |
+| Real-time hub, notifications | —                         | BLOCKED BY BACKEND       |                                          |
+
+### Practice content
+
+Tests/games catalogues for non-admin roles and the 11 games remain local practice content (no
+backend catalogue for those roles) — labelled in the UI.
+
+## Totals (counted from the 53 matrix rows)
+
+| Status                   | Rows |
+| ------------------------ | ---: |
+| VERIFIED LIVE            |   27 |
+| PARTIALLY VERIFIED       |    4 |
+| IMPLEMENTED, MOCK-TESTED |   11 |
+| BLOCKED BY BACKEND       |   10 |
+| Not started (no screen)  |    1 |
+
+## Needed to continue
+
+1. **Authorization to use disposable test records** (e.g. a clearly named test child under the
+   demo parent) to verify writes: child CRUD, assessment start/answer/complete, plan add/remove,
+   assign teacher/specialist, reports CRUD + PDF, chat send, admin content CRUD.
+2. A **Teacher** demo account.
+3. Backend: the **assessment results** endpoint (route + response), the **notes list**
+   endpoint, and confirmation that **unauthenticated** access to `/api/Admin/*` is fixed.

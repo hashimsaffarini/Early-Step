@@ -18,9 +18,11 @@ Current status: the complete Replit UI (ADR-019) is on `main`. On the branch
 `feature/backend-integration` (ADR-020) every backend-supported feature is integrated with the
 real API contracts (live Swagger) — real login/registration, route guards, children CRUD,
 assessment, admin content, plans, reports, dashboards, users, teacher notes, chat (REST +
-polling) — and tested with MSW. **Nothing is live-verified yet**: the provided demo accounts fail
-to sign in, and live testing is paused because the backend's Admin endpoints are open
-(`docs/SECURITY.md`). Missing backend capabilities are shown as honest "not available" states.
+polling) — and tested with MSW. **Read endpoints are live-verified** for Parent, Specialist, Admin
+and Super Admin (`docs/api/LIVE_CONTRACTS.md`, `npm run test:live`); write flows are mock-tested
+until disposable test records are authorized; no Teacher account yet. Anonymous Admin access
+awaits backend confirmation (`docs/SECURITY.md`) — do not merge to `main` before that. Missing
+backend capabilities are shown as honest "not available" states.
 Status per feature: `docs/BACKEND_INTEGRATION_STATUS.md`. Development mock mode
 (`VITE_USE_MOCKS=true`, dev only) lets you review the integrated UI without accounts.
 Next steps: `docs/IMPLEMENTATION_PLAN.md`.
@@ -105,7 +107,7 @@ types, `type=test`). Normalize at the boundary only: `constants/backendRoles.ts`
 - Known API traits: bearer auth; GUID ids; mixed `multipart/form-data` (use `toFormData`) and JSON
   bodies; request paths are **relative** to the base URL (`Parent/GetMyChildren` — never a second
   `/api`); relative media URLs (`resolveMediaUrl`); Arabic messages; response schemas mostly
-  undocumented → lenient Zod schemas + mappers, marked NOT LIVE-VERIFIED.
+  verified live (`docs/api/LIVE_CONTRACTS.md`) → Zod schemas follow those shapes.
 - Query keys come from `src/services/api/queryKeys.ts` (one key = one cached shape); reads used by
   several features live in `src/services/api/*` + `src/hooks/api/*`.
 - Tests and development mock mode use MSW (`src/mocks/`); unit tests never call the live backend.
@@ -236,6 +238,7 @@ npm run lint         # eslint, zero warnings allowed
 npm run test         # vitest run
 npm run build        # typecheck + production build
 npm run validate     # typecheck + lint + test + build
+npm run test:live    # opt-in live read-only contract tests (needs .env.e2e.local)
 npm run format       # prettier --write
 ```
 

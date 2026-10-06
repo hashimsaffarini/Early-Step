@@ -1,5 +1,9 @@
 # Integration status — Admin content management
 
+> **Superseded statuses (2026-10-06 live round):** current statuses are in
+> `../BACKEND_INTEGRATION_STATUS.md` and verified shapes in `../api/LIVE_CONTRACTS.md`. This file
+> keeps the per-feature design notes and assumptions.
+
 Screens (new design; Replit had no content UI): `/admin/content/categories`,
 `/admin/content/activities?type=test|game[&categoryId=]`,
 `/admin/content/activities/:activityType/:activityId`, `/admin/content/initial-assessment`.

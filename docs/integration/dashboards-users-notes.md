@@ -1,5 +1,9 @@
 # Integration status — dashboards, users (Admin / Super Admin), teacher notes
 
+> **Superseded statuses (2026-10-06 live round):** current statuses are in
+> `../BACKEND_INTEGRATION_STATUS.md` and verified shapes in `../api/LIVE_CONTRACTS.md`. This file
+> keeps the per-feature design notes and assumptions.
+
 Branch `feature/backend-integration`. Contracts from the Swagger snapshot (`docs/api/swagger.json`)
 and Apidog examples. **No live requests were made** — every integration below is tested with MSW
 mocks only. Statuses: VERIFIED WORKING · IMPLEMENTED, NOT LIVE-VERIFIED · PARTIALLY WORKING ·

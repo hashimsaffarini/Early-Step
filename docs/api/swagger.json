@@ -1790,6 +1790,16 @@
         }
       }
     },
+    "/api/specialist/teachers": {
+      "get": {
+        "tags": ["Specialist"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/specialist/assign-teacher": {
       "post": {
         "tags": ["Specialist"],
@@ -1931,17 +1941,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTeacherNoteRequest"
+                "$ref": "#/components/schemas/UpdateTrainingPlanFeedbackRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTeacherNoteRequest"
+                "$ref": "#/components/schemas/UpdateTrainingPlanFeedbackRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTeacherNoteRequest"
+                "$ref": "#/components/schemas/UpdateTrainingPlanFeedbackRequest"
               }
             }
           }
@@ -1990,17 +2000,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTeacherNoteRequest"
+                "$ref": "#/components/schemas/CreateTrainingPlanFeedbackRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTeacherNoteRequest"
+                "$ref": "#/components/schemas/CreateTrainingPlanFeedbackRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTeacherNoteRequest"
+                "$ref": "#/components/schemas/CreateTrainingPlanFeedbackRequest"
               }
             }
           }
@@ -2366,7 +2376,7 @@
         },
         "additionalProperties": false
       },
-      "CreateTeacherNoteRequest": {
+      "CreateTrainingPlanFeedbackRequest": {
         "type": "object",
         "properties": {
           "content": {
@@ -2538,7 +2548,7 @@
         },
         "additionalProperties": false
       },
-      "UpdateTeacherNoteRequest": {
+      "UpdateTrainingPlanFeedbackRequest": {
         "type": "object",
         "properties": {
           "content": {

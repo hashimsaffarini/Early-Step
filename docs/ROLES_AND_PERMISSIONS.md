@@ -1,5 +1,10 @@
 # Roles and Permissions
 
+> **Live verification 2026-10-06:** login roles `ولي أمر`, `أخصائي/ة`, `Admin`, `SuperAdmin` (and
+> `معلم/ة` in user lists); authenticated cross-role requests return **403** (parent → staff
+> dashboards, specialist → admin/teacher, admin ↔ super admin). Anonymous access to Admin endpoints
+> awaits backend confirmation (`SECURITY.md`).
+>
 > **Update 2026-10-06 (backend integration):** role values observed on the live backend's user
 > list: `ولي أمر` (Parent), `معلم/ة` (Teacher), `أخصائي/ة` (Specialist). They are normalized in one
 > place (`src/constants/backendRoles.ts`, unknown → no access). Admin/SuperAdmin wire values are
