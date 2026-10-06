@@ -1,10 +1,19 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 
+import { apiUrl } from '@/mocks/http';
+import { server } from '@/mocks/server';
+import { registerHttpAuthHooks } from '@/services/http/interceptors';
+import { getAccessToken } from '@/services/session';
 import { renderInRouter } from '@/test/renderWithRouter';
-
-import { MOCK_PARENT_ACTIVITY, MOCK_PARENT_CHILDREN } from '../mock/parentDashboard.mock';
+import { signInAs } from '@/test/session';
 
 import { ParentDashboardPage } from './ParentDashboardPage';
+
+beforeEach(() => {
+  registerHttpAuthHooks({ getAccessToken, onUnauthorized: () => undefined });
+  signInAs('Parent');
+});
 
 function renderDashboard() {
   return renderInRouter(<ParentDashboardPage parentName="محمد أحمد" />);
@@ -15,63 +24,69 @@ describe('ParentDashboardPage', () => {
     renderDashboard();
 
     expect(screen.getByRole('heading', { level: 1, name: /محمد أحمد/ })).toBeInTheDocument();
-    expect(screen.getByText('إليك نظرة عامة على آخر التطورات والأنشطة.')).toBeInTheDocument();
   });
 
-  it('renders the four summary cards', () => {
+  it('shows counts from the API (children, plan activities, reports)', async () => {
     renderDashboard();
-    const summary = screen.getByRole('region', { name: 'ملخص' });
+    const summary = await screen.findByRole('region', { name: 'ملخص' });
 
-    for (const label of ['عدد الأطفال', 'التقييمات المكتملة', 'الخطط التدريبية', 'التقارير']) {
-      expect(within(summary).getByText(label)).toBeInTheDocument();
+    const value = (label: string) => within(summary).getByText(label).nextElementSibling;
+    expect(value('عدد الأطفال')).toHaveTextContent('3');
+    await waitFor(() => {
+      expect(value('التقارير')).toHaveTextContent('2');
+    });
+    await waitFor(() => {
+      expect(value('أنشطة الخطط التدريبية')).toHaveTextContent('2');
+    });
+    expect(within(summary).queryByText('التقييمات المكتملة')).not.toBeInTheDocument();
+  });
+
+  it('renders a card per child from the API with profile links and plan progress', async () => {
+    renderDashboard();
+    const section = await screen.findByRole('region', { name: 'أطفالي' });
+
+    for (const name of ['يوسف', 'نور', 'ريم']) {
+      expect(within(section).getByRole('heading', { name })).toBeInTheDocument();
     }
-  });
-
-  it('renders the children preview with a card per mock child', () => {
-    renderDashboard();
-    const section = screen.getByRole('region', { name: 'أطفالي' });
-
-    for (const child of MOCK_PARENT_CHILDREN) {
-      expect(within(section).getByRole('heading', { name: child.name })).toBeInTheDocument();
-    }
-    expect(within(section).getByText('بانتظار بدء التقييم')).toBeInTheDocument();
-  });
-
-  it('renders recent activity items with dates', () => {
-    renderDashboard();
-    const section = screen.getByRole('region', { name: 'آخر النشاطات' });
-    const items = within(section).getAllByRole('listitem');
-
-    expect(items).toHaveLength(MOCK_PARENT_ACTIVITY.length);
-    expect(within(section).getAllByText(/2026/)).toHaveLength(MOCK_PARENT_ACTIVITY.length);
-  });
-
-  it('gives every primary section a meaningful heading', () => {
-    renderDashboard();
-
-    for (const name of ['أطفالي', 'آخر النشاطات', 'نصائح لك']) {
-      expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument();
-    }
-  });
-
-  it('links "عرض الكل" to the children list and each card to its profile', () => {
-    renderDashboard();
-
+    expect(screen.getByRole('link', { name: 'عرض ملف يوسف' })).toHaveAttribute(
+      'href',
+      '/parent/children/c0000000-0000-4000-8000-000000000001',
+    );
+    expect(await within(section).findByRole('progressbar')).toHaveAttribute(
+      'aria-valuetext',
+      '1 من 2 أنشطة',
+    );
     expect(screen.getByRole('link', { name: /عرض الكل/ })).toHaveAttribute(
       'href',
       '/parent/children',
     );
-    for (const child of MOCK_PARENT_CHILDREN) {
-      expect(screen.getByRole('link', { name: `عرض ملف ${child.name}` })).toHaveAttribute(
-        'href',
-        `/parent/children/${child.id}`,
-      );
-    }
   });
 
-  it('shows no percentages or risk scores', () => {
+  it('does not show an invented activity feed', async () => {
+    renderDashboard();
+    await screen.findByRole('region', { name: 'أطفالي' });
+
+    expect(screen.queryByRole('region', { name: 'آخر النشاطات' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  it('shows an add-child empty state when the parent has no children', async () => {
+    server.use(http.get(apiUrl('Parent/GetMyChildren'), () => HttpResponse.json([])));
     renderDashboard();
 
-    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+    expect(await screen.findByText('لم تُضف أي طفل بعد')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'إضافة طفل' })).toHaveAttribute(
+      'href',
+      '/parent/children',
+    );
+  });
+
+  it('shows an error state when the children request fails', async () => {
+    server.use(
+      http.get(apiUrl('Parent/GetMyChildren'), () => new HttpResponse(null, { status: 500 })),
+    );
+    renderDashboard();
+
+    expect(await screen.findByText('تعذّر تحميل قائمة الأطفال')).toBeInTheDocument();
   });
 });

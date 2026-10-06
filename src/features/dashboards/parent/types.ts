@@ -1,32 +1,14 @@
 import type { LucideIcon } from 'lucide-react';
 
-import type { ChildJourneyStatus } from '@/types/child';
-
-export interface ParentChildSummary {
-  id: string;
-  name: string;
-  ageYears: number;
-  status: ChildJourneyStatus;
-  latestAssessmentLabel: string;
-  /** Present only when a training plan exists: completed / total activities. */
-  planProgress?: { completed: number; total: number };
-}
-
-export interface ParentDashboardStats {
-  children: number;
-  completedAssessments: number;
-  trainingPlans: number;
-  reports: number;
-}
-
 export type ActivityKind = 'assessment' | 'report' | 'plan';
 
+/** Activity feed item (used by the admin dashboard's recent-activity card). */
 export interface ParentActivityItem {
   id: string;
   kind: ActivityKind;
   title: string;
   description: string;
-  /** ISO date (mock). */
+  /** ISO date. */
   date: string;
 }
 
@@ -36,4 +18,11 @@ export interface ParentTip {
   text: string;
   icon: LucideIcon;
   tone: 'primary' | 'success' | 'violet';
+}
+
+/** Dashboard counts from the API. `null` = still loading or unavailable. */
+export interface ParentDashboardStats {
+  children: number;
+  planActivities: number | null;
+  reports: number | null;
 }

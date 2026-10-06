@@ -1,34 +1,29 @@
-import { CalendarDays, ClipboardCheck, Layers } from 'lucide-react';
+import { ClipboardCheck } from 'lucide-react';
 
 import { SectionHeader } from '@/components/shared/SectionHeader';
-import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { formatDisplayDate } from '@/utils/dateFormat';
 
-import type { ChildAssessment } from '@/features/children/types';
-
-import { ASSESSMENT_STATE_DISPLAY } from './labels';
+import { ASSESSMENT_RESULTS_UNAVAILABLE } from './assessmentCopy';
 import styles from './profile.module.css';
 import { StartAssessmentLink } from './StartAssessmentLink';
 
 const HEADING_ID = 'profile-assessment-title';
 
-const SUMMARY_TEXT = {
-  completed: 'تم إكمال التقييم المبدئي',
-  'in-progress': 'التقييم المبدئي قيد التنفيذ',
-  'not-started': 'لم يبدأ التقييم المبدئي بعد',
-} as const;
-
 export interface AssessmentSummaryCardProps {
-  assessment: ChildAssessment | undefined;
   childId: string;
   childName: string;
+  /** Only the parent starts the initial assessment (for their child). */
+  canStart: boolean;
 }
 
+/**
+ * Initial assessment. No endpoint returns a child's assessment status or results
+ * (BLOCKED BY BACKEND), so the card never claims a state — it only offers to start one.
+ */
 export function AssessmentSummaryCard({
-  assessment,
   childId,
   childName,
+  canStart,
 }: AssessmentSummaryCardProps) {
   return (
     <Card as="section" className={styles.card} aria-labelledby={HEADING_ID}>
@@ -37,40 +32,16 @@ export function AssessmentSummaryCard({
         title="التقييم المبدئي"
         icon={ClipboardCheck}
         iconTone="primary"
-        action={
-          assessment ? (
-            <Badge tone={ASSESSMENT_STATE_DISPLAY[assessment.state].tone} hasDot>
-              {ASSESSMENT_STATE_DISPLAY[assessment.state].label}
-            </Badge>
-          ) : undefined
-        }
       />
-      <p className={styles.lead}>{SUMMARY_TEXT[assessment?.state ?? 'not-started']}</p>
-      {assessment?.state === 'completed' ? (
-        <ul className={styles.meta}>
-          {assessment.completedAt ? (
-            <li>
-              <CalendarDays aria-hidden="true" />
-              تاريخ الإكمال: {formatDisplayDate(assessment.completedAt)}
-            </li>
-          ) : null}
-          {assessment.totalSections ? (
-            <li>
-              <Layers aria-hidden="true" />
-              الأقسام المكتملة: {assessment.completedSections ?? 0} من {assessment.totalSections}
-            </li>
-          ) : null}
-        </ul>
-      ) : (
-        <p className={styles.muted}>
-          يتكوّن التقييم المبدئي من أنشطة وألعاب قصيرة مناسبة لعمر الطفل.
-        </p>
-      )}
-      {assessment?.state === 'completed' ? null : (
+      <p className={styles.muted}>
+        يتكوّن التقييم المبدئي من أنشطة وألعاب قصيرة مناسبة لعمر الطفل.
+      </p>
+      <p className={styles.muted}>{ASSESSMENT_RESULTS_UNAVAILABLE}</p>
+      {canStart ? (
         <div className={styles.footer}>
           <StartAssessmentLink childId={childId} childName={childName} />
         </div>
-      )}
+      ) : null}
     </Card>
   );
 }

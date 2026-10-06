@@ -7,13 +7,16 @@ import { reportsHandlers } from './reports';
 import { staffHandlers } from './staff';
 import { trainingPlansHandlers } from './trainingPlans';
 
-/** Every mock handler. Each domain owns its file. */
+/**
+ * Every mock handler. Each domain owns its file. Order matters: MSW uses the first match, so
+ * specific paths (`.../activities/summary`) must come before patterns (`.../activities/:id`).
+ */
 export const handlers = [
   ...authHandlers,
   ...childrenHandlers,
   ...contentHandlers,
-  ...assessmentsHandlers,
   ...trainingPlansHandlers,
+  ...assessmentsHandlers,
   ...reportsHandlers,
   ...staffHandlers,
   ...chatHandlers,

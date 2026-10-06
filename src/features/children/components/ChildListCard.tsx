@@ -1,52 +1,39 @@
-import { Cake, CalendarDays, Smile, UserRound } from 'lucide-react';
+import { Cake, Smile, UserRound } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { ChildCard, type ChildCardDetail } from '@/components/shared/ChildCard';
-import { Badge } from '@/components/ui/Badge';
 import { getButtonClassName } from '@/components/ui/Button';
-import { CHILD_GENDER_LABELS, CHILD_STATUS_DISPLAY } from '@/constants/childDisplay';
 import { useRoleArea } from '@/hooks/useRoleArea';
-import { ageInYears, formatAge } from '@/utils/age';
-import { formatDisplayDate } from '@/utils/dateFormat';
+import type { ChildSummary } from '@/services/api/childrenLists';
 
-import type { ChildProfileLocationState } from '../pages/ChildProfilePage';
-import type { ChildRecord } from '../types';
+import { childDetails } from './childDisplay';
 
 export interface ChildListCardProps {
-  child: ChildRecord;
+  child: ChildSummary;
   /** Staff see the parent's name; the parent's own list omits it. */
   showParent?: boolean;
 }
 
+/** Child card with the fields the API provides (name, age, gender, parent for staff). */
 export function ChildListCard({ child, showParent = false }: ChildListCardProps) {
   const { paths } = useRoleArea();
-  const status = CHILD_STATUS_DISPLAY[child.status];
-  const details: ChildCardDetail[] = [
-    { icon: Cake, label: `العمر: ${formatAge(ageInYears(child.birthDate))}` },
-    { icon: CalendarDays, label: `تاريخ الميلاد: ${formatDisplayDate(child.birthDate)}` },
-    { icon: Smile, label: `الجنس: ${CHILD_GENDER_LABELS[child.gender]}` },
-  ];
+  const details: ChildCardDetail[] = childDetails(child).map((detail) => ({
+    icon: detail.kind === 'age' ? Cake : Smile,
+    label: detail.label,
+  }));
   if (showParent && child.parentName) {
     details.push({ icon: UserRound, label: `ولي الأمر: ${child.parentName}` });
   }
 
   return (
     <ChildCard
-      name={child.name}
-      tone={status.avatarTone}
-      status={
-        <Badge tone={status.tone}>
-          <status.icon aria-hidden="true" size={14} />
-          {status.label}
-        </Badge>
-      }
+      name={child.fullName}
       details={details}
       footer={
         <Link
           to={paths.childProfile(child.id)}
-          state={{ child } satisfies ChildProfileLocationState}
           className={getButtonClassName({ variant: 'soft', fullWidth: true })}
-          aria-label={`عرض ملف ${child.name}`}
+          aria-label={`عرض ملف ${child.fullName}`}
         >
           عرض الملف
         </Link>

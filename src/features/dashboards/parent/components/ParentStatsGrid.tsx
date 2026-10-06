@@ -1,4 +1,4 @@
-import { ClipboardCheck, FileText, Target, Users } from 'lucide-react';
+import { FileText, ListChecks, Users } from 'lucide-react';
 
 import { StatCard } from '@/components/shared/StatCard';
 
@@ -6,10 +6,13 @@ import type { ParentDashboardStats } from '../types';
 
 import styles from './ParentStatsGrid.module.css';
 
+const PENDING = '…';
+
 export interface ParentStatsGridProps {
   stats: ParentDashboardStats;
 }
 
+/** Counts from the API only (children list, plan summaries, child reports). */
 export function ParentStatsGrid({ stats }: ParentStatsGridProps) {
   return (
     <section aria-label="ملخص">
@@ -19,22 +22,19 @@ export function ParentStatsGrid({ stats }: ParentStatsGridProps) {
         </li>
         <li>
           <StatCard
-            label="التقييمات المكتملة"
-            value={stats.completedAssessments}
-            icon={ClipboardCheck}
-            tone="success"
-          />
-        </li>
-        <li>
-          <StatCard
-            label="الخطط التدريبية"
-            value={stats.trainingPlans}
-            icon={Target}
+            label="أنشطة الخطط التدريبية"
+            value={stats.planActivities ?? PENDING}
+            icon={ListChecks}
             tone="warning"
           />
         </li>
         <li>
-          <StatCard label="التقارير" value={stats.reports} icon={FileText} tone="violet" />
+          <StatCard
+            label="التقارير"
+            value={stats.reports ?? PENDING}
+            icon={FileText}
+            tone="violet"
+          />
         </li>
       </ul>
     </section>

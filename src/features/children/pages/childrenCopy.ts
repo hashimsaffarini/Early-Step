@@ -29,7 +29,7 @@ export const CHILDREN_LIST_COPY: Record<AreaRole, ChildrenListCopy> = {
   },
   Admin: {
     title: 'الأطفال',
-    subtitle: 'جميع ملفات الأطفال في المنصة',
+    subtitle: 'ملفات الأطفال في المنصة',
     emptyTitle: 'لا يوجد أطفال هنا',
     emptyText: 'لا توجد ملفات أطفال بعد',
   },

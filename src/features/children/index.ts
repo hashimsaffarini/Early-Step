@@ -1,2 +1,2 @@
 export { ChildProfilePage } from './pages/ChildProfilePage';
-export { ChildrenListPage, type ChildrenListPageProps } from './pages/ChildrenListPage';
+export { ChildrenListPage } from './pages/ChildrenListPage';

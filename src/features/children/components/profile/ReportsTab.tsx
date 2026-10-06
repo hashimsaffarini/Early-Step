@@ -4,17 +4,22 @@ import { Link } from 'react-router';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useChildReports } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
-import type { ChildReport } from '@/features/children/types';
-
+import { firstLine } from './labels';
 import styles from './profile.module.css';
+import { QueryStatus } from './TabStatus';
 
-/** Replit "التقارير" tab: report cards linking to the report detail. */
-export function ReportsTab({ reports }: { reports: readonly ChildReport[] }) {
+/** Child reports (`GET Reports/child/{childId}`), linking to the report detail. */
+export function ReportsTab({ childId }: { childId: string }) {
   const { paths } = useRoleArea();
-  if (reports.length === 0) {
+  const query = useChildReports(childId);
+  if (query.isPending || query.isError) {
+    return <QueryStatus query={query} errorTitle="تعذّر تحميل التقارير" />;
+  }
+  if (query.data.length === 0) {
     return (
       <EmptyState
         icon={<FileText />}
@@ -26,32 +31,38 @@ export function ReportsTab({ reports }: { reports: readonly ChildReport[] }) {
 
   return (
     <ul className={`${styles.list} ${styles.twoColumns}`}>
-      {reports.map((report) => (
+      {query.data.map((report) => (
         <Card as="li" key={report.id} className={styles.card}>
           <div className={styles.cardHeader}>
             <span className={`${styles.iconTile} ${styles.toneViolet}`} aria-hidden="true">
               <FileText />
             </span>
             <div className={styles.rowBody}>
-              <h3 className={styles.rowTitle}>{report.title}</h3>
+              <h3 className={styles.rowTitle}>{report.title || 'تقرير'}</h3>
               <ul className={styles.meta}>
-                <li>
-                  <CalendarDays aria-hidden="true" />
-                  <time dateTime={report.date}>{formatDisplayDate(report.date)}</time>
-                </li>
-                <li>
-                  <UserRound aria-hidden="true" />
-                  {report.authorName}
-                </li>
+                {report.createdAt ? (
+                  <li>
+                    <CalendarDays aria-hidden="true" />
+                    <time dateTime={report.createdAt}>{formatDisplayDate(report.createdAt)}</time>
+                  </li>
+                ) : null}
+                {report.authorName ? (
+                  <li>
+                    <UserRound aria-hidden="true" />
+                    {report.authorName}
+                  </li>
+                ) : null}
               </ul>
             </div>
           </div>
-          <p className={styles.muted}>{report.summary}</p>
+          {report.recommendations ? (
+            <p className={styles.muted}>{firstLine(report.recommendations)}</p>
+          ) : null}
           <div className={styles.footer}>
             <Link
               to={paths.reportDetail(report.id)}
               className={getButtonClassName({ variant: 'soft' })}
-              aria-label={`عرض التقرير: ${report.title}`}
+              aria-label={`عرض التقرير: ${report.title || 'تقرير'}`}
             >
               عرض التقرير
               <ChevronLeft aria-hidden="true" />
