@@ -12,11 +12,12 @@ import { HTTP_STATUS } from '@/services/http/httpStatus';
 import { httpClient } from '@/services/http/httpClient';
 
 /**
- * `GET TrainingPlan/children/{childId}/activities/{activityId}`.
- * ⚠️ NOT LIVE-VERIFIED: the response is undocumented (Apidog only shows the 200
- * `{ message: "النشاط غير موجود في الخطة التدريبية." }` case). Accepted: the plan-activity fields
- * plus an optional `questions[]` in the admin question model; `isCorrect` is used only if exposed.
- * There is NO endpoint to submit training-plan results (BLOCKED BY BACKEND).
+ * `GET TrainingPlan/children/{childId}/activities/{activityId}` — verified live 2026-10-07:
+ * questions are `{ planQuestionId, questionId, questionText, questionImageUrl, type, order,
+ * options: [{ id, optionText, optionImageUrl, order, correctOrder: null, pairKey: null }] }`.
+ * Questions have NO `id` and answers are hidden (`isCorrect` absent, `correctOrder`/`pairKey`
+ * nulled) — `isCorrect` is used only if the server ever exposes it. A missing activity is a 200
+ * `{ message }`. There is NO endpoint to submit training-plan results (BLOCKED BY BACKEND).
  */
 const optionSchema = z.looseObject({
   id: z.string(),
@@ -26,7 +27,9 @@ const optionSchema = z.looseObject({
 });
 
 const questionSchema = z.looseObject({
-  id: z.string(),
+  questionId: z.string().nullish(),
+  planQuestionId: z.string().nullish(),
+  id: z.string().nullish(),
   questionText: z.string().nullish(),
   questionImageUrl: z.string().nullish(),
   type: z.string().nullish(),
@@ -73,7 +76,7 @@ export function parsePlanActivityDetail(data: unknown): PlanActivityDetail {
   return {
     activity: mapPlanActivity(parsed.data),
     questions: (parsed.data.questions ?? []).map((question) => ({
-      id: question.id,
+      id: question.questionId ?? question.id ?? question.planQuestionId ?? '',
       text: question.questionText ?? '',
       imageUrl: question.questionImageUrl ?? null,
       isSingleChoice: (question.type ?? '').toLowerCase() === 'singlechoice',

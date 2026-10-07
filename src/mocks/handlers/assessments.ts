@@ -5,6 +5,7 @@ import {
   MOCK_ACTIVITY_QUESTIONS,
   MOCK_ASSESSMENT_CATEGORIES,
   mockAssessmentSessions,
+  type MockQuestion,
 } from '../fixtures/assessmentQuestions';
 import { findMockChild } from '../fixtures/children';
 import { mockPlanActivities } from '../fixtures/planActivities';
@@ -118,9 +119,29 @@ export const planActivityDetailHandler = http.get(
       iconUrl: row.iconUrl,
       type: row.type,
       isCompleted: row.isCompleted,
-      questions: MOCK_ACTIVITY_QUESTIONS[row.activityId] ?? [],
+      questions: (MOCK_ACTIVITY_QUESTIONS[row.activityId] ?? []).map(toChildQuestion),
     });
   },
 );
 
 assessmentsHandlers.push(planActivityDetailHandler);
+
+/** Live child-facing question shape (verified 2026-10-07): no `id`, answers hidden. */
+function toChildQuestion(question: MockQuestion, index: number) {
+  return {
+    planQuestionId: `plan-${question.id}`,
+    questionId: question.id,
+    questionText: question.questionText,
+    questionImageUrl: question.questionImageUrl,
+    type: question.type,
+    order: index + 1,
+    options: question.options.map((option, optionIndex) => ({
+      id: option.id,
+      optionText: option.optionText,
+      optionImageUrl: option.optionImageUrl,
+      order: optionIndex + 1,
+      correctOrder: null,
+      pairKey: null,
+    })),
+  };
+}

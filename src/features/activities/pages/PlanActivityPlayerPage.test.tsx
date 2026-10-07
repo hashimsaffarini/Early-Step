@@ -30,7 +30,7 @@ describe('PlanActivityPlayerPage', () => {
     signInAs('Parent');
   });
 
-  it('plays the server questions locally and says results are not saved', async () => {
+  it('plays the live-shaped questions without correctness and says results are not saved', async () => {
     renderPlayer(WITH_QUESTIONS);
 
     expect(
@@ -38,15 +38,47 @@ describe('PlanActivityPlayerPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/لن تُحفظ النتيجة/)).toBeInTheDocument();
 
+    // Live: questions carry `questionId` (no `id`) and no `isCorrect` — nothing is marked right/wrong.
     await userEvent.click(screen.getByRole('button', { name: /^بطة/ }));
-    expect(screen.getByText('أحسنت! إجابة صحيحة')).toBeInTheDocument();
+    expect(screen.getByText('تم اختيار إجابتك')).toBeInTheDocument();
+    expect(screen.queryByText('أحسنت! إجابة صحيحة')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'التالي' }));
     await userEvent.click(await screen.findByRole('button', { name: /^2/ }));
-    expect(screen.getByRole('button', { name: /^3.*إجابة صحيحة/ })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'إنهاء النشاط' }));
 
-    expect(await screen.findByText('1 من 2 إجابات صحيحة')).toBeInTheDocument();
+    expect(await screen.findByText('أنهيت أسئلة النشاط')).toBeInTheDocument();
     expect(screen.getByText(/لن تُحفظ النتيجة/)).toBeInTheDocument();
+  });
+
+  it('offers to skip question types the player does not support', async () => {
+    server.use(
+      http.get(apiUrl('TrainingPlan/children/:childId/activities/:activityId'), () =>
+        HttpResponse.json({
+          planActivityId: 'p1',
+          activityId: 'a1',
+          title: 'نشاط',
+          questions: [
+            {
+              planQuestionId: 'pq1',
+              questionId: 'q1',
+              questionText: 'رتّب',
+              type: 'Sequence',
+              order: 1,
+              options: [
+                { id: 'o1', optionText: 'أ', order: 1, correctOrder: null, pairKey: null },
+                { id: 'o2', optionText: 'ب', order: 2, correctOrder: null, pairKey: null },
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+    renderPlayer('a1');
+
+    expect(
+      await screen.findByText('هذا النوع من الأسئلة غير مدعوم بعد في المشغّل. يمكنك تخطّيه.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'إنهاء النشاط' })).toBeInTheDocument();
   });
 
   it('shows an honest empty state when the activity has no questions', async () => {
@@ -61,21 +93,21 @@ describe('PlanActivityPlayerPage', () => {
     expect(await screen.findByText('النشاط غير موجود في الخطة التدريبية.')).toBeInTheDocument();
   });
 
-  it('does not show correctness the server does not provide', async () => {
+  it('marks answers only if the server ever exposes correctness', async () => {
     server.use(
       http.get(apiUrl('TrainingPlan/children/:childId/activities/:activityId'), () =>
         HttpResponse.json({
-          id: 'p1',
+          planActivityId: 'p1',
           activityId: 'a1',
           title: 'نشاط',
           questions: [
             {
-              id: 'q1',
+              questionId: 'q1',
               questionText: 'اختر',
               type: 'SingleChoice',
               options: [
-                { id: 'o1', optionText: 'أ' },
-                { id: 'o2', optionText: 'ب' },
+                { id: 'o1', optionText: 'أ', isCorrect: true },
+                { id: 'o2', optionText: 'ب', isCorrect: false },
               ],
             },
           ],
@@ -85,9 +117,9 @@ describe('PlanActivityPlayerPage', () => {
     renderPlayer('a1');
 
     await userEvent.click(await screen.findByRole('button', { name: /^أ/ }));
-    expect(screen.getByText('تم اختيار إجابتك')).toBeInTheDocument();
+    expect(screen.getByText('أحسنت! إجابة صحيحة')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'إنهاء النشاط' }));
 
-    expect(await screen.findByText('أنهيت أسئلة النشاط')).toBeInTheDocument();
+    expect(await screen.findByText('1 من 1 إجابات صحيحة')).toBeInTheDocument();
   });
 });
