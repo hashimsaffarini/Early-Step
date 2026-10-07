@@ -7,7 +7,8 @@ import { HTTP_STATUS } from '@/services/http/httpStatus';
 /**
  * Child report (shared by children, reports and dashboards).
  * Fields from the Swagger request (`title`, `weaknesses`, `recommendations`); the response
- * shape is still unverified live (the demo accounts have no reports yet) — read leniently.
+ * VERIFIED LIVE item: `{ id, childId, childName, specialistId, specialistName, title, weaknesses,
+ * recommendations, createdAt }`.
  * There is no "strengths" field in the API.
  */
 const reportDtoSchema = z.looseObject({
@@ -63,7 +64,10 @@ export function isNoReportsError(error: unknown): boolean {
 export async function fetchChildReports(childId: string): Promise<ChildReport[]> {
   try {
     const { data } = await httpClient.get<unknown>(`Reports/child/${encodeURIComponent(childId)}`);
-    return reportListSchema.parse(data).map(mapReport);
+    // VERIFIED LIVE (2026-10-07): a child with reports returns ONE report object (the first one),
+    // not an array — accept both; the backend has been asked to return the full list.
+    const list = Array.isArray(data) ? data : [data];
+    return reportListSchema.parse(list).map(mapReport);
   } catch (error) {
     if (isNoReportsError(error)) return [];
     throw error;

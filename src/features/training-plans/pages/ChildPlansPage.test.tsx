@@ -160,6 +160,20 @@ describe('ChildPlansPage — specialist', () => {
   });
 });
 
+describe('ChildPlansPage — live backend quirks', () => {
+  it('explains the server error when adding the first activity to a child without a plan', async () => {
+    renderPlans('Specialist', NOUR);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'إضافة نشاط' }));
+    const dialog = await screen.findByRole('dialog');
+    const [add] = await within(dialog).findAllByRole('button', { name: /إضافة/ });
+    if (!add) throw new Error('no add button');
+    await userEvent.click(add);
+
+    expect(await within(dialog).findByText(/الخادم لا يدعم إنشاءها حالياً/)).toBeInTheDocument();
+  });
+});
+
 describe('ChildPlansPage — teacher assignment (specialist)', () => {
   it('shows the current teacher from the plan and lists teachers from specialist/teachers', async () => {
     renderPlans('Specialist', YOUSEF);

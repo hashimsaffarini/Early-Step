@@ -11,8 +11,16 @@ import { Alert } from '@/components/ui/Feedback';
 import { Modal } from '@/components/ui/Modal';
 import { Tabs, type TabItem } from '@/components/ui/Tabs';
 import type { ActivityType } from '@/services/api/activityType';
+import { HTTP_STATUS } from '@/services/http/httpStatus';
 
 import { useAssignActivityMutation, useAvailableActivities } from '../api/trainingPlansQueries';
+
+/**
+ * VERIFIED LIVE (2026-10-07): adding the first activity to a child who has no training plan yet
+ * returns HTTP 500 and creates nothing (no "create plan" endpoint exists). Reported to the backend.
+ */
+const FIRST_ACTIVITY_SERVER_ERROR =
+  'تعذّر إضافة النشاط بسبب خطأ في الخادم. إذا لم تكن لدى الطفل خطة تدريبية بعد، فالخادم لا يدعم إنشاءها حالياً.';
 
 import styles from './plans.module.css';
 
@@ -114,7 +122,15 @@ export function AssignActivityDialog({
     >
       <div className={styles.picker}>
         {lastAdded ? <Alert tone="success">{`تمت إضافة «${lastAdded}» إلى الخطة.`}</Alert> : null}
-        <ApiErrorAlert error={assignMutation.error} />
+        <ApiErrorAlert
+          error={assignMutation.error}
+          message={
+            assignMutation.error &&
+            (assignMutation.error.status ?? 0) >= HTTP_STATUS.INTERNAL_SERVER_ERROR
+              ? FIRST_ACTIVITY_SERVER_ERROR
+              : undefined
+          }
+        />
         <Tabs label="نوع النشاط" items={TYPE_TABS} value={type} onChange={setType}>
           <div className={styles.picker}>
             <SearchField

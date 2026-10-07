@@ -4,8 +4,10 @@ import { Link } from 'react-router';
 
 import { getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ProgressBar } from '@/components/ui/Feedback';
 import { cx } from '@/utils/classNames';
 
+import type { AssessmentResult } from '../api/assessmentApi';
 import { formatQuestionCount } from '../format';
 
 import styles from './AssessmentResults.module.css';
@@ -14,14 +16,21 @@ export interface AssessmentResultsProps {
   childName: string;
   /** Answers the server accepted. */
   answered: number;
+  /** Result returned by `complete` (null if the server sent none). */
+  result: AssessmentResult | null;
   profilePath: string;
 }
 
 /**
- * Shown only after `complete` succeeded. Neutral: the backend returns no result and has no
- * endpoint to read assessment results (BLOCKED BY BACKEND), so no score is shown or implied.
+ * Shown only after `complete` succeeded. Shows exactly the result the server returned (overall
+ * score + per-category percentage) in neutral words — no diagnosis or interpretation is added.
  */
-export function AssessmentResults({ childName, answered, profilePath }: AssessmentResultsProps) {
+export function AssessmentResults({
+  childName,
+  answered,
+  result,
+  profilePath,
+}: AssessmentResultsProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     headingRef.current?.focus();
@@ -41,9 +50,35 @@ export function AssessmentResults({ childName, answered, profilePath }: Assessme
 
       <Card className={styles.card}>
         <p className={styles.rowTitle}>{`تم إرسال ${formatQuestionCount(answered)} إلى المنصة.`}</p>
+        {result ? (
+          <>
+            <ProgressBar
+              label="النتيجة العامة للتقييم المبدئي"
+              value={result.overallScore}
+              max={100}
+              showLabel
+            />
+            {result.categories.length > 0 ? (
+              <ul className={styles.list} aria-label="النتيجة حسب التصنيف">
+                {result.categories.map((category) => (
+                  <li key={category.name}>
+                    <ProgressBar
+                      label={category.name}
+                      value={category.percentage}
+                      max={100}
+                      showLabel
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </>
+        ) : null}
         <p className={styles.note}>
           <Info aria-hidden="true" />
-          لا يعرض التطبيق نتائج التقييم حالياً: لا يوفّر الخادم بعدُ نتائج يمكن قراءتها.
+          {result
+            ? 'هذه نتيجة مبدئية يراجعها الأخصائي، وليست تشخيصاً.'
+            : 'لم يُرجع الخادم نتيجة لهذا التقييم.'}
         </p>
       </Card>
 

@@ -63,7 +63,8 @@ export const assessmentsHandlers: HttpHandler[] = [
       return HttpResponse.json({ message: CANNOT_ANSWER });
     }
     session.answered.add(question.id);
-    return HttpResponse.json({ message: 'تم حفظ الإجابة.' });
+    // Live shape (verified 2026-10-07).
+    return HttpResponse.json({ questionId: question.id, isCorrect: true });
   }),
 
   http.post(apiUrl('initial-assessment/:assessmentId/complete'), ({ request, params }) => {
@@ -74,7 +75,18 @@ export const assessmentsHandlers: HttpHandler[] = [
       return HttpResponse.json({ message: CANNOT_COMPLETE });
     }
     session.completed = true;
-    return HttpResponse.json({ message: 'تم إنهاء التقييم.' });
+    // Live (verified 2026-10-07): complete returns the result (and returns it again if repeated).
+    return HttpResponse.json({
+      childId: session.childId,
+      childName: 'طفل تجريبي',
+      parentId: user.id,
+      parentName: user.fullName,
+      overallScore: 75,
+      categories: MOCK_ASSESSMENT_CATEGORIES.map((category, index) => ({
+        categoryName: category.name,
+        percentage: index % 2 === 0 ? 100 : 50,
+      })),
+    });
   }),
 ];
 

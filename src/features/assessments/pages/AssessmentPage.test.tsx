@@ -79,6 +79,30 @@ describe('AssessmentPage (initial assessment)', () => {
     LONG_FLOW,
   );
 
+  it(
+    'shows the result returned by complete (live contract) without a diagnosis',
+    async () => {
+      renderAssessment();
+      expect(await screen.findByRole('heading', { name: 'مرحباً يا يوسف!' })).toBeInTheDocument();
+      await start();
+
+      for (const label of ['بطة', 'ق', '3']) {
+        await userEvent.click(await screen.findByRole('button', { name: new RegExp(`^${label}`) }));
+        await userEvent.click(screen.getByRole('button', { name: /التالي|إنهاء التقييم/ }));
+      }
+
+      expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('progressbar', { name: 'النتيجة العامة للتقييم المبدئي' }),
+      ).toHaveAttribute('aria-valuenow', '75');
+      expect(screen.getByRole('list', { name: 'النتيجة حسب التصنيف' })).toBeInTheDocument();
+      expect(
+        screen.getByText('هذه نتيجة مبدئية يراجعها الأخصائي، وليست تشخيصاً.'),
+      ).toBeInTheDocument();
+    },
+    LONG_FLOW,
+  );
+
   it('shows the backend message when no assessment is available', async () => {
     server.use(
       http.post(apiUrl('initial-assessment/:childId/start'), () =>

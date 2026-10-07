@@ -152,6 +152,8 @@ export const trainingPlansHandlers: HttpHandler[] = [
       const body = (await request.json()) as { activityId?: string };
       const activity = MOCK_CATALOG_ACTIVITIES.find((item) => item.id === body.activityId);
       if (!activity) return notFound('النشاط غير موجود.');
+      // Live (verified 2026-10-07): the first activity for a child without a plan fails with 500.
+      if (rowsFor(child.id, null).length === 0) return new HttpResponse(null, { status: 500 });
       if (rowsFor(child.id, null).some((row) => row.activityId === activity.id)) {
         return badRequest('النشاط موجود بالفعل في الخطة التدريبية.');
       }

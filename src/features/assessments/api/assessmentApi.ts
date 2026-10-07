@@ -151,8 +151,34 @@ export async function submitAnswer(input: AnswerInput): Promise<void> {
   assertNotKnownFailure(data);
 }
 
-/** No result is returned or readable afterwards (no results endpoint — BLOCKED BY BACKEND). */
-export async function completeAssessment(assessmentId: string): Promise<void> {
+/**
+ * VERIFIED LIVE (2026-10-07): `complete` returns the result —
+ * `{ childId, childName, parentId, parentName, overallScore, categories: [{ categoryName, percentage }] }`
+ * — and returns the same result when called again. There is no GET endpoint to read it later
+ * (requested from the backend).
+ */
+const assessmentResultSchema = z.looseObject({
+  overallScore: z.number(),
+  categories: z
+    .array(z.looseObject({ categoryName: z.string().nullish(), percentage: z.number() }))
+    .nullish(),
+});
+
+export interface AssessmentResult {
+  overallScore: number;
+  categories: { name: string; percentage: number }[];
+}
+
+export async function completeAssessment(assessmentId: string): Promise<AssessmentResult | null> {
   const { data } = await httpClient.post<unknown>(ASSESSMENT_PATHS.complete(assessmentId));
   assertNotKnownFailure(data);
+  const parsed = assessmentResultSchema.safeParse(data);
+  if (!parsed.success) return null;
+  return {
+    overallScore: parsed.data.overallScore,
+    categories: (parsed.data.categories ?? []).map((category) => ({
+      name: category.categoryName?.trim() ?? '',
+      percentage: category.percentage,
+    })),
+  };
 }

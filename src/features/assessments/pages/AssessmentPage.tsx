@@ -146,6 +146,7 @@ function ParentAssessment({ childId }: { childId: string }) {
         <AssessmentResults
           childName={child.fullName}
           answered={answered}
+          result={complete.data}
           profilePath={profilePath}
         />
       );
