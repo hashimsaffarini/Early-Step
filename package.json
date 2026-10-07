@@ -18,7 +18,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "validate": "npm run typecheck && npm run lint && npm run test && vite build",
-    "test:live": "vitest run --config vitest.live.config.ts"
+    "test:live": "vitest run --config vitest.live.config.ts",
+    "test:live:read": "vitest run --config vitest.live.config.ts src/test/live/read.live.test.ts",
+    "test:live:write": "vitest run --config vitest.live.config.ts src/test/live/write.live.test.ts"
   },
   "dependencies": {
     "@fontsource-variable/cairo": "^5.3.0",

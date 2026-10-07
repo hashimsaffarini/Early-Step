@@ -15,6 +15,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/test/live/**/*.live.test.ts'],
+    // Write tests depend on each other's records — run files and tests sequentially.
+    fileParallelism: false,
+    sequence: { concurrent: false },
     testTimeout: 60_000,
     hookTimeout: 60_000,
     env: { VITE_API_BASE_URL: 'https://earlystep22.runasp.net/api/', VITE_USE_MOCKS: 'false' },
