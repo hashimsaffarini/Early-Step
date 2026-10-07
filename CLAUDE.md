@@ -18,11 +18,11 @@ Current status: the complete Replit UI (ADR-019) is on `main`. On the branch
 `feature/backend-integration` (ADR-020) every backend-supported feature is integrated with the
 real API contracts (live Swagger) — real login/registration, route guards, children CRUD,
 assessment, admin content, plans, reports, dashboards, users, teacher notes, chat (REST +
-polling) — and tested with MSW. **Read endpoints are live-verified** for Parent, Specialist, Admin
-and Super Admin (`docs/api/LIVE_CONTRACTS.md`, `npm run test:live`); write flows are mock-tested
-until disposable test records are authorized; no Teacher account yet. Anonymous Admin access
-awaits backend confirmation (`docs/SECURITY.md`) — do not merge to `main` before that. Missing
-backend capabilities are shown as honest "not available" states.
+polling) — and tested with MSW. **Reads and writes are live-verified** for Parent, Specialist,
+Admin and Super Admin (`docs/API_VERIFICATION_MATRIX.md`, `npm run test:live:read` /
+`test:live:write` with disposable `E2E Test …` records); no Teacher account yet. Anonymous Admin
+access is fixed; remaining backend issues are in `docs/BACKEND_REQUESTS.md` and
+`docs/SECURITY.md`. Missing backend capabilities are shown as honest "not available" states.
 Status per feature: `docs/BACKEND_INTEGRATION_STATUS.md`. Development mock mode
 (`VITE_USE_MOCKS=true`, dev only) lets you review the integrated UI without accounts.
 Next steps: `docs/IMPLEMENTATION_PLAN.md`.
@@ -144,8 +144,9 @@ types, `type=test`). Normalize at the boundary only: `constants/backendRoles.ts`
 - **Never commit secrets**: passwords, tokens, API keys, demo account credentials, real
   `.env` files. Not in code, not in docs, not in this file, not in commit messages.
 - Demo accounts live only in the gitignored `.env.e2e.local`; never print or copy them.
-- The live backend has open Admin endpoints (see `docs/SECURITY.md`); do not probe further or read
-  exposed records until the backend team confirms a fix.
+- Live checks: status codes and shapes only; never record personal data. Live writes only on
+  clearly named disposable `E2E Test …` records that are deleted and verified afterwards
+  (`docs/SECURITY.md`). Do not probe registration roles or other privilege escalation.
 - `.env` is gitignored; `.env.example` holds placeholders only.
 - Frontend authorization is UX only — the backend enforces security.
 - No `dangerouslySetInnerHTML` with untrusted content. Details: `docs/SECURITY.md`.
@@ -238,7 +239,8 @@ npm run lint         # eslint, zero warnings allowed
 npm run test         # vitest run
 npm run build        # typecheck + production build
 npm run validate     # typecheck + lint + test + build
-npm run test:live    # opt-in live read-only contract tests (needs .env.e2e.local)
+npm run test:live:read   # opt-in live read contract tests (needs .env.e2e.local)
+npm run test:live:write  # opt-in live write tests on disposable E2E records (verified cleanup)
 npm run format       # prettier --write
 ```
 

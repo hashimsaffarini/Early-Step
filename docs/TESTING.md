@@ -52,12 +52,21 @@ exist — ADR required; credentials only via CI secrets.
 - Assert request methods, URLs, query params and bodies (JSON or multipart `FormData`) in
   `server.use` handlers; assert cache refresh by the UI updating after mutations.
 - The unit/integration suite never calls the live backend.
-- **Live contract tests** (`npm run test:live`, `vitest.live.config.ts`, `src/test/live/`): the app's
-  own login + GET fetchers + Zod schemas against the real API for Parent, Specialist, Admin and
-  Super Admin, credentials from the gitignored `.env.e2e.local`. Read-only, no data printed,
-  excluded from `npm run test`/`validate`. Result 2026-10-06: **6/6 pass**. Write flows wait for
-  authorized disposable test records; browser E2E with real logins is run by a person (the
-  assistant does not type real passwords into the browser).
+- **Live tests** (`vitest.live.config.ts`, `src/test/live/`, credentials from the gitignored
+  `.env.e2e.local`, excluded from `npm run test`/`validate`, nothing printed):
+  - `npm run test:live:read` — the app's own login + GET fetchers + Zod schemas for Parent,
+    Specialist, Admin, Super Admin.
+  - `npm run test:live:write` — the app's own write functions on disposable `E2E Test …` records:
+    child create/edit/delete, assessment start/answer/complete (result), assign specialist,
+    assign teacher, report create/edit/PDF/delete (parent sees it), category / test + game
+    activities / question / option CRUD, assessment composition. Every record is tracked and
+    deleted in `afterAll`; a 404 counts as already gone (cascades); **any other leftover fails the
+    run** with its id. Not covered: chat send (messages cannot be deleted), registration (users
+    cannot be deleted).
+  - `npm run test:live` runs both, sequentially. Result 2026-10-07: **read 6/6, write 6/6 pass**,
+    cleanup verified.
+  - Browser E2E with real logins is run by a person (the assistant does not type real passwords
+    into the browser).
 
 ## Don't
 
@@ -65,9 +74,9 @@ exist — ADR required; credentials only via CI secrets.
 - Don't snapshot whole pages.
 - Don't commit real credentials or real children's data as fixtures.
 
-## Current tests (2026-10-06)
+## Current tests (2026-10-07)
 
-**305 tests in 61 files** (`npm run test`), all against MSW:
+**311 tests in 62 files** (`npm run test`), all against MSW:
 
 | Area                                                  | Files | Covers                                                                                                                                                                                       |
 | ----------------------------------------------------- | ----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

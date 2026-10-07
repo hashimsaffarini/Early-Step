@@ -22,23 +22,27 @@
 - Replit loads a third-party script (ResponsiveVoice) with a public key and never uses it — do
   not carry over.
 
-## Live backend findings (2026-10-06) — reported to the backend team
+## Live backend findings — re-checked 2026-10-07
 
-Checked with read-only, unauthenticated requests only. **No personal data from these responses
-is recorded anywhere in this repository.** Live security probing has stopped until the backend
-team confirms remediation (user instruction).
+Re-checked with **status codes and access behaviour only** (anonymous sweep of all 75 Swagger
+operations; one fictional `.invalid` email for forgot-password; a CORS preflight). No personal data
+was downloaded or recorded; nothing was exploited beyond confirming whether access is protected.
+Registration role restriction was **not** probed — it is a question for the backend team
+(`BACKEND_REQUESTS.md` §5).
 
-| Severity     | Finding                                                                                                                                                                                                 | Evidence (no data recorded)                                                    | Recommendation                                                                                                                                                                                                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Critical** | Every `GET /api/Admin/*` endpoint answers **without authentication** (200): dashboard, the full user list (names + emails of all users), user detail with children, categories, activities, questions.  | Unauthenticated GET sweep; only response _keys_ were inspected.                | Add `[Authorize(Roles = "Admin")]` (or a policy) to the whole Admin controller; audit every controller for missing attributes. Assume the Admin **write** endpoints (create/update/delete categories, activities, questions, assign specialist) are also open — they were deliberately **not** tested. |
-| High         | Registration accepts `Role` as a free client-supplied string. If not restricted server-side, anyone could self-register as staff/admin.                                                                 | Swagger request schema (`Role: string`). Not tested (would create an account). | Ignore client roles on public registration (parents only) or whitelist.                                                                                                                                                                                                                                |
-| Medium       | Forgot-password reveals whether an email has an account (`400 "Email not found."`).                                                                                                                     | One request with a fictional `.invalid` email.                                 | Return the same response for known and unknown emails. The UI already shows a neutral message.                                                                                                                                                                                                         |
-| Medium       | CORS allows any origin (`Access-Control-Allow-Origin: *`).                                                                                                                                              | Preflight response.                                                            | Restrict to the deployed frontend origin(s).                                                                                                                                                                                                                                                           |
-| Low          | Swagger UI and the OpenAPI document are public in production.                                                                                                                                           | `/swagger/v1/swagger.json`.                                                    | Acceptable for a graduation project; disable or protect in production.                                                                                                                                                                                                                                 |
-| Info         | First demo accounts returned 401.                                                                                                                                                                       | One login attempt each; no retries.                                            | Resolved: the updated accounts (2026-10-06) all sign in.                                                                                                                                                                                                                                               |
-| **Open**     | Unauthenticated access to `/api/Admin/*` — **not re-tested** (no further probing by instruction). Authenticated cross-role calls now return 403 (parent/specialist/super-admin → admin and vice versa). | Authenticated read-only checks only.                                           | Backend team to **confirm** `[Authorize]` on the Admin controller for anonymous requests. Do not merge to `main` until confirmed.                                                                                                                                                                      |
-| Medium       | `GET Chats/users` returns **every user** (all roles, names) to any signed-in user, including parents.                                                                                                   | Shape-only inspection.                                                         | Limit chat contacts to the people related to the user's children.                                                                                                                                                                                                                                      |
-| Low          | Some `SuperAdmin/children` `parentName` values are email addresses.                                                                                                                                     | Type inspection only (values not recorded).                                    | Data quality — store display names.                                                                                                                                                                                                                                                                    |
+| Severity | Finding                                                                                                 | Status 2026-10-07                                        | Recommendation                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------- |
+| Critical | `GET /api/Admin/*` answered without authentication (users, emails, children)                            | **FIXED** — 67 of 69 protected operations now return 401 | Keep `[Authorize]` on every controller                         |
+| Medium   | `GET Admin/categoriesActivity?type=` answers anonymously (category names/counts, no personal data)      | **STILL PRESENT**                                        | `[Authorize(Roles = "Admin")]`                                 |
+| Medium   | `POST initial-assessment/{id}/answer` is processed without authentication (404 for unknown id, not 401) | **STILL PRESENT**                                        | `[Authorize]` + check the assessment's child belongs to caller |
+| High     | Registration accepts a client-supplied `Role`                                                           | **NOT RETESTED** — open question to the backend team     | Public registration = Parent only                              |
+| Medium   | Forgot-password reveals whether an email exists (`400 "Email not found."`)                              | **STILL PRESENT**                                        | Same response for known/unknown emails (UI is already neutral) |
+| Medium   | CORS `Access-Control-Allow-Origin: *`                                                                   | **STILL PRESENT** (no credentials header)                | Restrict to the frontend origin(s)                             |
+| Medium   | `GET Chats/users` gives any signed-in user (including parents) every user's name and role               | **STILL PRESENT**                                        | Limit to related staff/parents                                 |
+| Low      | Swagger UI and OpenAPI public in production                                                             | **STILL PRESENT**                                        | Protect/disable in production                                  |
+| Low      | Some `SuperAdmin/children` `parentName` values are email addresses                                      | **NOT RETESTED**                                         | Store display names                                            |
+| Info     | Child-facing plan activities hide answers (`isCorrect` absent, `correctOrder`/`pairKey` null)           | **VERIFIED** (good)                                      | Keep                                                           |
+| Info     | Authenticated cross-role calls return 403; outsider reading a chat conversation gets 404                | **VERIFIED** (good)                                      | Keep                                                           |
 
 Frontend route guards (`RequireRole`) are **UX only** and do not mitigate any of the above.
 
@@ -50,6 +54,9 @@ Frontend route guards (`RequireRole`) are **UX only** and do not mitigate any of
   commit messages. Never echo them in reports.
 - Signing in with them through a browser on a remote host is done by the user, not by the
   assistant.
+- Live test suites (`npm run test:live:read` / `test:live:write`) read them from
+  `.env.e2e.local` at run time and never print them; the write suite only creates clearly named
+  `E2E Test …` records and fails if its cleanup leaves anything behind.
 
 ## Environment variables
 
@@ -57,11 +64,11 @@ Frontend route guards (`RequireRole`) are **UX only** and do not mitigate any of
 - Everything prefixed `VITE_` is embedded in the public JS bundle. Only put non-secret
   configuration there (e.g. the API base URL).
 
-## Auth tokens and session (implemented, NOT LIVE-VERIFIED)
+## Auth tokens and session (verified live 2026-10-07)
 
-- Bearer token from `POST /api/Auth/login` (response shape undocumented — parsed leniently by
-  `features/auth/api/loginResponse.ts`; JWT payload decoded for display/routing only, never
-  trusted for authorization).
+- Bearer token from `POST /api/Auth/login` → `{ id, fullName, accessToken, role }` (JWT, 120 h;
+  parsed by `features/auth/api/loginResponse.ts`; the payload is decoded for display/routing only,
+  never trusted for authorization).
 - Storage: `sessionStorage` by default, `localStorage` when "تذكّرني" is checked
   (`services/session/sessionStore.ts`). Web storage is readable by scripts on this origin, so XSS
   prevention is essential. The backend offers no httpOnly cookie, refresh or logout endpoint.
