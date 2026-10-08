@@ -1,5 +1,5 @@
 import {
-  fetchChildReports,
+  fetchChildReport,
   mapReport,
   reportListSchema,
   type ChildReport,
@@ -15,7 +15,7 @@ export const REPORT_PATHS = {
   download: (reportId: string) => `Reports/${encodeURIComponent(reportId)}/download`,
 } as const;
 
-export { fetchChildReports };
+export { fetchChildReport };
 
 /** `GET specialist/Reports` — the specialist's reports. Item shape NOT LIVE-VERIFIED. */
 export async function fetchSpecialistReports(): Promise<ChildReport[]> {

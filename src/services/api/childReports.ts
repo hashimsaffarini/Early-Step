@@ -60,16 +60,18 @@ export function isNoReportsError(error: unknown): boolean {
   );
 }
 
-/** `GET Reports/child/{childId}` — an empty list when the backend says there are no reports. */
-export async function fetchChildReports(childId: string): Promise<ChildReport[]> {
+/**
+ * `GET Reports/child/{childId}` — the child's report, or `null` when there is none (404 + message).
+ * Business rule confirmed by the backend team (2026-10-08): ONE initial-assessment report per
+ * child, so the endpoint returns a single object. (Live, `specialist/CreateReport` still accepts a
+ * second report for the same child; this endpoint then returns the newest.)
+ */
+export async function fetchChildReport(childId: string): Promise<ChildReport | null> {
   try {
     const { data } = await httpClient.get<unknown>(`Reports/child/${encodeURIComponent(childId)}`);
-    // VERIFIED LIVE (2026-10-07): a child with reports returns ONE report object (the first one),
-    // not an array — accept both; the backend has been asked to return the full list.
-    const list = Array.isArray(data) ? data : [data];
-    return reportListSchema.parse(list).map(mapReport);
+    return mapReport(reportDtoSchema.parse(data));
   } catch (error) {
-    if (isNoReportsError(error)) return [];
+    if (isNoReportsError(error)) return null;
     throw error;
   }
 }

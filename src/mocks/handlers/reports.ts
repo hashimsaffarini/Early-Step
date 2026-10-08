@@ -47,9 +47,9 @@ export const reportsHandlers: HttpHandler[] = [
     const reports = mockReports.filter((report) => report.childId === child.id);
     // Live: no reports → 404 with this message (not an empty array).
     if (reports.length === 0) return notFound(' لا يوجد تقرير .');
-    // Live (verified 2026-10-07): a single report object (the first one), not an array.
-    const [first] = reports;
-    return HttpResponse.json(first ? toDto(first) : null);
+    // Live: a single report object (one report per child; the newest if several exist).
+    const [newest] = [...reports].sort((x, y) => y.createdAt.localeCompare(x.createdAt));
+    return HttpResponse.json(newest ? toDto(newest) : null);
   }),
 
   http.get(apiUrl('Reports/:reportId/download'), ({ request, params }) => {

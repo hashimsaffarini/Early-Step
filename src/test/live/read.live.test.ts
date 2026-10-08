@@ -27,7 +27,7 @@ import {
 import { fetchAdminUser, fetchAdminUsers } from '@/features/users/api/usersApi';
 import { fetchUnreadMessagesCount } from '@/services/api/chatUnread';
 import { fetchChildPlanActivities, fetchChildPlanSummary } from '@/services/api/childPlan';
-import { fetchChildReports } from '@/services/api/childReports';
+import { fetchChildReport } from '@/services/api/childReports';
 import { fetchChildrenForRole } from '@/services/api/childrenLists';
 
 import { hasAccount, signInLive } from './liveSession';
@@ -48,7 +48,8 @@ describe.runIf(hasAccount('PARENT'))('live — Parent', () => {
       await fetchParentChild(child.id);
       const plan = await fetchChildPlanActivities(child.id);
       await fetchChildPlanSummary(child.id);
-      expect(Array.isArray(await fetchChildReports(child.id))).toBe(true);
+      const report = await fetchChildReport(child.id);
+      expect(report === null || typeof report.id === 'string').toBe(true);
       const first = plan[0];
       if (first) await fetchPlanActivityDetail(child.id, first.activityId);
     }

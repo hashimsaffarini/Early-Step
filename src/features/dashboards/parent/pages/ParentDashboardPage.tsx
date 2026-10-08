@@ -9,7 +9,7 @@ import { Button, getButtonClassName } from '@/components/ui/Button';
 import { ROUTE_PATHS } from '@/constants/routes';
 import { useChildrenForRole } from '@/hooks/api/childResources';
 import { fetchChildPlanSummary } from '@/services/api/childPlan';
-import { fetchChildReports } from '@/services/api/childReports';
+import { fetchChildReport } from '@/services/api/childReports';
 import { queryKeys } from '@/services/api/queryKeys';
 
 import { ChildrenPreviewSection } from '../components/ChildrenPreviewSection';
@@ -47,7 +47,7 @@ export function ParentDashboardPage({ parentName }: ParentDashboardPageProps) {
   const reports = useQueries({
     queries: children.map((child) => ({
       queryKey: queryKeys.reports.byChild(child.id),
-      queryFn: () => fetchChildReports(child.id),
+      queryFn: () => fetchChildReport(child.id),
     })),
   });
 
@@ -92,7 +92,7 @@ export function ParentDashboardPage({ parentName }: ParentDashboardPageProps) {
           stats={{
             children: children.length,
             planActivities: sumWhenReady(summaries, (summary) => summary.totalCount),
-            reports: sumWhenReady(reports, (list) => list.length),
+            reports: sumWhenReady(reports, (report) => (report ? 1 : 0)),
           }}
         />
       ) : null}

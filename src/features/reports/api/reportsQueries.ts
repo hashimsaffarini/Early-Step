@@ -10,7 +10,7 @@ import {
   createReport,
   deleteReport,
   downloadReportPdf,
-  fetchChildReports,
+  fetchChildReport,
   fetchSpecialistReports,
   updateReport,
   type ReportInput,
@@ -56,7 +56,7 @@ export function useRoleReports(role: AreaRole): RoleReports {
   const perChild = useQueries({
     queries: children.map((child) => ({
       queryKey: queryKeys.reports.byChild(child.id),
-      queryFn: () => fetchChildReports(child.id),
+      queryFn: () => fetchChildReport(child.id),
     })),
   });
 
@@ -87,7 +87,7 @@ export function useRoleReports(role: AreaRole): RoleReports {
   const reports = perChild
     .flatMap((query, index) => {
       const child = children[index];
-      return (query.data ?? []).map((report) => ({
+      return (query.data ? [query.data] : []).map((report) => ({
         ...report,
         childId: report.childId ?? child?.id ?? null,
         childName: report.childName ?? child?.fullName ?? '',

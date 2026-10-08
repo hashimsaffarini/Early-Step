@@ -112,11 +112,11 @@ describe('ChildProfilePage — tabs from the API', () => {
     expect(screen.queryByRole('link', { name: /^ابدأ:/ })).not.toBeInTheDocument();
   });
 
-  it('lists the child reports with links to the report detail', async () => {
+  it('shows the child report (one per child) with a link to the report detail', async () => {
     renderProfile('Parent', YOUSEF);
     await heading('يوسف');
 
-    await userEvent.click(tab(/التقارير/));
+    await userEvent.click(tab(/^التقرير/));
 
     expect(await screen.findByRole('link', { name: 'عرض التقرير: تقرير متابعة' })).toHaveAttribute(
       'href',
@@ -130,8 +130,8 @@ describe('ChildProfilePage — tabs from the API', () => {
 
     await userEvent.click(tab(/الأنشطة/));
     expect(await screen.findByText('لا توجد أنشطة في الخطة التدريبية بعد')).toBeInTheDocument();
-    await userEvent.click(tab(/التقارير/));
-    expect(await screen.findByText('لا توجد تقارير بعد')).toBeInTheDocument();
+    await userEvent.click(tab(/^التقرير/));
+    expect(await screen.findByText('لا يوجد تقرير بعد')).toBeInTheDocument();
   });
 
   it('is honest that assessment results are not available, with a start link for the parent', async () => {

@@ -16,7 +16,7 @@ import { useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { useSession } from '@/services/session';
 
-import { useCreateReportMutation } from '../api/reportsQueries';
+import { useCreateReportMutation, useRoleReports } from '../api/reportsQueries';
 import { ReportFields } from '../components/ReportFields';
 import { createReportSchema, type CreateReportFormValues } from '../schemas/createReport';
 
@@ -53,7 +53,7 @@ function SavedState({
           عرض جميع التقارير
         </Link>
         <Button variant="outline" onClick={onWriteAnother}>
-          كتابة تقرير آخر
+          كتابة تقرير لطفل آخر
         </Button>
       </div>
     </Card>
@@ -63,12 +63,20 @@ function SavedState({
 /**
  * Create report (`POST specialist/CreateReport`). Manual entry only — Replit's AI mode, the
  * probability slider, report types and "strengths" have no API field and are not migrated.
+ * One initial-assessment report per child (business rule confirmed by the backend team): a child
+ * who already has a report links to editing it instead of offering a second report.
  */
 export function CreateReportPage() {
   const { role, paths } = useRoleArea();
   const session = useSession();
   const childrenQuery = useChildrenForRole(role);
   const createMutation = useCreateReportMutation();
+  const existingReports = useRoleReports(role);
+  const reportIdByChild = new Map(
+    existingReports.reports.flatMap((report) =>
+      report.childId ? [[report.childId, report.id] as const] : [],
+    ),
+  );
   const {
     register,
     handleSubmit,
@@ -135,19 +143,36 @@ export function CreateReportPage() {
               اختر الطفل
             </legend>
             <div className={styles.children}>
-              {children.map((child) => (
-                <label key={child.id} className={styles.childOption}>
-                  <input
-                    type="radio"
-                    value={child.id}
-                    className={styles.radio}
-                    {...register('childId')}
-                  />
-                  <Avatar name={child.fullName} shape="circle" />
-                  {child.fullName}
-                  <Check className={styles.check} aria-hidden="true" />
-                </label>
-              ))}
+              {children.map((child) => {
+                const reportId = reportIdByChild.get(child.id);
+                if (reportId) {
+                  return (
+                    <div key={child.id} className={styles.childOption}>
+                      <Avatar name={child.fullName} shape="circle" />
+                      {child.fullName}
+                      <Link
+                        to={paths.reportEdit(reportId)}
+                        aria-label={`تعديل تقرير ${child.fullName}`}
+                      >
+                        لديه تقرير — تعديله
+                      </Link>
+                    </div>
+                  );
+                }
+                return (
+                  <label key={child.id} className={styles.childOption}>
+                    <input
+                      type="radio"
+                      value={child.id}
+                      className={styles.radio}
+                      {...register('childId')}
+                    />
+                    <Avatar name={child.fullName} shape="circle" />
+                    {child.fullName}
+                    <Check className={styles.check} aria-hidden="true" />
+                  </label>
+                );
+              })}
             </div>
             {childError ? (
               <p id="report-child-error" className={styles.error}>

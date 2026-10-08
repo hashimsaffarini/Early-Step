@@ -45,7 +45,7 @@ import {
 } from '@/features/reports/api/reportsApi';
 import { assignTeacher, fetchTeachers } from '@/features/training-plans/api/trainingPlansApi';
 import { assignChildrenToSpecialist } from '@/features/users/api/usersApi';
-import { fetchChildReports } from '@/services/api/childReports';
+import { fetchChildReport } from '@/services/api/childReports';
 import { fetchChildrenForRole } from '@/services/api/childrenLists';
 import { isAppError } from '@/services/http/apiError';
 
@@ -196,7 +196,7 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     expect(pdf.filename).toMatch(/\.pdf$/);
 
     await signInLive('PARENT');
-    expect((await fetchChildReports(childId)).map((r) => r.id)).toContain(reportId);
+    expect((await fetchChildReport(childId))?.id).toBe(reportId);
 
     await signInLive('SPECIALIST');
     await deleteReport(reportId);
@@ -292,6 +292,6 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     await deleteChild(childId);
     untrack('child', childId);
     expect(await isGone(() => fetchParentChild(childId))).toBe(true);
-    expect(await fetchChildReports(childId).catch(() => [])).toEqual([]);
+    expect(await fetchChildReport(childId).catch(() => null)).toBeNull();
   });
 });

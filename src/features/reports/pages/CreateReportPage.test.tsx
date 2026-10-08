@@ -8,7 +8,9 @@ import { server } from '@/mocks/server';
 
 import { CreateReportPage } from './CreateReportPage';
 import { EditReportPage } from './EditReportPage';
-import { renderReportsPage, REPORT_YOUSEF, YOUSEF } from './reportsTestUtils';
+import { renderReportsPage, REPORT_YOUSEF } from './reportsTestUtils';
+
+const SALMA = 'c0000000-0000-4000-8000-000000000005';
 
 const paths = getAreaPaths('Specialist');
 
@@ -20,17 +22,23 @@ function renderCreate() {
 }
 
 async function fillReport() {
-  await userEvent.click(await screen.findByRole('radio', { name: /يوسف/ }));
+  await userEvent.click(await screen.findByRole('radio', { name: /سلمى/ }));
   await userEvent.type(screen.getByLabelText(/عنوان التقرير/), 'تقرير شهري');
   await userEvent.type(screen.getByLabelText(/جوانب تحتاج إلى دعم/), 'العدّ بعد 10');
   await userEvent.type(screen.getByLabelText(/التوصيات/), 'ألعاب عدّ قصيرة');
 }
 
 describe('CreateReportPage', () => {
-  it('offers only the specialist assigned children and validates required fields', async () => {
+  it('offers only assigned children without a report and validates required fields', async () => {
     renderCreate();
 
-    expect(await screen.findAllByRole('radio')).toHaveLength(3);
+    // One report per child: يوسف and نور already have one → edit links instead of radios.
+    expect(await screen.findAllByRole('radio')).toHaveLength(1);
+    expect(await screen.findByRole('link', { name: 'تعديل تقرير يوسف' })).toHaveAttribute(
+      'href',
+      paths.reportEdit(REPORT_YOUSEF),
+    );
+    expect(screen.getByRole('link', { name: 'تعديل تقرير نور' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'حفظ التقرير' }));
 
     expect(screen.getByText('الرجاء اختيار الطفل')).toBeInTheDocument();
@@ -59,7 +67,7 @@ describe('CreateReportPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'تم حفظ التقرير' })).toBeInTheDocument();
     expect(body).toEqual({
-      childId: YOUSEF,
+      childId: SALMA,
       title: 'تقرير شهري',
       weaknesses: 'العدّ بعد 10',
       recommendations: 'ألعاب عدّ قصيرة',

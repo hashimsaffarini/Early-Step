@@ -44,7 +44,7 @@ const TAB_ITEMS: readonly TabItem<ProfileTab>[] = [
     icon: <ClipboardCheck aria-hidden="true" size={16} />,
   },
   { value: 'activities', label: 'الأنشطة', icon: <ListChecks aria-hidden="true" size={16} /> },
-  { value: 'reports', label: 'التقارير', icon: <FileText aria-hidden="true" size={16} /> },
+  { value: 'reports', label: 'التقرير', icon: <FileText aria-hidden="true" size={16} /> },
 ];
 
 function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }) {

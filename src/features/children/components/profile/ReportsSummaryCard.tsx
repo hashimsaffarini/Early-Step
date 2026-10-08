@@ -5,7 +5,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { useChildReports } from '@/hooks/api/childResources';
+import { useChildReport } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
@@ -13,7 +13,6 @@ import styles from './profile.module.css';
 import { QueryStatus } from './TabStatus';
 
 const HEADING_ID = 'profile-reports-summary-title';
-const PREVIEW_COUNT = 2;
 
 export interface ReportsSummaryCardProps {
   childId: string;
@@ -22,24 +21,24 @@ export interface ReportsSummaryCardProps {
 
 export function ReportsSummaryCard({ childId, onShowReports }: ReportsSummaryCardProps) {
   const { paths } = useRoleArea();
-  const query = useChildReports(childId);
+  const query = useChildReport(childId);
   let body;
   if (query.isPending || query.isError) {
-    body = <QueryStatus query={query} errorTitle="تعذّر تحميل التقارير" />;
-  } else if (query.data.length === 0) {
+    body = <QueryStatus query={query} errorTitle="تعذّر تحميل التقرير" />;
+  } else if (!query.data) {
     body = (
       <EmptyState
         isBoxed={false}
         icon={<FileText />}
-        title="لا توجد تقارير بعد"
-        description="ستظهر هنا التقارير التي يضيفها الأخصائي."
+        title="لا يوجد تقرير بعد"
+        description="سيظهر هنا تقرير التقييم المبدئي الذي يكتبه الأخصائي."
       />
     );
   } else {
     body = (
       <>
         <ul className={styles.list}>
-          {query.data.slice(0, PREVIEW_COUNT).map((report) => (
+          {[query.data].map((report) => (
             <li key={report.id} className={styles.row}>
               <span className={`${styles.iconTile} ${styles.toneViolet}`} aria-hidden="true">
                 <FileText />
@@ -59,7 +58,7 @@ export function ReportsSummaryCard({ childId, onShowReports }: ReportsSummaryCar
         </ul>
         <div className={styles.footer}>
           <Button variant="soft" onClick={onShowReports}>
-            عرض كل التقارير
+            عرض التقرير
           </Button>
         </div>
       </>
@@ -68,7 +67,7 @@ export function ReportsSummaryCard({ childId, onShowReports }: ReportsSummaryCar
 
   return (
     <Card as="section" className={styles.card} aria-labelledby={HEADING_ID}>
-      <SectionHeader id={HEADING_ID} title="أحدث التقارير" icon={FileText} iconTone="violet" />
+      <SectionHeader id={HEADING_ID} title="التقرير" icon={FileText} iconTone="violet" />
       {body}
     </Card>
   );

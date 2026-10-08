@@ -4,7 +4,7 @@ import { Link } from 'react-router';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { useChildReports } from '@/hooks/api/childResources';
+import { useChildReport } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
@@ -12,26 +12,30 @@ import { firstLine } from './labels';
 import styles from './profile.module.css';
 import { QueryStatus } from './TabStatus';
 
-/** Child reports (`GET Reports/child/{childId}`), linking to the report detail. */
+/**
+ * The child's report (`GET Reports/child/{childId}`) — one initial-assessment report per child
+ * (business rule confirmed by the backend team) — linking to the report detail.
+ */
 export function ReportsTab({ childId }: { childId: string }) {
   const { paths } = useRoleArea();
-  const query = useChildReports(childId);
+  const query = useChildReport(childId);
   if (query.isPending || query.isError) {
-    return <QueryStatus query={query} errorTitle="تعذّر تحميل التقارير" />;
+    return <QueryStatus query={query} errorTitle="تعذّر تحميل التقرير" />;
   }
-  if (query.data.length === 0) {
+  const report = query.data;
+  if (!report) {
     return (
       <EmptyState
         icon={<FileText />}
-        title="لا توجد تقارير بعد"
-        description="ستظهر هنا التقارير التي يضيفها الأخصائي."
+        title="لا يوجد تقرير بعد"
+        description="سيظهر هنا تقرير التقييم المبدئي الذي يكتبه الأخصائي."
       />
     );
   }
 
   return (
     <ul className={`${styles.list} ${styles.twoColumns}`}>
-      {query.data.map((report) => (
+      {[report].map((report) => (
         <Card as="li" key={report.id} className={styles.card}>
           <div className={styles.cardHeader}>
             <span className={`${styles.iconTile} ${styles.toneViolet}`} aria-hidden="true">

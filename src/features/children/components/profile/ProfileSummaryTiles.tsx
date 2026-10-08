@@ -1,8 +1,8 @@
-import { ClipboardList, FileText, Gamepad2, ListChecks, type LucideIcon } from 'lucide-react';
+import { ClipboardList, Gamepad2, ListChecks, type LucideIcon } from 'lucide-react';
 
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Card } from '@/components/ui/Card';
-import { useChildPlanSummary, useChildReports } from '@/hooks/api/childResources';
+import { useChildPlanSummary } from '@/hooks/api/childResources';
 import { cx } from '@/utils/classNames';
 
 import styles from './profile.module.css';
@@ -17,10 +17,9 @@ interface Tile {
   tone: string | undefined;
 }
 
-/** Replit "ملخص الأنشطة" pastel tiles — server counts only (plan summary + reports). */
+/** Replit "ملخص الأنشطة" pastel tiles — server counts only (plan summary). */
 export function ProfileSummaryTiles({ childId }: { childId: string }) {
   const summary = useChildPlanSummary(childId);
-  const reports = useChildReports(childId);
 
   let body;
   if (summary.isPending || summary.isError) {
@@ -45,16 +44,6 @@ export function ProfileSummaryTiles({ childId }: { childId: string }) {
         icon: Gamepad2,
         tone: styles.toneSuccess,
       },
-      ...(reports.data
-        ? [
-            {
-              label: 'التقارير',
-              value: reports.data.length,
-              icon: FileText,
-              tone: styles.toneWarning,
-            },
-          ]
-        : []),
     ];
     body = (
       <ul className={styles.tiles}>
