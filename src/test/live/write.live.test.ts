@@ -242,8 +242,8 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
       image: null,
       type: 'SingleChoice',
       options: [
-        { text: 'E2E A', image: null, isCorrect: true, correctOrder: null, pairKey: null },
-        { text: 'E2E B', image: null, isCorrect: false, correctOrder: null, pairKey: null },
+        { text: 'E2E A', image: null, isCorrect: true, correctOrder: null },
+        { text: 'E2E B', image: null, isCorrect: false, correctOrder: null },
       ],
     });
     const detail = await fetchActivity('test', activityIds.test);
@@ -260,7 +260,6 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
         order: 2,
         isCorrect: false,
         correctOrder: null,
-        pairKey: null,
       });
       await deleteOption(option.id);
       expect((await fetchQuestion(questionId)).options).toHaveLength(1);

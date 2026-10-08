@@ -1,14 +1,13 @@
 import type { ActivityType } from '@/services/api/activityType';
 
-/** Question types from Swagger (`QuestionType` enum). */
-export const QUESTION_TYPES = ['SingleChoice', 'MultiSelect', 'Sequence', 'Matching'] as const;
+/** Question types from Swagger (`QuestionType` enum). `Matching` was removed by the backend (2026-10-08: 400). */
+export const QUESTION_TYPES = ['SingleChoice', 'MultiSelect', 'Sequence'] as const;
 export type QuestionType = (typeof QUESTION_TYPES)[number];
 
 export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   SingleChoice: 'اختيار إجابة واحدة',
   MultiSelect: 'اختيار عدة إجابات',
   Sequence: 'ترتيب',
-  Matching: 'مطابقة',
 };
 
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
@@ -49,7 +48,6 @@ export interface QuestionOption {
   isCorrect: boolean;
   order: number | null;
   correctOrder: number | null;
-  pairKey: string | null;
 }
 
 export interface Question {

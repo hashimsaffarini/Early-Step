@@ -25,8 +25,6 @@ function answerLabel(question: Question, option: QuestionOption): string | null 
       ? null
       : `الترتيب الصحيح: ${option.correctOrder.toString()}`;
   }
-  if (question.type === 'Matching')
-    return option.pairKey ? `مفتاح المطابقة: ${option.pairKey}` : null;
   return option.isCorrect ? 'إجابة صحيحة' : null;
 }
 

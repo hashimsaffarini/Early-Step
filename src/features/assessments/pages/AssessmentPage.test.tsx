@@ -132,8 +132,9 @@ describe('AssessmentPage (initial assessment)', () => {
   });
 
   it(
-    'marks unsupported question types and lets the child skip them',
+    'answers MultiSelect and Sequence with one option, as the live API requires',
     async () => {
+      const bodies: unknown[] = [];
       server.use(
         http.post(apiUrl('initial-assessment/:childId/start'), () =>
           HttpResponse.json({
@@ -141,24 +142,77 @@ describe('AssessmentPage (initial assessment)', () => {
             questions: [
               {
                 id: 'q1',
+                questionText: 'اختر الحيوانات',
+                type: 'MultiSelect',
+                options: [
+                  { id: 'o1', optionText: 'قطة' },
+                  { id: 'o2', optionText: 'كرسي' },
+                ],
+              },
+              {
+                id: 'q2',
                 questionText: 'رتّب الصور',
                 type: 'Sequence',
-                options: [{ id: 'o1', optionText: 'أ' }],
+                options: [
+                  { id: 'o3', optionText: 'أولاً' },
+                  { id: 'o4', optionText: 'ثانياً' },
+                ],
               },
             ],
           }),
         ),
+        http.post(apiUrl('initial-assessment/:id/answer'), async ({ request }) => {
+          const body = (await request.json()) as { questionId: string };
+          bodies.push(body);
+          return HttpResponse.json({ questionId: body.questionId, isCorrect: true });
+        }),
         http.post(apiUrl('initial-assessment/:id/complete'), () =>
-          HttpResponse.json({
-            message: 'لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة.',
-          }),
+          HttpResponse.json({ overallScore: 100, categories: [] }),
         ),
       );
       renderAssessment();
 
       await start();
 
-      expect(await screen.findByText(/هذا النوع من الأسئلة غير مدعوم بعد/)).toBeInTheDocument();
+      expect(await screen.findByText('اختر إجابة واحدة.')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: /^قطة/ }));
+      await userEvent.click(screen.getByRole('button', { name: 'التالي' }));
+      await userEvent.click(await screen.findByRole('button', { name: /^أولاً/ }));
+      await userEvent.click(screen.getByRole('button', { name: 'إنهاء التقييم' }));
+
+      expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
+      expect(bodies).toEqual([
+        { questionId: 'q1', selectedOptionId: 'o1' },
+        { questionId: 'q2', selectedOptionId: 'o3' },
+      ]);
+    },
+    LONG_FLOW,
+  );
+
+  it(
+    'lets the child skip a question without options and shows the server refusal to complete',
+    async () => {
+      server.use(
+        http.post(apiUrl('initial-assessment/:childId/start'), () =>
+          HttpResponse.json({
+            assessmentId: 'as-1',
+            questions: [
+              { id: 'q1', questionText: 'سؤال بلا خيارات', type: 'SingleChoice', options: [] },
+            ],
+          }),
+        ),
+        http.post(apiUrl('initial-assessment/:id/complete'), () =>
+          HttpResponse.json(
+            { message: 'لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة.' },
+            { status: 400 },
+          ),
+        ),
+      );
+      renderAssessment();
+
+      await start();
+
+      expect(await screen.findByText(/لم يُرسل الخادم خيارات له/)).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: 'تخطّي السؤال' }));
 
       expect(
@@ -167,7 +221,6 @@ describe('AssessmentPage (initial assessment)', () => {
       expect(
         screen.getByRole('button', { name: 'إعادة محاولة إنهاء التقييم' }),
       ).toBeInTheDocument();
-      expect(screen.queryByRole('heading', { name: 'تم إرسال التقييم' })).not.toBeInTheDocument();
     },
     LONG_FLOW,
   );

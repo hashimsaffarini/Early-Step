@@ -40,7 +40,6 @@ export function OptionEditDialog({ option, questionType, onClose }: OptionEditDi
       order: String(option.order ?? 1),
       isCorrect: option.isCorrect,
       correctOrder: option.correctOrder === null ? '' : String(option.correctOrder),
-      pairKey: option.pairKey ?? '',
     },
   });
 
@@ -54,7 +53,6 @@ export function OptionEditDialog({ option, questionType, onClose }: OptionEditDi
           order: Number(values.order),
           isCorrect: values.isCorrect,
           correctOrder: values.correctOrder ? Number(values.correctOrder) : null,
-          pairKey: values.pairKey || null,
         },
       },
       { onSuccess: onClose },
@@ -79,11 +77,6 @@ export function OptionEditDialog({ option, questionType, onClose }: OptionEditDi
             {(field) => (
               <Input {...field} {...register('correctOrder')} inputMode="numeric" dir="ltr" />
             )}
-          </FormField>
-        ) : null}
-        {questionType === 'Matching' ? (
-          <FormField label="مفتاح المطابقة">
-            {(field) => <Input {...field} {...register('pairKey')} />}
           </FormField>
         ) : null}
         <Controller

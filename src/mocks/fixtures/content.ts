@@ -18,7 +18,6 @@ export interface MockOptionRow {
   isCorrect: boolean;
   order: number;
   correctOrder: number | null;
-  pairKey: string | null;
 }
 
 export interface MockQuestionRow {
@@ -105,7 +104,6 @@ const INITIAL_QUESTIONS: readonly MockQuestionRow[] = [
         isCorrect: true,
         order: 1,
         correctOrder: null,
-        pairKey: null,
       },
       {
         id: 'o0000000-0000-4000-8000-000000000002',
@@ -114,7 +112,6 @@ const INITIAL_QUESTIONS: readonly MockQuestionRow[] = [
         isCorrect: false,
         order: 2,
         correctOrder: null,
-        pairKey: null,
       },
     ],
   },
@@ -133,7 +130,6 @@ const INITIAL_QUESTIONS: readonly MockQuestionRow[] = [
         isCorrect: false,
         order: 1,
         correctOrder: 2,
-        pairKey: null,
       },
       {
         id: 'o0000000-0000-4000-8000-000000000004',
@@ -142,7 +138,6 @@ const INITIAL_QUESTIONS: readonly MockQuestionRow[] = [
         isCorrect: false,
         order: 2,
         correctOrder: 1,
-        pairKey: null,
       },
       {
         id: 'o0000000-0000-4000-8000-000000000005',
@@ -151,7 +146,6 @@ const INITIAL_QUESTIONS: readonly MockQuestionRow[] = [
         isCorrect: false,
         order: 3,
         correctOrder: 3,
-        pairKey: null,
       },
     ],
   },

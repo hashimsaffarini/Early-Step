@@ -14,12 +14,13 @@ import { Card } from '@/components/ui/Card';
 import { resolveMediaUrl } from '@/services/api/mediaUrl';
 
 import { useSubmitAnswer } from '../api/assessmentMutations';
-import { isAnswerable } from '../state/assessmentRun';
+import { isAnswerable, needsSingleAnswerHint } from '../state/assessmentRun';
 import type { AssessmentQuestion } from '../types';
 
 import styles from './AssessmentQuestionRunner.module.css';
 
 const ANSWER_CHOSEN = 'رائع! تم اختيار إجابتك';
+const SINGLE_ANSWER_HINT = 'اختر إجابة واحدة.';
 
 export interface AssessmentQuestionRunnerProps {
   assessmentId: string;
@@ -108,6 +109,7 @@ export function AssessmentQuestionRunner({
 
         {supported ? (
           <>
+            {needsSingleAnswerHint(question) ? <p>{SINGLE_ANSWER_HINT}</p> : null}
             <div className={styles.answers} role="group" aria-label="الإجابات">
               {question.options.map((option) => (
                 <AnswerTile
@@ -125,8 +127,8 @@ export function AssessmentQuestionRunner({
           </>
         ) : (
           <Alert tone="warning">
-            هذا النوع من الأسئلة غير مدعوم بعد: لا يوفّر الخادم طريقة لإرسال هذا النوع من الإجابات.
-            يمكنك تخطّيه.
+            لا يمكن الإجابة عن هذا السؤال: لم يُرسل الخادم خيارات له. يمكنك تخطّيه، لكن قد لا يقبل
+            الخادم إنهاء التقييم قبل إصلاحه.
           </Alert>
         )}
 

@@ -5,14 +5,12 @@ const option = (
     text: string;
     isCorrect: boolean;
     correctOrder: string;
-    pairKey: string;
   }> = {},
 ) => ({
   text: 'خيار',
   image: null,
   isCorrect: false,
   correctOrder: '',
-  pairKey: '',
   ...overrides,
 });
 
@@ -50,14 +48,14 @@ describe('questionSchema', () => {
     ).toBe(true);
   });
 
-  it('requires pair keys that appear at least twice for matching', () => {
+  it('rejects the Matching type the backend no longer accepts', () => {
     const result = questionSchema.safeParse({
       text: 'س',
       image: null,
       type: 'Matching',
-      options: [option({ pairKey: 'أ' }), option({ pairKey: 'ب' })],
+      options: [option(), option()],
     });
-    expect(messages(result)[0]).toMatch(/مفتاح مطابقة/);
+    expect(result.success).toBe(false);
   });
 
   it('needs at least two options, each with text or an image', () => {

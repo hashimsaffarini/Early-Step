@@ -22,14 +22,12 @@ const EMPTY_OPTION: QuestionFormValues['options'][number] = {
   image: null,
   isCorrect: false,
   correctOrder: '',
-  pairKey: '',
 };
 
 const TYPE_HINTS = {
   SingleChoice: 'حدّد الإجابة الصحيحة الوحيدة.',
   MultiSelect: 'حدّد كل الإجابات الصحيحة.',
   Sequence: 'أدخل الترتيب الصحيح لكل خيار (1، 2، 3…).',
-  Matching: 'أعطِ الخيارات المتطابقة مفتاح المطابقة نفسه (مثل: أ، ب).',
 } as const;
 
 export interface QuestionFormDialogProps {
@@ -39,7 +37,7 @@ export interface QuestionFormDialogProps {
 
 /**
  * Add a question with its options (multipart `Options[i].*`). The answer fields shown depend on
- * the type: IsCorrect (single/multi), CorrectOrder (sequence), PairKey (matching).
+ * the type: IsCorrect (single/multi), CorrectOrder (sequence).
  */
 export function QuestionFormDialog({ activityId, onClose }: QuestionFormDialogProps) {
   const createMutation = useCreateQuestion();
@@ -75,7 +73,6 @@ export function QuestionFormDialog({ activityId, onClose }: QuestionFormDialogPr
             image: option.image,
             isCorrect: option.isCorrect,
             correctOrder: option.correctOrder ? Number(option.correctOrder) : null,
-            pairKey: option.pairKey || null,
           })),
         },
       },
@@ -197,11 +194,6 @@ export function QuestionFormDialog({ activityId, onClose }: QuestionFormDialogPr
                         dir="ltr"
                       />
                     )}
-                  </FormField>
-                ) : null}
-                {type === 'Matching' ? (
-                  <FormField label={`مفتاح المطابقة للخيار ${number}`}>
-                    {(field) => <Input {...field} {...register(`options.${index}.pairKey`)} />}
                   </FormField>
                 ) : null}
               </div>

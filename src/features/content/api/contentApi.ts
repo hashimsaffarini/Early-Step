@@ -74,7 +74,6 @@ const optionSchema = z.looseObject({
   isCorrect: z.boolean().nullish(),
   order: z.number().nullish(),
   correctOrder: z.number().nullish(),
-  pairKey: z.string().nullish(),
 });
 
 const questionSchema = z.looseObject({
@@ -127,7 +126,6 @@ function mapOption(dto: z.infer<typeof optionSchema>): QuestionOption {
     isCorrect: dto.isCorrect ?? false,
     order: dto.order ?? null,
     correctOrder: dto.correctOrder ?? null,
-    pairKey: dto.pairKey ?? null,
   };
 }
 
@@ -259,7 +257,6 @@ export interface OptionInput {
   image: File | null;
   isCorrect: boolean;
   correctOrder: number | null;
-  pairKey: string | null;
 }
 
 export interface QuestionInput {
@@ -277,7 +274,6 @@ export function buildQuestionForm(input: QuestionInput): FormData {
     Order: index + 1,
     IsCorrect: option.isCorrect,
     CorrectOrder: input.type === 'Sequence' ? option.correctOrder : null,
-    PairKey: input.type === 'Matching' ? option.pairKey : null,
   }));
   return toFormData({
     QuestionText: input.text,
@@ -322,7 +318,6 @@ export interface OptionUpdateInput {
   order: number;
   isCorrect: boolean;
   correctOrder: number | null;
-  pairKey: string | null;
 }
 
 export async function updateOption(optionId: string, input: OptionUpdateInput): Promise<void> {
@@ -334,7 +329,6 @@ export async function updateOption(optionId: string, input: OptionUpdateInput): 
       Order: input.order,
       IsCorrect: input.isCorrect,
       CorrectOrder: input.correctOrder,
-      PairKey: input.pairKey,
     }),
   );
 }

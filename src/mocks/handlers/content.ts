@@ -84,11 +84,12 @@ function parseOptions(form: FormData): MockOptionRow[] {
       isCorrect: text(form, key('IsCorrect')) === 'true',
       order: Number(text(form, key('Order'))),
       correctOrder: correctOrder ? Number(correctOrder) : null,
-      pairKey: text(form, key('PairKey')) || null,
     });
   }
   return options;
 }
+
+const QUESTION_TYPE_VALUES = ['SingleChoice', 'MultiSelect', 'Sequence'];
 
 export const contentHandlers: HttpHandler[] = [
   /* Categories */
@@ -160,6 +161,17 @@ export const contentHandlers: HttpHandler[] = [
     const form = await request.formData();
     const questionText = text(form, 'QuestionText');
     if (!questionText) return badRequest('نص السؤال مطلوب.');
+    // Live (2026-10-08): the `QuestionType` enum no longer has `Matching` → ProblemDetails 400.
+    if (!QUESTION_TYPE_VALUES.includes(text(form, 'Type'))) {
+      return HttpResponse.json(
+        {
+          title: 'One or more validation errors occurred.',
+          status: 400,
+          errors: { Type: [`The value '${text(form, 'Type')}' is not valid for Type.`] },
+        },
+        { status: 400 },
+      );
+    }
     mockQuestions.push({
       id: mockId(),
       activityId: activity.id,
@@ -218,7 +230,6 @@ export const contentHandlers: HttpHandler[] = [
     option.isCorrect = text(form, 'IsCorrect') === 'true';
     const correctOrder = text(form, 'CorrectOrder');
     option.correctOrder = correctOrder ? Number(correctOrder) : null;
-    option.pairKey = text(form, 'PairKey') || null;
     option.optionImageUrl = uploadedUrl(form, 'OptionImage', 'options') ?? option.optionImageUrl;
     return HttpResponse.json(option);
   }),

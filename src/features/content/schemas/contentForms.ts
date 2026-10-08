@@ -44,12 +44,11 @@ const optionSchema = z.object({
   image: imageFileSchema,
   isCorrect: z.boolean(),
   correctOrder: z.string(),
-  pairKey: z.string().trim(),
 });
 
 export const MIN_OPTIONS = 2;
 
-/** Per-type answer rules. Matching/Sequence semantics are inferred from the field names. */
+/** Per-type answer rules. Sequence semantics are inferred from `CorrectOrder`. */
 export const questionSchema = z
   .object({
     text: z.string().trim().min(1, 'نص السؤال مطلوب').max(MAX_TEXT),
@@ -92,22 +91,6 @@ export const questionSchema = z
         });
       }
     }
-    if (values.type === 'Matching') {
-      const counts = new Map<string, number>();
-      for (const option of values.options) {
-        counts.set(option.pairKey, (counts.get(option.pairKey) ?? 0) + 1);
-      }
-      const invalid = values.options.some(
-        (option) => !option.pairKey || (counts.get(option.pairKey) ?? 0) < 2,
-      );
-      if (invalid) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['options'],
-          message: 'لكل خيار مفتاح مطابقة يتكرر في خيار آخر واحد على الأقل',
-        });
-      }
-    }
   });
 export type QuestionFormValues = z.infer<typeof questionSchema>;
 
@@ -124,7 +107,6 @@ export const optionEditSchema = z.object({
   order: z.string().regex(/^\d+$/, 'أدخل رقماً صحيحاً'),
   isCorrect: z.boolean(),
   correctOrder: z.string(),
-  pairKey: z.string().trim(),
 });
 export type OptionEditFormValues = z.infer<typeof optionEditSchema>;
 

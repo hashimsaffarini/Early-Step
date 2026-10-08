@@ -35,7 +35,6 @@ const QUESTION_TYPES: readonly AssessmentQuestionType[] = [
   'SingleChoice',
   'MultiSelect',
   'Sequence',
-  'Matching',
 ];
 
 const optionSchema = z.looseObject({
