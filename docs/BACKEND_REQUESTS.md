@@ -1,108 +1,96 @@
 # Backend requests
 
-For the backend developer. Verified live on 2026-10-07 against `https://earlystep22.runasp.net/api/`.
-Each item: what the backend does now → what the frontend needs → a suggested contract. Ordered by
-priority. Full endpoint status: `API_VERIFICATION_MATRIX.md`.
+For the backend developer — **only what is still needed**, re-verified live on 2026-10-08 against
+`https://earlystep22.runasp.net/api/` after your update. Thank you for the fixes: anonymous access
+on `Admin/categoriesActivity` and `initial-assessment/{id}/answer` (now 401), "delete all options",
+forgot-password (same answer for every email), the `Teacher/feedbacks` endpoint, and the first plan
+activity (works once a teacher is assigned) are all confirmed working.
 
-## Bugs
+Production hardening (CORS, Swagger exposure, refresh tokens, notifications) is listed separately
+in `SECURITY.md` and is **not** part of this list.
 
-### 1. Adding the first activity to a child without a plan returns 500
+## Blocking (please fix)
 
-- **Feature:** specialist builds a training plan (`ChildPlansPage`).
-- **Now:** `POST TrainingPlan/specialist/children/{childId}/activities` → **500** when the child has
-  no plan yet; nothing is created. With an existing plan it works. There is no "create plan" endpoint.
-- **Needed:** the first activity creates the plan, or a separate create call.
-- **Suggested:** create the plan implicitly on first add (→ 200), or
-  `POST TrainingPlan/specialist/children/{childId}` → `201 { id, status: "Active", activities: [] }`.
+### 1. No child can finish the initial assessment right now
 
-### 2. "Delete all options" does nothing
+- **Now:** the live assessment contains two questions with **no options**:
+  `95fb31c4-b1cf-49bc-8466-04fcd09c4eea` (SingleChoice) and `10b71e85-203c-4d29-8e84-08b55da47119`
+  (MultiSelect). They cannot be answered, and `complete` requires every question →
+  `400 "لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة."` for every child.
+- **Fix:** add options to those questions or remove them from the assessment. Suggested guard:
+  reject adding a question without options to the assessment (or let `complete` ignore them).
 
-- **Feature:** question editor (replace options).
-- **Now:** `DELETE Admin/questions/{questionId}/options` → 200, but every option is still there.
-- **Needed:** the options are actually removed (or a 4xx if not allowed).
-- **Suggested:** delete the options and return 204.
+### 2. `GET Chats/users` returns 500 for Parent and Specialist
 
-### 3. `Reports/child/{childId}` returns one report, not a list
+- **Now:** empty `500` for Parent and Specialist (Admin and Super Admin get 200). Yesterday it
+  returned 200 for everyone. Conversations, messages, send and seen still work.
+- **Impact:** parents and specialists cannot start a new conversation.
+- **Expected:** `200 [{ id, name, role }]` — ideally only the people related to the user's
+  children (yesterday a parent received every user).
 
-- **Feature:** child profile → reports tab (parent and specialist).
-- **Now:** returns a **single report object** (the first) when reports exist, and
-  `404 { message: "لا يوجد تقرير ." }` when there are none.
-- **Needed:** all reports of the child.
-- **Suggested:** `200 [ { id, childId, childName, specialistId, specialistName, title, weaknesses,
-recommendations, createdAt } ]`, `200 []` when none. (The frontend already accepts both shapes.)
+## Needed for the workflow
 
-## Security (please fix before release)
+### 3. Assessment result after the session
 
-### 4. Two endpoints still answer without authentication
+- **Now (documented flow):** `POST initial-assessment/{assessmentId}/complete` returns
+  `{ childId, childName, parentId, parentName, overallScore, categories: [{ categoryName, percentage }] }`.
+  The frontend shows it right after completion. Afterwards it cannot be read again: there is no GET,
+  and `start` for a completed child returns 404, so the frontend never learns the `assessmentId`.
+- **Needed:** the specialist (who writes the report) and the parent see the result later.
+- **Suggested:** `GET initial-assessment/children/{childId}/result` → the same object plus
+  `assessmentId` and `completedAt` (404 when not completed).
 
-- **Now:** `GET Admin/categoriesActivity?type=…` → **200 anonymously** (all other `Admin/*` now
-  return 401 — thank you). `POST initial-assessment/{assessmentId}/answer` is processed
-  anonymously (404 "assessment not found" for an unknown id instead of 401).
-- **Suggested:** `[Authorize(Roles = "Admin")]` on the first; `[Authorize]` + ownership check
-  (the child belongs to the caller) on the second.
+### 4. MultiSelect and Sequence scoring
 
-### 5. Public registration and role
+- **Now:** every type takes one `{ questionId, selectedOptionId }`; a second answer → 400
+  "تمت الإجابة على هذا السؤال مسبقًا"; array fields are ignored. MultiSelect = correct when the one
+  chosen option is a correct one. **Sequence can never be correct** — its options have
+  `IsCorrect = false`, so choosing the right first step returned `isCorrect: false`.
+- **Please confirm one of:** (a) this single-option behaviour is intended (then Sequence needs a
+  rule, e.g. "correct = the option with `CorrectOrder` 1"), or (b) accept
+  `selectedOptionIds: [guid]` (MultiSelect) / `orderedOptionIds: [guid]` (Sequence). The frontend
+  sends one option today and can switch to (b) as soon as it exists.
 
-- **Now:** `POST Auth/register` takes a free-text `Role`.
-- **Question:** is the role restricted server-side to Parent for public registration? Please confirm.
-- **Suggested:** ignore the client role on public registration (always Parent).
+### 5. Saving a child's plan-activity answers
 
-### 6. Smaller issues
-
-| Issue               | Now                                                       | Suggested                                                       |
-| ------------------- | --------------------------------------------------------- | --------------------------------------------------------------- |
-| Forgot-password     | unknown email → `400 "Email not found."` (reveals emails) | same 200 response for known and unknown emails                  |
-| CORS                | `Access-Control-Allow-Origin: *`                          | allow only the deployed frontend origin(s)                      |
-| Chat contacts       | `GET Chats/users` gives a parent **every** user           | only the specialist/teacher of the parent's children (and back) |
-| `parentName` values | some `SuperAdmin/children` values are emails              | store display names                                             |
-
-## Missing features
-
-### 7. Initial-assessment results cannot be read again
-
-- **Now:** `complete` returns `{ childId, childName, parentId, parentName, overallScore,
-categories: [{ categoryName, percentage }] }` (not in Swagger); there is no GET.
-- **Needed:** the parent, specialist and admin open the result later.
-- **Suggested:** `GET initial-assessment/children/{childId}/result` → same object (404 if none);
-  document the `complete` response in Swagger.
-
-### 8. Answer payloads for MultiSelect / Sequence / Matching
-
-- **Now:** answers take one `selectedOptionId`.
-- **Suggested:** `{ questionId, selectedOptionIds: [guid] }` (MultiSelect),
-  `{ questionId, orderedOptionIds: [guid] }` (Sequence),
-  `{ questionId, pairs: [{ leftOptionId, rightOptionId }] }` (Matching).
-
-### 9. Plan activities: no way to save the child's answers or result
-
-- **Now:** the child-facing activity detail hides answers (good) but nothing accepts answers;
-  `score`, `correctAnswers`, `wrongAnswers`, `isCompleted` can never change.
+- **Now:** plan activities expose `score`, `correctAnswers`, `wrongAnswers`, `isCompleted`, but no
+  endpoint sets them, so progress never changes when a child plays.
 - **Suggested:** `POST TrainingPlan/children/{childId}/activities/{activityId}/answers`
-  `{ answers: [{ questionId, selectedOptionIds?, orderedOptionIds?, pairs? }] }` →
-  `{ score, correctAnswers, wrongAnswers, isCompleted, completedAt }`. For Matching the child view
-  also needs the two sides (e.g. `side: "left"|"right"` on options, without `pairKey`).
+  `{ answers: [{ questionId, selectedOptionId }] }` → `{ score, correctAnswers, wrongAnswers, isCompleted, completedAt }`.
+  If this exists under another route, please share it.
 
-### 10. Teacher notes list
+### 6. Real-time chat (SignalR) on the deployed server
 
-- **Now:** `GET Teacher/feedbacks` (Apidog) → 404; Swagger has only single-note routes.
-- **Suggested:** `GET Teacher/children/{childId}/notes` → `[{ id, childId, content, createdAt }]`,
-  and a read endpoint for the specialist/parent.
+- **Now:** Apidog documents `wss://localhost:7256/chatHub`; on `earlystep22.runasp.net`,
+  `POST /chatHub/negotiate?negotiateVersion=1` (and `/api/chatHub/...`) returns 404 with or
+  without a token. Swagger lists no hub.
+- **Needed:** the deployed hub path (`app.MapHub<…>("…")`), how the JWT is passed (`access_token`
+  query string?), and the server → client event names (new message, seen). The frontend uses
+  REST + polling until then.
 
-### 11. Other gaps
+## Small fixes
 
-| Need                                | Suggested                                                                                            |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Real-time chat                      | Confirm whether a SignalR hub exists (`/chatHub/negotiate` → 404); if yes, its URL and event names   |
-| Notifications                       | `GET Notifications`, `GET Notifications/unread-count`, `POST Notifications/{id}/read`                |
-| Delete chat message                 | `DELETE Chats/messages/{id}` (sender only)                                                           |
-| User management (Admin/Super Admin) | create staff user, edit, deactivate/delete, change role                                              |
-| Delete own account / test cleanup   | a way to delete a user, so registration can be tested with disposable accounts                       |
-| Assessment composition              | `GET initial-assessment/questions` to list the questions already in the assessment                   |
-| Category flags                      | `isInInitialAssessment` in `Admin/categoriesActivity` disagrees with `initial-assessment/categories` |
+| #   | Now                                                                                                             | Suggested                                                                           |
+| --- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 7   | First plan activity for a child **without a teacher** → empty `500`, nothing created                            | `400 { message: "أسند معلماً للطفل أولاً" }` (or create the plan without a teacher) |
+| 8   | `specialist/CreateReport` accepts a **second** report for the same child (one-report rule)                      | `409 { message }`, or update the existing report                                    |
+| 9   | `isInInitialAssessment` in `Admin/categoriesActivity` is `false` for all, while the assessment has 3 categories | Return the real flag (the frontend uses `initial-assessment/categories`)            |
+
+## Questions
+
+10. **Public registration role:** our rule is _public registration creates Parent accounts only_;
+    staff accounts are created by seed data or an admin-only flow. Please confirm the server
+    ignores (or rejects) any other `Role` value on `POST Auth/register`. We did not test this by
+    sending privileged roles, because a created account could not be deleted.
+11. **Teacher feedback readers:** `GET Teacher/feedbacks` returns 403 for Specialist, Parent, Admin
+    and Super Admin. Should the specialist (and parent) be able to read a child's feedback? If yes,
+    which endpoint?
+12. **Forgot password:** both `Auth/ForgotPassword` and `Auth/forgot-password` answer neutrally.
+    Which one is canonical? The frontend uses `Auth/ForgotPassword` with the reset-code flow.
 
 ## Accounts / data
 
-- A **Teacher demo account** (with at least one assigned child) — Teacher endpoints are
-  unverified.
-- Two chat messages "E2E TEST MESSAGE — SAFE TO DELETE" (demo parent → demo specialist) remain
-  because there is no delete endpoint; please delete them from the database.
+- A **Teacher demo account** with at least one assigned child (Teacher endpoints, including the new
+  feedback list, are unverified).
+- Two chat messages "E2E TEST MESSAGE — SAFE TO DELETE" (demo parent → demo specialist, from
+  2026-10-07) remain — there is no delete endpoint; please delete them in the database.

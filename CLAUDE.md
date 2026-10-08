@@ -21,8 +21,8 @@ assessment, admin content, plans, reports, dashboards, users, teacher notes, cha
 polling) — and tested with MSW. **Reads and writes are live-verified** for Parent, Specialist,
 Admin and Super Admin (`docs/API_VERIFICATION_MATRIX.md`, `npm run test:live:read` /
 `test:live:write` with disposable `E2E Test …` records); no Teacher account yet. Anonymous Admin
-access is fixed; remaining backend issues are in `docs/BACKEND_REQUESTS.md` and
-`docs/SECURITY.md`. Missing backend capabilities are shown as honest "not available" states.
+access is fixed (re-verified 2026-10-08); the current, short list of remaining backend work is
+`docs/BACKEND_REQUESTS.md`; production hardening is separate in `docs/SECURITY.md`. Missing backend capabilities are shown as honest "not available" states.
 Status per feature: `docs/BACKEND_INTEGRATION_STATUS.md`. Development mock mode
 (`VITE_USE_MOCKS=true`, dev only) lets you review the integrated UI without accounts.
 Next steps: `docs/IMPLEMENTATION_PLAN.md`.

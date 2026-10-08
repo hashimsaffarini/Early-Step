@@ -58,13 +58,17 @@ exist — ADR required; credentials only via CI secrets.
     Specialist, Admin, Super Admin.
   - `npm run test:live:write` — the app's own write functions on disposable `E2E Test …` records:
     child create/edit/delete, assessment start/answer/complete (result), assign specialist,
-    assign teacher, report create/edit/PDF/delete (parent sees it), category / test + game
+    assign teacher, report create/edit/PDF/delete (parent sees it), first plan activity creates the
+    plan, category / test + game
     activities / question / option CRUD, assessment composition. Every record is tracked and
     deleted in `afterAll`; a 404 counts as already gone (cascades); **any other leftover fails the
     run** with its id. Not covered: chat send (messages cannot be deleted), registration (users
     cannot be deleted).
-  - `npm run test:live` runs both, sequentially. Result 2026-10-07: **read 6/6, write 6/6 pass**,
-    cleanup verified.
+  - `npm run test:live` runs both, sequentially. Result 2026-10-07: read 6/6, write 6/6.
+    **Result 2026-10-08: read 5/6, write 5/6** — both failures are backend issues
+    (`Chats/users` 500; assessment completion blocked by option-less questions); cleanup verified.
+  - Live errors are redacted (`liveSession.ts` strips request config/response) so no token or
+    response body reaches the test output.
   - Browser E2E with real logins is run by a person (the assistant does not type real passwords
     into the browser).
 
@@ -74,9 +78,9 @@ exist — ADR required; credentials only via CI secrets.
 - Don't snapshot whole pages.
 - Don't commit real credentials or real children's data as fixtures.
 
-## Current tests (2026-10-07)
+## Current tests (2026-10-08)
 
-**311 tests in 62 files** (`npm run test`), all against MSW:
+**313 tests in 62 files** (`npm run test`), all against MSW:
 
 | Area                                                  | Files | Covers                                                                                                                                                                                       |
 | ----------------------------------------------------- | ----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

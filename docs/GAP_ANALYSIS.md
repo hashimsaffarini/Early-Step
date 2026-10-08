@@ -118,3 +118,21 @@ Confirmed while integrating against the live Swagger (details and status per cap
   demo account; authorization to run write flows on disposable records.
 - **Inconsistencies reported:** `initial-assessment/categories` vs `isInInitialAssessment` flags;
   `parentName` containing emails; `Chats/users` exposing all users.
+
+### Re-verification after the backend update (2026-10-08)
+
+Current list: `BACKEND_REQUESTS.md`. Earlier "missing" items above are superseded by it.
+
+- **Resolved:** anonymous access on the last two endpoints; delete-all-options; forgot-password
+  enumeration; `Teacher/feedbacks` deployed (Teacher-only, shape unverified — no Teacher account);
+  first plan activity creates the plan once a teacher is assigned.
+- **Decided by the backend team:** one initial-assessment report per child (frontend now models a
+  single report); assessment results are returned by `complete` (no GET); `Matching` removed;
+  refresh token and notifications out of scope; broad CORS kept for development.
+- **Still open:** two option-less assessment questions block every completion; `Chats/users` 500
+  for Parent/Specialist; result not readable after the session; MultiSelect/Sequence answered with
+  one option (Sequence never scored correct); no plan-activity result submission; no deployed
+  SignalR hub; registration role rule to confirm; Teacher demo account.
+- **Product conflict to note:** the written flow has the specialist monitoring progress and
+  reading teacher feedback, but `Teacher/feedbacks` is Teacher-only and plan results cannot be
+  submitted — raised as questions, not assumed.

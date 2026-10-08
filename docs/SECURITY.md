@@ -22,27 +22,43 @@
 - Replit loads a third-party script (ResponsiveVoice) with a public key and never uses it — do
   not carry over.
 
-## Live backend findings — re-checked 2026-10-07
+## Live backend findings — re-checked 2026-10-08
 
-Re-checked with **status codes and access behaviour only** (anonymous sweep of all 75 Swagger
-operations; one fictional `.invalid` email for forgot-password; a CORS preflight). No personal data
-was downloaded or recorded; nothing was exploited beyond confirming whether access is protected.
-Registration role restriction was **not** probed — it is a question for the backend team
-(`BACKEND_REQUESTS.md` §5).
+Checked with **status codes and access behaviour only** (anonymous requests to the formerly open
+endpoints, one fictional `.invalid` email for forgot-password, a CORS preflight). No personal data
+was downloaded or recorded. Registration role restriction was **not** probed by sending privileged
+roles (an account created that way could not be deleted) — it is a confirmation request to the
+backend team (`BACKEND_REQUESTS.md` §10).
 
-| Severity | Finding                                                                                                 | Status 2026-10-07                                        | Recommendation                                                 |
-| -------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------- |
-| Critical | `GET /api/Admin/*` answered without authentication (users, emails, children)                            | **FIXED** — 67 of 69 protected operations now return 401 | Keep `[Authorize]` on every controller                         |
-| Medium   | `GET Admin/categoriesActivity?type=` answers anonymously (category names/counts, no personal data)      | **STILL PRESENT**                                        | `[Authorize(Roles = "Admin")]`                                 |
-| Medium   | `POST initial-assessment/{id}/answer` is processed without authentication (404 for unknown id, not 401) | **STILL PRESENT**                                        | `[Authorize]` + check the assessment's child belongs to caller |
-| High     | Registration accepts a client-supplied `Role`                                                           | **NOT RETESTED** — open question to the backend team     | Public registration = Parent only                              |
-| Medium   | Forgot-password reveals whether an email exists (`400 "Email not found."`)                              | **STILL PRESENT**                                        | Same response for known/unknown emails (UI is already neutral) |
-| Medium   | CORS `Access-Control-Allow-Origin: *`                                                                   | **STILL PRESENT** (no credentials header)                | Restrict to the frontend origin(s)                             |
-| Medium   | `GET Chats/users` gives any signed-in user (including parents) every user's name and role               | **STILL PRESENT**                                        | Limit to related staff/parents                                 |
-| Low      | Swagger UI and OpenAPI public in production                                                             | **STILL PRESENT**                                        | Protect/disable in production                                  |
-| Low      | Some `SuperAdmin/children` `parentName` values are email addresses                                      | **NOT RETESTED**                                         | Store display names                                            |
-| Info     | Child-facing plan activities hide answers (`isCorrect` absent, `correctOrder`/`pairKey` null)           | **VERIFIED** (good)                                      | Keep                                                           |
-| Info     | Authenticated cross-role calls return 403; outsider reading a chat conversation gets 404                | **VERIFIED** (good)                                      | Keep                                                           |
+### Graduation-project scope
+
+| Severity | Finding                                                                            | Status 2026-10-08                                        | Recommendation                    |
+| -------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------- |
+| Critical | `GET /api/Admin/*` answered without authentication                                 | **FIXED** (10-07)                                        | Keep `[Authorize]` everywhere     |
+| Medium   | `GET Admin/categoriesActivity` answered anonymously                                | **FIXED** — 401                                          |                                   |
+| Medium   | `POST initial-assessment/{id}/answer` processed anonymously                        | **FIXED** — 401                                          |                                   |
+| Medium   | Forgot-password revealed whether an email exists                                   | **FIXED** — neutral 200 on both routes                   |                                   |
+| High     | Registration accepts a client-supplied `Role`                                      | **NOT RETESTED** — awaiting backend confirmation         | Public registration = Parent only |
+| Medium   | `GET Chats/users` gave any user every user's name and role                         | **CHANGED** — now 500 for Parent/Specialist (regression) | Return only related users         |
+| Low      | Some `SuperAdmin/children` `parentName` values are email addresses                 | **NOT RETESTED**                                         | Store display names               |
+| Info     | Child-facing plan activities hide answers; cross-role calls 403; chat outsider 404 | **VERIFIED** (good)                                      | Keep                              |
+
+### Production hardening (not graduation blockers)
+
+| Item                                         | Status                                                               | Recommendation                                |
+| -------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------- |
+| CORS `Access-Control-Allow-Origin: *`        | Present — intentional for development (Replit, several environments) | Restrict to the deployed frontend origin(s)   |
+| Swagger UI / OpenAPI public                  | Present                                                              | Protect or disable in production              |
+| No refresh token / server logout (120 h JWT) | Backend decision — out of scope                                      | Shorter-lived tokens + refresh for production |
+| Notifications                                | Out of scope                                                         | —                                             |
+
+### Test hygiene note (2026-10-08)
+
+A failing live test printed the full Axios error, including the demo Parent account's bearer
+token, to the **local terminal only** (nothing was committed or written to docs). The live suites
+now strip `config`, `request` and `response` from errors before Vitest reports them
+(`src/test/live/liveSession.ts`). The backend has no logout/revocation endpoint, so that token stays
+valid until it expires (120 h); changing the demo Parent password does not revoke it either.
 
 Frontend route guards (`RequireRole`) are **UX only** and do not mitigate any of the above.
 

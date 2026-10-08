@@ -1,8 +1,8 @@
 # Backend integration status
 
-Branch `feature/backend-integration` · updated 2026-10-07 (final live verification with
-authorized disposable writes) · backend `https://earlystep22.runasp.net/api/` · per-endpoint
-results: `API_VERIFICATION_MATRIX.md` · shapes: `api/LIVE_CONTRACTS.md` · open backend items:
+Branch `feature/backend-integration` · updated 2026-10-08 (re-verification after the backend
+update) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results:
+`API_VERIFICATION_MATRIX.md` · shapes: `api/LIVE_CONTRACTS.md` · open backend items:
 `BACKEND_REQUESTS.md` · players: `PLAYER_BACKEND_COMPATIBILITY.md`.
 
 ## Status values
@@ -11,69 +11,64 @@ results: `API_VERIFICATION_MATRIX.md` · shapes: `api/LIVE_CONTRACTS.md` · open
 | ------------------------------ | ------------------------------------------------------------------------------------- |
 | **VERIFIED LIVE**              | Read path verified against the real backend with the app's own fetcher + schema       |
 | **VERIFIED LIVE — WRITE**      | Write executed live on disposable `E2E Test …` data, effect re-read, cleanup verified |
-| **PARTIALLY VERIFIED**         | Works live, but with a backend bug or limitation (see Notes)                          |
-| **IMPLEMENTED**                | Wired, but not verified live or with mocks (no screen path to test)                   |
+| **PARTIALLY VERIFIED**         | Works live, with a backend limitation (see Notes)                                     |
 | **MOCK TESTED**                | Wired and tested against MSW only                                                     |
-| **BLOCKED BY BACKEND**         | No (working) endpoint; the UI shows an honest "not available" state                   |
+| **BLOCKED BY BACKEND**         | Missing or broken on the backend; the UI shows an honest state                        |
 | **BLOCKED BY MISSING ACCOUNT** | Needs an account we do not have (Teacher)                                             |
-| **NOT REQUIRED**               | Not needed by the product / not used                                                  |
+| **OUT OF SCOPE**               | Agreed out of the graduation-project scope (production recommendation at most)        |
+| **NOT REQUIRED**               | Not needed by the product                                                             |
 
 ## How verification was done
 
 - Demo accounts Parent, Specialist, Admin, SuperAdmin (gitignored `.env.e2e.local`); no Teacher.
-- `npm run test:live:read` (6 tests) and `npm run test:live:write` (6 tests) run the **app's own**
-  API functions against the live API. The write suite creates `E2E Test …` records, tracks ids,
-  deletes them in `afterAll` and fails if anything remains — **both pass**.
-- Python scripts outside the repo for what the suite does not cover (icon uploads, all question
-  types, chat, plan add/remove on an existing plan) — structures and status codes only.
-- Browser: real-account sign-in is done by the user (the assistant does not type real passwords).
+- `npm run test:live:read` / `npm run test:live:write` run the **app's own** API functions against
+  the live API; the write suite creates `E2E Test …` records, deletes them in `afterAll` and fails
+  on any leftover. Live errors are redacted (no token or body reaches the test output).
+- Python scripts outside the repo for what the suites do not cover — status codes and shapes only.
+- Browser sign-in with real accounts is done by the user (the assistant does not type real passwords).
 
 ## Matrix
 
 ### Auth & core
 
-| Capability                          | API                     | Status                     | Notes                                                       |
-| ----------------------------------- | ----------------------- | -------------------------- | ----------------------------------------------------------- |
-| Login, role normalization, expiry   | `POST Auth/login`       | **VERIFIED LIVE**          | 4 accounts; JWT 120 h                                       |
-| Route guards / server authorization | —                       | **VERIFIED LIVE**          | anon 401 (67/69 protected ops), cross-role 403              |
-| Error parsing                       | ProblemDetails, message | **VERIFIED LIVE**          |                                                             |
-| Parent registration                 | `POST Auth/register`    | MOCK TESTED                | not created live: no user-delete endpoint for cleanup       |
-| Forgot password                     | `Auth/ForgotPassword`   | PARTIALLY VERIFIED         | unknown email → 400 (enumeration); UI shows neutral message |
-| Reset password                      | `Auth/reset-password`   | BLOCKED BY MISSING ACCOUNT | needs a disposable mailbox                                  |
-| Change password, email confirmation | —                       | NOT REQUIRED               | no screen (confirmation link is served by the backend)      |
-| Refresh token / `me` / logout       | —                       | BLOCKED BY BACKEND         |                                                             |
+| Capability                          | API                   | Status                     | Notes                                                        |
+| ----------------------------------- | --------------------- | -------------------------- | ------------------------------------------------------------ |
+| Login, role normalization, expiry   | `POST Auth/login`     | **VERIFIED LIVE**          | JWT 120 h                                                    |
+| Server authorization                | —                     | **VERIFIED LIVE**          | anonymous → 401 everywhere checked; cross-role → 403         |
+| Forgot password                     | `Auth/ForgotPassword` | **VERIFIED LIVE**          | neutral answer for unknown emails (fixed 10-08)              |
+| Reset password                      | `Auth/reset-password` | BLOCKED BY MISSING ACCOUNT | needs a disposable mailbox                                   |
+| Parent registration                 | `POST Auth/register`  | MOCK TESTED                | not created live (no user delete); role rule to be confirmed |
+| Refresh token / server logout       | —                     | OUT OF SCOPE               | backend decision; production recommendation                  |
+| Change password, email confirmation | —                     | NOT REQUIRED               | no screen                                                    |
 
 ### Parent & children
 
-| Capability                | API                                           | Status                    | Notes                                                      |
-| ------------------------- | --------------------------------------------- | ------------------------- | ---------------------------------------------------------- |
-| My children, child detail | `GET Parent/GetMyChildren`, `GET Parent/{id}` | **VERIFIED LIVE**         |                                                            |
-| Add / edit / delete child | `POST/PATCH/DELETE Parent`                    | **VERIFIED LIVE — WRITE** | delete cascades reports, assessment, plan                  |
-| Plan activities + summary | `TrainingPlan/children/{id}/activities…`      | **VERIFIED LIVE**         | `type` required → app fetches tests + games                |
-| Plan activity player      | `…/activities/{activityId}`                   | PARTIALLY VERIFIED        | questions load (bug fixed); no result submission (backend) |
-| Child reports             | `GET Reports/child/{id}`                      | PARTIALLY VERIFIED        | backend returns only ONE report                            |
-| Report PDF                | `GET Reports/{id}/download`                   | **VERIFIED LIVE**         | parent and specialist                                      |
+| Capability                | API                                           | Status                    | Notes                                          |
+| ------------------------- | --------------------------------------------- | ------------------------- | ---------------------------------------------- |
+| My children, child detail | `GET Parent/GetMyChildren`, `GET Parent/{id}` | **VERIFIED LIVE**         |                                                |
+| Add / edit / delete child | `POST/PATCH/DELETE Parent`                    | **VERIFIED LIVE — WRITE** | delete cascades reports, assessment, plan      |
+| Plan activities + summary | `TrainingPlan/children/{id}/activities…`      | **VERIFIED LIVE**         |                                                |
+| Plan activity player      | `…/activities/{activityId}`                   | PARTIALLY VERIFIED        | plays; results cannot be saved (no endpoint)   |
+| Child report              | `GET Reports/child/{id}`                      | **VERIFIED LIVE**         | one report per child (confirmed business rule) |
+| Report PDF                | `GET Reports/{id}/download`                   | **VERIFIED LIVE**         |                                                |
 
 ### Initial assessment
 
-| Capability                        | API                           | Status                    | Notes                                                    |
-| --------------------------------- | ----------------------------- | ------------------------- | -------------------------------------------------------- |
-| Start / answer / complete         | `POST initial-assessment/{…}` | **VERIFIED LIVE — WRITE** | complete returns the result; shown on the results screen |
-| Result shown after completion     | `complete` response           | **VERIFIED LIVE — WRITE** | overall + per-category percentages; "not a diagnosis"    |
-| Result later (profile tab, staff) | —                             | BLOCKED BY BACKEND        | no GET results endpoint                                  |
-| MultiSelect / Sequence / Matching | —                             | BLOCKED BY BACKEND        | one option id per answer; app skips these honestly       |
+| Capability                         | API                           | Status                    | Notes                                                                   |
+| ---------------------------------- | ----------------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| Start, answer (all 3 types)        | `POST initial-assessment/{…}` | **VERIFIED LIVE — WRITE** | one option per question for every type                                  |
+| Complete + result screen           | `complete` response           | BLOCKED BY BACKEND        | worked 10-07; **10-08 fails for every child** (2 option-less questions) |
+| Result later (profile, specialist) | —                             | BLOCKED BY BACKEND        | result only returned by `complete`; no GET                              |
+| MultiSelect / Sequence scoring     | —                             | PARTIALLY VERIFIED        | accepted with one option; Sequence always scored incorrect              |
 
 ### Admin content
 
-| Capability                                       | API                                        | Status                    | Notes                              |
-| ------------------------------------------------ | ------------------------------------------ | ------------------------- | ---------------------------------- |
-| Lists and detail (categories, activities, Qs)    | `GET Admin/…`                              | **VERIFIED LIVE**         |                                    |
-| Category create / rename / delete                | `Admin/categories`                         | **VERIFIED LIVE — WRITE** |                                    |
-| Activity create / edit (+ icon) / delete         | `Admin/activities/{type}`                  | **VERIFIED LIVE — WRITE** | test and game                      |
-| Question create (4 types), edit, option edit/del | `Admin/questions…`, `question-options`     | **VERIFIED LIVE — WRITE** |                                    |
-| Delete all options                               | `DELETE Admin/questions/{id}/options`      | BLOCKED BY BACKEND        | 200 but no effect                  |
-| Assessment composition                           | `initial-assessment/categories, questions` | **VERIFIED LIVE — WRITE** | category flags disagree (reported) |
-| Add one option; list assessment questions        | —                                          | BLOCKED BY BACKEND        |                                    |
+| Capability                                       | API                                        | Status                    | Notes                           |
+| ------------------------------------------------ | ------------------------------------------ | ------------------------- | ------------------------------- |
+| Lists and detail                                 | `GET Admin/…`                              | **VERIFIED LIVE**         |                                 |
+| Category / activity (test, game, icon) CRUD      | `Admin/categories`, `Admin/activities`     | **VERIFIED LIVE — WRITE** |                                 |
+| Questions (3 types), options, delete all options | `Admin/questions…`, `question-options`     | **VERIFIED LIVE — WRITE** | Matching removed by the backend |
+| Assessment composition                           | `initial-assessment/categories, questions` | **VERIFIED LIVE — WRITE** |                                 |
 
 ### Admin users & assignment
 
@@ -81,57 +76,51 @@ results: `API_VERIFICATION_MATRIX.md` · shapes: `api/LIVE_CONTRACTS.md` · open
 | ----------------------------- | ------------------------------------------ | ------------------------- | ----- |
 | Dashboard, users, user detail | `GET Admin/…`                              | **VERIFIED LIVE**         |       |
 | Assign children to specialist | `POST Admin/assign-children-to-specialist` | **VERIFIED LIVE — WRITE** |       |
-| User create / edit / delete   | —                                          | BLOCKED BY BACKEND        |       |
 
 ### Specialist & training plans
 
-| Capability                            | API                                | Status                    | Notes                                    |
-| ------------------------------------- | ---------------------------------- | ------------------------- | ---------------------------------------- |
-| Dashboard, children, teachers         | `GET specialist/…`                 | **VERIFIED LIVE**         |                                          |
-| Plan, available activities            | `GET TrainingPlan/specialist/…`    | **VERIFIED LIVE**         |                                          |
-| Assign teacher                        | `POST specialist/assign-teacher`   | **VERIFIED LIVE — WRITE** |                                          |
-| Add plan activity                     | `POST …/activities`                | PARTIALLY VERIFIED        | 500 for a child without a plan (backend) |
-| Remove plan activity                  | `DELETE …/activities/{activityId}` | **VERIFIED LIVE — WRITE** |                                          |
-| Reports list / create / edit / delete | `specialist/*`                     | **VERIFIED LIVE — WRITE** |                                          |
-| Reading teacher feedback              | —                                  | BLOCKED BY BACKEND        |                                          |
+| Capability                          | API                              | Status                    | Notes                                                     |
+| ----------------------------------- | -------------------------------- | ------------------------- | --------------------------------------------------------- |
+| Dashboard, children, teachers       | `GET specialist/…`               | **VERIFIED LIVE**         |                                                           |
+| Plan, available activities          | `GET TrainingPlan/specialist/…`  | **VERIFIED LIVE**         |                                                           |
+| Assign teacher                      | `POST specialist/assign-teacher` | **VERIFIED LIVE — WRITE** |                                                           |
+| Add first / further plan activities | `POST …/activities`              | **VERIFIED LIVE — WRITE** | first activity needs an assigned teacher (else empty 500) |
+| Remove plan activity                | `DELETE …/activities/{id}`       | **VERIFIED LIVE — WRITE** |                                                           |
+| Report create / edit / delete       | `specialist/*`                   | **VERIFIED LIVE — WRITE** | one per child enforced in the UI                          |
+| Reading teacher feedback            | `Teacher/feedbacks`              | BLOCKED BY BACKEND        | 403 for specialist — question open                        |
 
 ### Teacher
 
-| Capability                      | API                 | Status                     | Notes       |
-| ------------------------------- | ------------------- | -------------------------- | ----------- |
-| Dashboard, children, notes CRUD | `Teacher/*`         | BLOCKED BY MISSING ACCOUNT | MOCK TESTED |
-| Notes list                      | `Teacher/feedbacks` | BLOCKED BY BACKEND         | 404 live    |
+| Capability                            | API                     | Status                     | Notes                             |
+| ------------------------------------- | ----------------------- | -------------------------- | --------------------------------- |
+| Dashboard, children, notes CRUD       | `Teacher/*`             | BLOCKED BY MISSING ACCOUNT | mock-tested                       |
+| Feedback history (multiple per child) | `GET Teacher/feedbacks` | BLOCKED BY MISSING ACCOUNT | deployed (401/403); shape unknown |
 
 ### Super Admin
 
-| Capability                 | API                | Status             | Notes |
-| -------------------------- | ------------------ | ------------------ | ----- |
-| Dashboard, users, children | `GET SuperAdmin/…` | **VERIFIED LIVE**  |       |
-| User management, reports   | —                  | BLOCKED BY BACKEND |       |
+| Capability                 | API                | Status            | Notes |
+| -------------------------- | ------------------ | ----------------- | ----- |
+| Dashboard, users, children | `GET SuperAdmin/…` | **VERIFIED LIVE** |       |
 
 ### Chat & notifications
 
-| Capability                       | API                                | Status                    | Notes                                        |
-| -------------------------------- | ---------------------------------- | ------------------------- | -------------------------------------------- |
-| Contacts, conversations, unread  | `GET Chats/…`                      | **VERIFIED LIVE**         | contacts list every user (privacy, reported) |
-| Messages, older/newer pagination | `GET Chats`, `messages/old`, `new` | **VERIFIED LIVE**         | polling                                      |
-| Send, mark seen                  | `POST Chats/send`, `mark-…-seen`   | **VERIFIED LIVE — WRITE** | 2 E2E messages remain (no delete endpoint)   |
-| Real-time hub                    | —                                  | BLOCKED BY BACKEND        | `/chatHub/negotiate` → 404                   |
-| Notifications                    | —                                  | BLOCKED BY BACKEND        | no API                                       |
+| Capability                      | API                              | Status                    | Notes                                   |
+| ------------------------------- | -------------------------------- | ------------------------- | --------------------------------------- |
+| Contacts                        | `GET Chats/users`                | BLOCKED BY BACKEND        | 500 for Parent/Specialist (since 10-08) |
+| Conversations, messages, unread | `GET Chats/…`                    | **VERIFIED LIVE**         | REST + polling                          |
+| Send, mark seen                 | `POST Chats/send`, `mark-…-seen` | **VERIFIED LIVE — WRITE** |                                         |
+| Real-time hub (SignalR)         | —                                | BLOCKED BY BACKEND        | no hub on the deployed server           |
+| Notifications                   | —                                | OUT OF SCOPE              |                                         |
 
-### Practice content
-
-The 6 local tests and 11 local games remain frontend practice only (no backend catalogue for
-parents/children; nothing saved) — labelled in the UI. See `PLAYER_BACKEND_COMPATIBILITY.md`.
-
-## Totals (44 matrix rows)
+## Totals (38 matrix rows)
 
 | Status                     | Rows |
 | -------------------------- | ---: |
 | VERIFIED LIVE              |   13 |
-| VERIFIED LIVE — WRITE      |   12 |
-| PARTIALLY VERIFIED         |    4 |
+| VERIFIED LIVE — WRITE      |   11 |
+| PARTIALLY VERIFIED         |    2 |
 | MOCK TESTED                |    1 |
-| BLOCKED BY BACKEND         |   11 |
-| BLOCKED BY MISSING ACCOUNT |    2 |
+| BLOCKED BY BACKEND         |    5 |
+| BLOCKED BY MISSING ACCOUNT |    3 |
+| OUT OF SCOPE               |    2 |
 | NOT REQUIRED               |    1 |

@@ -6,19 +6,19 @@
 
 ## Live backend (verified 2026-10-06)
 
-| Topic                 | Verified fact                                                                                                                                        | Frontend handling                                                                                                               |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Base URL              | `https://earlystep22.runasp.net/api/` (root `/` answers "API is running")                                                                            | `VITE_API_BASE_URL` (must end with `/api/`); request paths are **relative** (`Parent/GetMyChildren`) so `/api/api` can't happen |
-| Contract              | Public Swagger at `/swagger/v1/swagger.json` — 74 operations, **all under `/api/`**, consistent casing                                               | Snapshot in `docs/api/swagger.json`; Swagger is the contract source (Apidog is outdated)                                        |
-| Auth                  | `Bearer` scheme; 401 = ProblemDetails                                                                                                                | Interceptor adds the token; 401 → sign out + clear cache                                                                        |
-| Errors                | ProblemDetails (`title`, `status`, `errors{Field:[…]}`), `{ message }`, string, string[]                                                             | `extractBackendDetails()` in `services/http/apiError.ts`                                                                        |
-| CORS                  | Preflight from `http://localhost:5173` allowed (`*`)                                                                                                 | Dev server talks to the API directly                                                                                            |
-| Login response        | **Verified:** `{ id, fullName, accessToken, role }`, JWT 120 h, no refresh/cookie                                                                    | `parseLoginResponse` (verified shape; JWT claims as fallback)                                                                   |
-| Enums                 | Roles `ولي أمر`, `معلم/ة`, `أخصائي/ة` (observed); gender `ولد`/`بنت` (Swagger); question types `SingleChoice`, `MultiSelect`, `Sequence`, `Matching` | `constants/backendRoles.ts`, `services/api/childrenLists.ts`, `services/api/activityType.ts`                                    |
-| Child model           | `FullName`, **`Age` (int)**, `Gender` — no birth date                                                                                                | Add/edit child asks for age                                                                                                     |
-| Responses             | Swagger documents response schemas only for chat; the others were **verified live** for every readable endpoint (`api/LIVE_CONTRACTS.md`)            | Zod schemas follow the verified shapes; `npm run test:live` re-checks them                                                      |
-| "No data" responses   | Reports and specialist plans answer **404 + Arabic message** when empty                                                                              | Mapped to empty states (`fetchChildReports`, `fetchSpecialistPlan`); other 404s stay errors                                     |
-| Required query params | `type` on `TrainingPlan/children/{id}/activities` and `Admin/categoriesActivity`                                                                     | The child plan fetches tests and games in parallel                                                                              |
+| Topic                 | Verified fact                                                                                                                                                            | Frontend handling                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Base URL              | `https://earlystep22.runasp.net/api/` (root `/` answers "API is running")                                                                                                | `VITE_API_BASE_URL` (must end with `/api/`); request paths are **relative** (`Parent/GetMyChildren`) so `/api/api` can't happen |
+| Contract              | Public Swagger at `/swagger/v1/swagger.json` — 74 operations, **all under `/api/`**, consistent casing                                                                   | Snapshot in `docs/api/swagger.json`; Swagger is the contract source (Apidog is outdated)                                        |
+| Auth                  | `Bearer` scheme; 401 = ProblemDetails                                                                                                                                    | Interceptor adds the token; 401 → sign out + clear cache                                                                        |
+| Errors                | ProblemDetails (`title`, `status`, `errors{Field:[…]}`), `{ message }`, string, string[]                                                                                 | `extractBackendDetails()` in `services/http/apiError.ts`                                                                        |
+| CORS                  | Preflight from `http://localhost:5173` allowed (`*`)                                                                                                                     | Dev server talks to the API directly                                                                                            |
+| Login response        | **Verified:** `{ id, fullName, accessToken, role }`, JWT 120 h, no refresh/cookie                                                                                        | `parseLoginResponse` (verified shape; JWT claims as fallback)                                                                   |
+| Enums                 | Roles `ولي أمر`, `معلم/ة`, `أخصائي/ة` (observed); gender `ولد`/`بنت` (Swagger); question types `SingleChoice`, `MultiSelect`, `Sequence` (`Matching` removed 2026-10-08) | `constants/backendRoles.ts`, `services/api/childrenLists.ts`, `services/api/activityType.ts`                                    |
+| Child model           | `FullName`, **`Age` (int)**, `Gender` — no birth date                                                                                                                    | Add/edit child asks for age                                                                                                     |
+| Responses             | Swagger documents response schemas only for chat; the others were **verified live** for every readable endpoint (`api/LIVE_CONTRACTS.md`)                                | Zod schemas follow the verified shapes; `npm run test:live` re-checks them                                                      |
+| "No data" responses   | Reports and specialist plans answer **404 + Arabic message** when empty                                                                                                  | Mapped to empty states (`fetchChildReports`, `fetchSpecialistPlan`); other 404s stay errors                                     |
+| Required query params | `type` on `TrainingPlan/children/{id}/activities` and `Admin/categoriesActivity`                                                                                         | The child plan fetches tests and games in parallel                                                                              |
 
 ## Mocked API (tests + development mock mode)
 
@@ -121,8 +121,20 @@ export const childrenKeys = {
 - Branded or aliased ID types (e.g. `type ChildId = string`) once ID formats are known.
 - Dates: keep as ISO strings at the boundary; format for display with `Intl` in `ar` locale.
 
+## Contract notes (re-verified 2026-10-08)
+
+- **Initial assessment:** every question type is answered with one
+  `{ questionId, selectedOptionId }` (`features/assessments/state/assessmentRun.ts`); the result is
+  the `complete` response (`AssessmentResult`) — there is no GET, so it is shown only right after
+  completion.
+- **Reports:** one report per child — `fetchChildReport(childId): ChildReport | null`
+  (`services/api/childReports.ts`, query key `reports.byChild`).
+- **Training plans:** the first `POST …/activities` creates the plan once a teacher is assigned;
+  an empty 500 is shown as "assign a teacher first".
+- **Chat:** REST + polling; no SignalR hub is deployed.
+
 ## Unknowns (TBD)
 
-Base URL/environments · CORS · login response & token format/lifetime · refresh/logout/me ·
-all role enum values · error body format & status codes · hub protocol & auth · initial
-assessment result endpoint · training-plan answer submission · game endpoints · API versioning.
+Deployed SignalR hub path/events · `Teacher/feedbacks` response shape (no Teacher account) ·
+training-plan answer submission · persistent assessment-result read · canonical forgot-password
+route · API versioning. Current backend list: `BACKEND_REQUESTS.md`.

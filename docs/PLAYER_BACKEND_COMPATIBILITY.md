@@ -1,44 +1,37 @@
 # Player ↔ backend compatibility
 
-Verified live 2026-10-07 with disposable `E2E Test …` activities and questions (all four question
-types), created, added to a plan, read as the parent, then removed and deleted (cleanup verified).
+Re-verified live 2026-10-08 with disposable `E2E Test …` questions of every type, added to the
+initial assessment and to a training plan, answered, then removed and deleted (cleanup verified).
 
-**Facts that decide every row**
+**Live facts behind every row**
 
-- Admin can author all four question types (`SingleChoice`, `MultiSelect`, `Sequence`, `Matching`)
-  with `IsCorrect`, `CorrectOrder` and `PairKey`.
-- The **child-facing** plan-activity detail returns questions as `{ planQuestionId, questionId,
-questionText, questionImageUrl, type, order, options: [{ id, optionText, optionImageUrl, order,
-correctOrder: null, pairKey: null }] }` — answers are hidden (no `isCorrect`; `correctOrder` and
-  `pairKey` are always `null`).
-- There is **no endpoint to submit plan-activity answers or results**; plan `score`,
-  `correctAnswers`, `wrongAnswers`, `isCompleted` cannot be set by the child.
-- The initial assessment accepts **one** `selectedOptionId` per answer, returns
-  `{ questionId, isCorrect }`, and `complete` returns `{ overallScore, categories[] }`.
+- Question types: `SingleChoice`, `MultiSelect`, `Sequence` (`CorrectOrder`). **`Matching` was
+  removed** from the backend: creating one → `400 "The value 'Matching' is not valid for Type."`,
+  and `PairKey` is gone from the contract.
+- Initial-assessment answer: **one** `{ questionId, selectedOptionId }` per question, for every
+  type. A second answer to the same question → `400 "تمت الإجابة على هذا السؤال مسبقًا"`; array
+  fields (`selectedOptionIds`, `orderedOptionIds`) are ignored (→ 404 "option not found").
+  Response `{ questionId, isCorrect }` = the chosen option's `IsCorrect`.
+- `complete` requires every question answered and returns the result (overall + per category).
+- Child-facing plan activities hide answers (`isCorrect` absent, `correctOrder` null) and there is
+  **no endpoint to submit plan-activity answers**.
 
-| Player / type                                                                                        | Where                              | Classification                  | What works                                                                     | What is missing                                                                                |
-| ---------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| Initial assessment — `SingleChoice`                                                                  | `AssessmentQuestionRunner`         | **FULLY BACKEND-SUPPORTED**     | Questions from `start`, each answer saved, result from `complete` shown        | A GET results endpoint to show the result again later                                          |
-| Initial assessment — `MultiSelect`                                                                   | `AssessmentQuestionRunner`         | **PARTIALLY BACKEND-SUPPORTED** | Server accepts one option id                                                   | Multi-option answer payload; the app skips these questions honestly                            |
-| Initial assessment — `Sequence`                                                                      | `AssessmentQuestionRunner`         | **PARTIALLY BACKEND-SUPPORTED** | Questions are served                                                           | Ordered answer payload; skipped                                                                |
-| Initial assessment — `Matching`                                                                      | `AssessmentQuestionRunner`         | **PARTIALLY BACKEND-SUPPORTED** | Questions are served                                                           | Pairs answer payload; skipped                                                                  |
-| Plan activity — `SingleChoice` (test or game)                                                        | `PlanActivityPlayerPage`           | **PARTIALLY BACKEND-SUPPORTED** | Questions load from the plan; child can play; "results not saved" notice shown | Answer/result submission; correctness (answers hidden, so no right/wrong feedback)             |
-| Plan activity — `MultiSelect`                                                                        | `PlanActivityPlayerPage`           | **PARTIALLY BACKEND-SUPPORTED** | Served; shown as "not supported yet — skip"                                    | Answer submission; correctness                                                                 |
-| Plan activity — `Sequence`                                                                           | `PlanActivityPlayerPage`           | **PARTIALLY BACKEND-SUPPORTED** | Served (options with `order`); skip                                            | `correctOrder` is nulled; answer submission                                                    |
-| Plan activity — `Matching`                                                                           | `PlanActivityPlayerPage`           | **PARTIALLY BACKEND-SUPPORTED** | Served; skip                                                                   | `pairKey` is nulled, so the two sides cannot even be grouped; answer submission                |
-| Admin authoring — all 4 types                                                                        | Content admin                      | **FULLY BACKEND-SUPPORTED**     | Create / edit / delete question and options                                    | "Delete all options" is a no-op (backend bug); no "add one option" endpoint                    |
-| Local tests: الحروف، الأعداد، الذاكرة القصيرة، الاستماع، الكتابة، التفكير المنطقي (6)                | `TestPlayerPage` (`data/tests.ts`) | **FRONTEND PRACTICE ONLY**      | Played locally, labelled as practice                                           | No backend catalogue for parents/children; nothing saved                                       |
-| Local games: مطابقة البطاقات، الكلمات المتقاطعة، الأرقام المفقودة، تشكيل الجمل، المتاهة المنطقية (5) | `GamePlayerPage` (`games/*`)       | **FRONTEND PRACTICE ONLY**      | Played locally, labelled as practice                                           | Custom game logic has no backend representation (no template/engine field)                     |
-| Local games: صواني الألوان، استمع واختر، فقّع البالون، رتّب الحروف، ابحث وجِد!، تسلسل القصة (6)      | `GamePlayerPage` (`games/*`)       | **FRONTEND PRACTICE ONLY**      | Played locally, labelled as practice                                           | Same; timing/procedural games (colour memory, spot-it) cannot be expressed as questions at all |
+| Player / type                                                                                                                                                                         | Where                      | Classification                  | Live request / behaviour                                                                   | Gap                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Initial assessment — `SingleChoice`                                                                                                                                                   | `AssessmentQuestionRunner` | **FULLY BACKEND-SUPPORTED**     | `{ questionId, selectedOptionId }` → 200 `{ isCorrect }`                                   | Result readable only from `complete` (no GET)                     |
+| Initial assessment — `MultiSelect`                                                                                                                                                    | `AssessmentQuestionRunner` | **PARTIALLY BACKEND-SUPPORTED** | One option (hint "اختر إجابة واحدة."); correct if it is a correct option                   | No multi-option answer                                            |
+| Initial assessment — `Sequence`                                                                                                                                                       | `AssessmentQuestionRunner` | **PARTIALLY BACKEND-SUPPORTED** | One option (hint "اختر إجابة واحدة."); accepted, **always scored incorrect**               | No ordered answer; scoring rule needed (`BACKEND_REQUESTS.md` §4) |
+| Initial assessment — question without options                                                                                                                                         | `AssessmentQuestionRunner` | —                               | Shown as "cannot be answered" and skippable; `complete` then fails with the server message | Backend content issue (`BACKEND_REQUESTS.md` §1)                  |
+| Plan activity — `SingleChoice` (test or game)                                                                                                                                         | `PlanActivityPlayerPage`   | **PARTIALLY BACKEND-SUPPORTED** | Questions load; child plays; "results not saved" notice                                    | No answer/result submission; no correctness exposed               |
+| Plan activity — `MultiSelect` / `Sequence`                                                                                                                                            | `PlanActivityPlayerPage`   | **PARTIALLY BACKEND-SUPPORTED** | Served; shown as "not supported yet — skip"                                                | Nothing to submit to, so no single-option adapter is used here    |
+| Admin authoring — SingleChoice, MultiSelect, Sequence                                                                                                                                 | Content admin              | **FULLY BACKEND-SUPPORTED**     | Create / edit / delete question and options; delete-all-options works                      | No "add one option" endpoint                                      |
+| Matching                                                                                                                                                                              | —                          | **REMOVED BY BACKEND**          | Removed from the admin editor                                                              | —                                                                 |
+| Local tests (6): الحروف، الأعداد، الذاكرة القصيرة، الاستماع، الكتابة، التفكير المنطقي                                                                                                 | `TestPlayerPage`           | **FRONTEND PRACTICE ONLY**      | Played locally, labelled as practice                                                       | No backend catalogue for parents/children; nothing saved          |
+| Local games (11): مطابقة البطاقات، الكلمات المتقاطعة، الأرقام المفقودة، تشكيل الجمل، المتاهة المنطقية، صواني الألوان، استمع واختر، فقّع البالون، رتّب الحروف، ابحث وجِد!، تسلسل القصة | `GamePlayerPage`           | **FRONTEND PRACTICE ONLY**      | Played locally, labelled as practice                                                       | Custom game logic has no backend representation                   |
 
-## Changes made in this round
+## Frontend changes in this round
 
-- **Bug fixed:** the plan player required `questions[].id`, which the live API never sends — every
-  activity with questions showed "النشاط غير موجود في الخطة التدريبية". It now reads `questionId`
-  (`features/activities/api/planActivityApi.ts`); the mock serves the live shape; tests cover the
-  live shape, unsupported types and the correctness-only-if-exposed path.
-
-## What the backend would need for full support
-
-See `BACKEND_REQUESTS.md` items 3–5 (plan-activity answer/result submission, multi-option answer
-payloads, assessment results endpoint).
+- The assessment runner answers `MultiSelect` and `Sequence` with one option (it used to skip
+  them, which made `complete` fail whenever the assessment contained them).
+- `Matching` / `PairKey` removed from the admin question editor, option editor and mocks; the mock
+  returns the live 400 for `Matching`.

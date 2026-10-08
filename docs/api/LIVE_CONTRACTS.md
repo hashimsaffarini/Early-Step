@@ -94,6 +94,24 @@ Base URL `https://earlystep22.runasp.net/api/`; paths below are relative to it.
 | `GET Chats?…`, `messages/old`, `messages/new`                                                                    | oldest → newest; outsider → 404                                                                                                                                                                                                    |
 | `POST Chats/mark-conversation-seen`                                                                              | `true`; status → `Seen`; unread → 0                                                                                                                                                                                                |
 
+## Changes found on 2026-10-08 (supersede the rows above)
+
+| Request                                                             | Result                                                                                                                                                                                         |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Swagger                                                             | 77 operations: added `GET Teacher/feedbacks`, `POST Auth/forgot-password`; `QuestionType` = SingleChoice, MultiSelect, Sequence                                                                |
+| `POST Admin/activities/{id}/questions` with `Type=Matching`         | `400` ProblemDetails `errors.Type: ["The value 'Matching' is not valid for Type."]`; `PairKey` removed                                                                                         |
+| `POST initial-assessment/{id}/answer`                               | one `{ questionId, selectedOptionId }` for every type; 2nd answer → `400 "تمت الإجابة على هذا السؤال مسبقًا. QuestionId: …"`; arrays ignored (→ 404 option not found); anonymous → 401         |
+| `POST initial-assessment/{id}/complete`                             | `400 "لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة."` while any question (incl. option-less ones) is unanswered                                                                     |
+| `POST TrainingPlan/specialist/children/{id}/activities` (no plan)   | with an assigned teacher: `200 { message, activity: { trainingPlanActivityId, activityId, title, …, order, assignedAt, score: null, … } }` and the plan exists; without a teacher: empty `500` |
+| `POST specialist/CreateReport` twice for one child                  | both 200; `GET Reports/child/{id}` returns the newest                                                                                                                                          |
+| `DELETE Admin/questions/{id}/options`                               | 200 and the options are removed (fixed)                                                                                                                                                        |
+| `GET Admin/categoriesActivity` anonymous                            | 401 (fixed)                                                                                                                                                                                    |
+| `POST Auth/ForgotPassword` / `Auth/forgot-password` unknown email   | `200 { message: "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال تعليمات استعادة كلمة المرور." }`                                                                                                 |
+| `GET Teacher/feedbacks`                                             | anonymous 401; Parent/Specialist/Admin/SuperAdmin 403 (Teacher-only; shape not observed)                                                                                                       |
+| `GET Chats/users`                                                   | **500** (empty) for Parent and Specialist; 200 for Admin/SuperAdmin                                                                                                                            |
+| `POST /chatHub/negotiate?negotiateVersion=1` (and `/api/chatHub/…`) | 404 with and without a token                                                                                                                                                                   |
+| Child-facing plan activity options                                  | `{ id, optionText, optionImageUrl, order, correctOrder: null }` (no `pairKey`)                                                                                                                 |
+
 ## Not available / not deployed
 
 | Capability                            | Finding                                                 |
