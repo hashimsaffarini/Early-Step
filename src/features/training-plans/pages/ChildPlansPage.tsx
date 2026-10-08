@@ -149,7 +149,7 @@ function SpecialistPlanEditor({ child }: { child: PlanChild }) {
         emptyText={
           plan.data.hasPlan
             ? 'أضف أنشطة مناسبة للطفل من قائمة الأنشطة المتاحة.'
-            : 'لا توجد خطة تدريبية لهذا الطفل بعد. أضف أول نشاط لبدء الخطة.'
+            : 'لا توجد خطة تدريبية لهذا الطفل بعد. أسنِد له معلماً، ثم أضف أول نشاط لبدء الخطة.'
         }
         onRemove={setToRemove}
       />

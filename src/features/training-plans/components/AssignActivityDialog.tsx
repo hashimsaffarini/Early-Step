@@ -16,11 +16,11 @@ import { HTTP_STATUS } from '@/services/http/httpStatus';
 import { useAssignActivityMutation, useAvailableActivities } from '../api/trainingPlansQueries';
 
 /**
- * VERIFIED LIVE (2026-10-07): adding the first activity to a child who has no training plan yet
- * returns HTTP 500 and creates nothing (no "create plan" endpoint exists). Reported to the backend.
+ * VERIFIED LIVE (2026-10-08): the first activity creates the child's plan once a teacher is
+ * assigned; without a teacher the server returns an empty HTTP 500 and creates nothing.
  */
 const FIRST_ACTIVITY_SERVER_ERROR =
-  'تعذّر إضافة النشاط بسبب خطأ في الخادم. إذا لم تكن لدى الطفل خطة تدريبية بعد، فالخادم لا يدعم إنشاءها حالياً.';
+  'تعذّر إضافة النشاط. إذا لم تكن لدى الطفل خطة تدريبية بعد، فأسنِد له معلماً أولاً ثم أضف النشاط.';
 
 import styles from './plans.module.css';
 

@@ -160,17 +160,36 @@ describe('ChildPlansPage — specialist', () => {
   });
 });
 
-describe('ChildPlansPage — live backend quirks', () => {
-  it('explains the server error when adding the first activity to a child without a plan', async () => {
-    renderPlans('Specialist', NOUR);
-
+describe('ChildPlansPage — first activity (live behaviour)', () => {
+  async function addFirstActivity() {
     await userEvent.click(await screen.findByRole('button', { name: 'إضافة نشاط' }));
     const dialog = await screen.findByRole('dialog');
     const [add] = await within(dialog).findAllByRole('button', { name: /إضافة/ });
     if (!add) throw new Error('no add button');
     await userEvent.click(add);
+    return dialog;
+  }
 
-    expect(await within(dialog).findByText(/الخادم لا يدعم إنشاءها حالياً/)).toBeInTheDocument();
+  it('creates the plan with the first activity when the child has a teacher', async () => {
+    renderPlans('Specialist', NOUR);
+
+    const dialog = await addFirstActivity();
+
+    expect(await within(dialog).findByText(/إلى الخطة\.$/)).toBeInTheDocument();
+  });
+
+  it('tells the specialist to assign a teacher first when the server answers 500', async () => {
+    server.use(
+      http.post(
+        apiUrl('TrainingPlan/specialist/children/:childId/activities'),
+        () => new HttpResponse(null, { status: 500 }),
+      ),
+    );
+    renderPlans('Specialist', NOUR);
+
+    const dialog = await addFirstActivity();
+
+    expect(await within(dialog).findByText(/فأسنِد له معلماً أولاً/)).toBeInTheDocument();
   });
 });
 
