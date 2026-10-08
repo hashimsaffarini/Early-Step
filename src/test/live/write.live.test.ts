@@ -43,9 +43,16 @@ import {
   fetchSpecialistReports,
   updateReport,
 } from '@/features/reports/api/reportsApi';
-import { assignTeacher, fetchTeachers } from '@/features/training-plans/api/trainingPlansApi';
+import {
+  assignActivity,
+  assignTeacher,
+  fetchSpecialistPlan,
+  fetchTeachers,
+  removeActivity,
+} from '@/features/training-plans/api/trainingPlansApi';
 import { assignChildrenToSpecialist } from '@/features/users/api/usersApi';
 import { fetchChildReport } from '@/services/api/childReports';
+import { fetchChildPlanActivities } from '@/services/api/childPlan';
 import { fetchChildrenForRole } from '@/services/api/childrenLists';
 import { isAppError } from '@/services/http/apiError';
 
@@ -264,6 +271,20 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
       await deleteOption(option.id);
       expect((await fetchQuestion(questionId)).options).toHaveLength(1);
     }
+
+    // First plan activity for a child without a plan (teacher assigned above) creates the plan.
+    await signInLive('SPECIALIST');
+    await assignActivity(childId, activityIds.test);
+    expect((await fetchSpecialistPlan(childId)).activities.map((a) => a.activityId)).toContain(
+      activityIds.test,
+    );
+    await signInLive('PARENT');
+    expect(
+      (await fetchChildPlanActivities(childId)).some((a) => a.activityId === activityIds.test),
+    ).toBe(true);
+    await signInLive('SPECIALIST');
+    await removeActivity(childId, activityIds.test);
+    await signInLive('ADMIN');
 
     await addCategoryToAssessment(categoryId);
     track({ kind: 'assessmentCategory', id: categoryId, account: 'ADMIN' });

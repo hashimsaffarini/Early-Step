@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 
 import { login } from '@/features/auth/api/authApi';
+import { httpClient } from '@/services/http/httpClient';
 import { registerHttpAuthHooks } from '@/services/http/interceptors';
 import type { Session } from '@/services/session';
 
@@ -30,6 +31,25 @@ export function hasAccount(account: LiveAccount): boolean {
 
 let token: string | null = null;
 registerHttpAuthHooks({ getAccessToken: () => token, onUnauthorized: () => undefined });
+
+/**
+ * Vitest prints thrown errors with all their properties. Axios errors carry the request config
+ * (bearer token, login body) and the response (possibly personal data), so strip them before any
+ * error reaches the reporter. Runs after the app's normalizer, on the AppError and its cause.
+ */
+function redact(error: unknown): void {
+  for (let current = error; typeof current === 'object' && current !== null;) {
+    const record = current as Record<string, unknown>;
+    if ('config' in record) record.config = '[redacted]';
+    if ('request' in record) record.request = '[redacted]';
+    if ('response' in record) record.response = '[redacted]';
+    current = record.cause;
+  }
+}
+httpClient.interceptors.response.use(undefined, (error: unknown) => {
+  redact(error);
+  return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+});
 
 /** Signs in through the app's real `login()` (verifies the login contract too). */
 export async function signInLive(account: LiveAccount): Promise<Session> {
