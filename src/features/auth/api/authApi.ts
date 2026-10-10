@@ -1,4 +1,3 @@
-import { PARENT_REGISTRATION_ROLE } from '@/constants/backendRoles';
 import { toFormData } from '@/services/http/formData';
 import { httpClient } from '@/services/http/httpClient';
 import type { Session } from '@/services/session';
@@ -36,7 +35,10 @@ export interface RegisterInput {
   confirmPassword: string;
 }
 
-/** Public registration is parent-only; the role value is the one observed on the wire. */
+/**
+ * Public registration creates Parent accounts only: since 2026-10-10 the Swagger contract has no
+ * `Role` field, so none is sent (the server decides the role).
+ */
 export async function registerParent(input: RegisterInput): Promise<void> {
   await httpClient.post(
     AUTH_PATHS.register,
@@ -45,7 +47,6 @@ export async function registerParent(input: RegisterInput): Promise<void> {
       Email: input.email,
       Password: input.password,
       ConfirmPassword: input.confirmPassword,
-      Role: PARENT_REGISTRATION_ROLE,
     }),
   );
 }

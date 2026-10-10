@@ -97,7 +97,8 @@ describe('RegisterPage', () => {
     await fillValid('new-parent@demo.test');
 
     expect(await screen.findByText(/تم إنشاء الحساب/)).toBeInTheDocument();
-    expect(received?.get('Role')).toBe('ولي أمر');
+    // The live contract (2026-10-10) has no Role field: public registration is parent-only.
+    expect(received?.has('Role')).toBe(false);
     expect(received?.get('FullName')).toBe('سارة أحمد');
     expect(received?.get('ConfirmPassword')).toBe(STRONG_PASSWORD);
   });

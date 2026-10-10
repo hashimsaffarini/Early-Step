@@ -31,6 +31,3 @@ export function normalizeRole(value: unknown): UserRole | null {
   if (typeof value !== 'string') return null;
   return LOOKUP.get(canonical(value)) ?? null;
 }
-
-/** Role value sent by public parent registration (as observed on the wire). */
-export const PARENT_REGISTRATION_ROLE = 'ولي أمر';
