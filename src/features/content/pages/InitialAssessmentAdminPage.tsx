@@ -41,6 +41,9 @@ export function InitialAssessmentAdminPage() {
   const [questionActions, setQuestionActions] = useState<Record<string, QuestionAction>>({});
   const memberIds = useAssessmentCategoryIds();
   const memberSet = new Set(memberIds.data ?? []);
+  // Live 2026-10-10: `initial-assessment/categories` answers 403 for Admin and the
+  // `isInInitialAssessment` flags are always false, so membership can be unknown.
+  const isMembershipUnknown = memberIds.isError;
   const categories = (categoriesQuery.data ?? []).map((category) => ({
     ...category,
     isInInitialAssessment: memberIds.data
@@ -72,11 +75,17 @@ export function InitialAssessmentAdminPage() {
         <ApiErrorAlert error={toggleCategory.error} />
         <QueryStatus
           isLoading={categoriesQuery.isPending || memberIds.isPending}
-          error={categoriesQuery.error ?? memberIds.error}
+          error={categoriesQuery.error}
           isEmpty={categories.length === 0}
           emptyTitle="لا توجد تصنيفات"
           onRetry={() => void categoriesQuery.refetch()}
         />
+        {isMembershipUnknown ? (
+          <Alert tone="warning">
+            تعذّر على الخادم إرجاع التصنيفات المضمّنة في التقييم لحساب المدير، لذلك لا تظهر حالة كل
+            تصنيف. ما زالت الإضافة والإزالة تعملان.
+          </Alert>
+        ) : null}
         {categories.length > 0 ? (
           <ul className={styles.list} aria-label="تصنيفات الاختبارات">
             {categories.map((category) => (
@@ -86,9 +95,13 @@ export function InitialAssessmentAdminPage() {
                   <h3 className={styles.rowTitle}>{category.name}</h3>
                   <ul className={styles.meta}>
                     <li>
-                      <Badge tone={category.isInInitialAssessment ? 'success' : 'neutral'} hasDot>
-                        {category.isInInitialAssessment ? 'ضمن التقييم' : 'غير مضاف'}
-                      </Badge>
+                      {isMembershipUnknown ? (
+                        <Badge hasDot>الحالة غير معروفة</Badge>
+                      ) : (
+                        <Badge tone={category.isInInitialAssessment ? 'success' : 'neutral'} hasDot>
+                          {category.isInInitialAssessment ? 'ضمن التقييم' : 'غير مضاف'}
+                        </Badge>
+                      )}
                     </li>
                     <li>
                       <Badge>{`${category.count.toString()} أنشطة`}</Badge>
