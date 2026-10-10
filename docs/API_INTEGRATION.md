@@ -121,20 +121,30 @@ export const childrenKeys = {
 - Branded or aliased ID types (e.g. `type ChildId = string`) once ID formats are known.
 - Dates: keep as ISO strings at the boundary; format for display with `Intl` in `ar` locale.
 
-## Contract notes (re-verified 2026-10-08)
+## Contract notes (re-verified 2026-10-10)
 
 - **Initial assessment:** every question type is answered with one
-  `{ questionId, selectedOptionId }` (`features/assessments/state/assessmentRun.ts`); the result is
-  the `complete` response (`AssessmentResult`) — there is no GET, so it is shown only right after
-  completion.
+  `{ questionId, selectedOptionId }` (`features/assessments/state/assessmentRun.ts`). The result
+  (`AssessmentResult`, `services/api/assessmentResult.ts`) comes from `complete` and is readable
+  later with `GET initial-assessment/{childId}/result` (`fetchAssessmentResult`, query key
+  `assessments.result`, hook `useAssessmentResult`; 404 → `null`). `complete` invalidates
+  `assessments.all`.
+- **Plan activities:** `submitPlanActivity(childId, planActivityId, answers)` /
+  `useSubmitPlanActivity` (`features/activities/api/planActivityApi.ts`) posts
+  `{ answers: [{ questionId, selectedOptionId | selectedOptionIds | orderedOptionIds }] }` once and
+  invalidates `trainingPlans.all`; the plan's counts then update. `GET …/{planActivityId}/result`
+  is not wired (403 for every available role).
 - **Reports:** one report per child — `fetchChildReport(childId): ChildReport | null`
   (`services/api/childReports.ts`, query key `reports.byChild`).
 - **Training plans:** the first `POST …/activities` creates the plan once a teacher is assigned;
   an empty 500 is shown as "assign a teacher first".
+- **Registration:** no `Role` is sent (removed from the contract; public registration = Parent).
+- **Assessment composition:** `GET initial-assessment/categories` is Specialist-only since
+  2026-10-10; the admin page shows "status unknown" on 403.
 - **Chat:** REST + polling; no SignalR hub is deployed.
 
 ## Unknowns (TBD)
 
-Deployed SignalR hub path/events · `Teacher/feedbacks` response shape (no Teacher account) ·
-training-plan answer submission · persistent assessment-result read · canonical forgot-password
-route · API versioning. Current backend list: `BACKEND_REQUESTS.md`.
+Deployed SignalR hub path/events · `Teacher/feedbacks` and plan-result response shapes (no Teacher
+account / 403) · canonical forgot-password route · API versioning. Current backend list:
+`BACKEND_REQUESTS.md`.

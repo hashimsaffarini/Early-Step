@@ -136,3 +136,16 @@ Current list: `BACKEND_REQUESTS.md`. Earlier "missing" items above are supersede
 - **Product conflict to note:** the written flow has the specialist monitoring progress and
   reading teacher feedback, but `Teacher/feedbacks` is Teacher-only and plan results cannot be
   submitted — raised as questions, not assumed.
+
+### Re-verification after the second backend update (2026-10-10)
+
+- **Resolved:** assessment result readable later (`GET initial-assessment/{childId}/result`);
+  plan-activity answers saved (`…/submit`, all three types, correct scoring); option-less
+  assessment questions removed (completion works again); `Chats/users` fixed and filtered;
+  `Role` removed from public registration.
+- **Still open:** Admin 403 on `initial-assessment/categories` (new regression); MultiSelect /
+  Sequence in the initial assessment (one option; Sequence never correct); plan-result endpoint
+  403 for every available role; empty 500s (second submit, first activity without teacher);
+  duplicate reports accepted; SignalR not deployed; Teacher account.
+- **Product note:** the written flow has the specialist reading teacher feedback, but
+  `Teacher/feedbacks` stays Teacher-only — kept as a question, not assumed.

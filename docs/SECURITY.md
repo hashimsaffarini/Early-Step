@@ -22,7 +22,7 @@
 - Replit loads a third-party script (ResponsiveVoice) with a public key and never uses it — do
   not carry over.
 
-## Live backend findings — re-checked 2026-10-08
+## Live backend findings — re-checked 2026-10-08 and 2026-10-10
 
 Checked with **status codes and access behaviour only** (anonymous requests to the formerly open
 endpoints, one fictional `.invalid` email for forgot-password, a CORS preflight). No personal data
@@ -32,16 +32,17 @@ backend team (`BACKEND_REQUESTS.md` §10).
 
 ### Graduation-project scope
 
-| Severity | Finding                                                                            | Status 2026-10-08                                        | Recommendation                    |
-| -------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------- |
-| Critical | `GET /api/Admin/*` answered without authentication                                 | **FIXED** (10-07)                                        | Keep `[Authorize]` everywhere     |
-| Medium   | `GET Admin/categoriesActivity` answered anonymously                                | **FIXED** — 401                                          |                                   |
-| Medium   | `POST initial-assessment/{id}/answer` processed anonymously                        | **FIXED** — 401                                          |                                   |
-| Medium   | Forgot-password revealed whether an email exists                                   | **FIXED** — neutral 200 on both routes                   |                                   |
-| High     | Registration accepts a client-supplied `Role`                                      | **NOT RETESTED** — awaiting backend confirmation         | Public registration = Parent only |
-| Medium   | `GET Chats/users` gave any user every user's name and role                         | **CHANGED** — now 500 for Parent/Specialist (regression) | Return only related users         |
-| Low      | Some `SuperAdmin/children` `parentName` values are email addresses                 | **NOT RETESTED**                                         | Store display names               |
-| Info     | Child-facing plan activities hide answers; cross-role calls 403; chat outsider 404 | **VERIFIED** (good)                                      | Keep                              |
+| Severity | Finding                                                                                             | Status 2026-10-08                                                                                                                             | Recommendation                       |
+| -------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Critical | `GET /api/Admin/*` answered without authentication                                                  | **FIXED** (10-07)                                                                                                                             | Keep `[Authorize]` everywhere        |
+| Medium   | `GET Admin/categoriesActivity` answered anonymously                                                 | **FIXED** — 401                                                                                                                               |                                      |
+| Medium   | `POST initial-assessment/{id}/answer` processed anonymously                                         | **FIXED** — 401                                                                                                                               |                                      |
+| Medium   | Forgot-password revealed whether an email exists                                                    | **FIXED** — neutral 200 on both routes                                                                                                        |                                      |
+| High     | Registration accepted a client-supplied `Role`                                                      | **RESOLVED (contract, 10-10)** — Swagger `Auth/register` has no `Role` field; not exercised live (no user delete, no privileged-role probing) | Keep public registration parent-only |
+| Medium   | `GET Chats/users` gave any user every user's name and role                                          | **RESOLVED (10-10)** — parent and specialist receive only related users                                                                       | Keep                                 |
+| Low      | Some `SuperAdmin/children` `parentName` values are email addresses                                  | **NOT RETESTED**                                                                                                                              | Store display names                  |
+| Info     | Plan-activity submit: Parent only (Specialist 403, anonymous 401); assessment result: anonymous 401 | **VERIFIED** (good, 10-10)                                                                                                                    | Keep                                 |
+| Info     | Child-facing plan activities hide answers; cross-role calls 403; chat outsider 404                  | **VERIFIED** (good)                                                                                                                           | Keep                                 |
 
 ### Production hardening (not graduation blockers)
 

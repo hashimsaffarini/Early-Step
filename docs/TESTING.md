@@ -65,8 +65,11 @@ exist — ADR required; credentials only via CI secrets.
     run** with its id. Not covered: chat send (messages cannot be deleted), registration (users
     cannot be deleted).
   - `npm run test:live` runs both, sequentially. Result 2026-10-07: read 6/6, write 6/6.
-    **Result 2026-10-08: read 5/6, write 5/6** — both failures are backend issues
-    (`Chats/users` 500; assessment completion blocked by option-less questions); cleanup verified.
+    Result 2026-10-08: read 5/6, write 5/6 (backend issues, since fixed).
+    **Result 2026-10-10: read 5/6, write 6/6** — the one failure is the backend's new Admin 403 on
+    `initial-assessment/categories`; cleanup verified. The write suite now also checks the saved
+    assessment result (`GET …/result`, Parent and Specialist) and a plan-activity submission whose
+    counts appear in the specialist plan.
   - Live errors are redacted (`liveSession.ts` strips request config/response) so no token or
     response body reaches the test output.
   - Browser E2E with real logins is run by a person (the assistant does not type real passwords
@@ -78,9 +81,9 @@ exist — ADR required; credentials only via CI secrets.
 - Don't snapshot whole pages.
 - Don't commit real credentials or real children's data as fixtures.
 
-## Current tests (2026-10-08)
+## Current tests (2026-10-10)
 
-**313 tests in 62 files** (`npm run test`), all against MSW:
+**317 tests in 62 files** (`npm run test`), all against MSW:
 
 | Area                                                  | Files | Covers                                                                                                                                                                                       |
 | ----------------------------------------------------- | ----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

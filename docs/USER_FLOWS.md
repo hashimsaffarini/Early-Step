@@ -1,5 +1,13 @@
 # User Flows
 
+> **Update 2026-10-10 (live-verified):** the assessment result is saved and readable later
+> (`GET initial-assessment/{childId}/result` — assessment page after refresh, child profile for
+> parent and staff); a child's plan activity is played and **saved**
+> (`POST …/activities/{planActivityId}/submit`, one attempt), and the specialist sees the counts in
+> the plan. Still open: Admin reading the assessment composition (403), the plan-result endpoint
+> (403 for our roles), multi-option assessment answers, teacher-feedback reading by the specialist.
+> Current list: `BACKEND_REQUESTS.md`.
+
 > **Update 2026-10-06:** the flows below are now wired to the backend endpoints with mocked HTTP
 > (not live-verified). Differences from the original flows: the parent enters the child's **age**
 > (no birth date in the API); assessment results, training-plan result submission, teacher
@@ -37,18 +45,28 @@ Register → Login → Dashboard → Add Child → Child Profile
 Select child → Intro → Start → Section → Question/Activity → Submit answer → Complete → Results
 ```
 
-| Step             | API                                                    | Replit                                 | Notes                               |
-| ---------------- | ------------------------------------------------------ | -------------------------------------- | ----------------------------------- |
-| Select child     | from children list                                     | "ابدأ التقييم الأولي" on child profile |                                     |
-| Intro            | —                                                      | Section grid (4 domains), "play all"   | Intro content **TBD**               |
-| Start            | `POST /initial-assessment/{childId}/start`             | none (client only)                     | Response **TBD**                    |
-| Sections         | by category (_inference_)                              | 4 hard-coded mini-games                |                                     |
-| Answer           | `POST /initial-assessment/{id}/answer` (single option) | client-scored                          | Multi/sequence payload **GAP**      |
-| Complete         | `POST /initial-assessment/{id}/complete`               | `POST` 4 scores                        |                                     |
-| Results (parent) | **GAP**                                                | Client results screen                  | Whether parent sees results **TBD** |
-| Who operates     | **TBD**                                                | parent's session                       | Child login not supported by either |
+| Step             | API                                                              | Replit                                 | Notes                                                                   |
+| ---------------- | ---------------------------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------- |
+| Select child     | from children list                                               | "ابدأ التقييم الأولي" on child profile |                                                                         |
+| Intro            | —                                                                | Section grid (4 domains), "play all"   | Intro content **TBD**                                                   |
+| Start            | `POST /initial-assessment/{childId}/start`                       | none (client only)                     | Response **TBD**                                                        |
+| Sections         | by category (_inference_)                                        | 4 hard-coded mini-games                |                                                                         |
+| Answer           | `POST /initial-assessment/{id}/answer` (single option)           | client-scored                          | Verified: one option for every type; Sequence never correct             |
+| Complete         | `POST /initial-assessment/{id}/complete`                         | `POST` 4 scores                        |                                                                         |
+| Results (parent) | `complete` response + `GET /initial-assessment/{childId}/result` | Client results screen                  | Verified 2026-10-10; shown again after refresh and in the child profile |
+| Who operates     | **TBD**                                                          | parent's session                       | Child login not supported by either                                     |
 
 See `docs/ACTIVITY_ENGINE.md`.
+
+### 2b. Child plays a training-plan activity (verified 2026-10-10)
+
+```text
+Child profile → Activities → Play → answer every question → Submit (once) → plan refreshed
+```
+
+SingleChoice (tap one), MultiSelect (toggle several), Sequence (tap in order) are submitted together
+to `POST /TrainingPlan/children/{childId}/activities/{planActivityId}/submit`. A completed activity
+cannot be submitted again (server: one attempt). No right/wrong feedback (answers are hidden).
 
 ## 3. Admin review and specialist assignment
 
@@ -56,12 +74,12 @@ See `docs/ACTIVITY_ENGINE.md`.
 Assessment completed → Admin sees result → Admin reviews child → Admin assigns Specialist
 ```
 
-| Step                             | API                                                                      | Replit                                 | Notes                             |
-| -------------------------------- | ------------------------------------------------------------------------ | -------------------------------------- | --------------------------------- |
-| Admin sees completed assessments | **GAP** (no results endpoint; dashboard shape unknown)                   | none                                   |                                   |
-| Admin browses users/children     | `GET /Admin/users?Role&Search`, `GET /Admin/users/{id}` (with children)  | none for Admin (SuperAdmin panel only) |                                   |
-| Admin finds specialists          | `GET /Admin/users?Role=<specialist role value>`                          | —                                      | Role filter value **TBD**         |
-| Assign specialist                | `POST /Admin/assign-children-to-specialist { specialistId, childIds[] }` | none in UI                             | Bulk assignment; unassign **GAP** |
+| Step                             | API                                                                      | Replit                                 | Notes                                                   |
+| -------------------------------- | ------------------------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------- |
+| Admin sees completed assessments | `GET /initial-assessment/{childId}/result` (Admin allowed)               | none                                   | No list of completed assessments; per-child result only |
+| Admin browses users/children     | `GET /Admin/users?Role&Search`, `GET /Admin/users/{id}` (with children)  | none for Admin (SuperAdmin panel only) |                                                         |
+| Admin finds specialists          | `GET /Admin/users?Role=<specialist role value>`                          | —                                      | Role filter value **TBD**                               |
+| Assign specialist                | `POST /Admin/assign-children-to-specialist { specialistId, childIds[] }` | none in UI                             | Bulk assignment; unassign **GAP**                       |
 
 ## 4. Specialist workflow
 
@@ -73,7 +91,7 @@ Assigned child → Review → Training plan → Add activities → Assign teache
 | --------------------- | ------------------------------------------------------------ | ----------------------------- | --------------------------------- |
 | Dashboard             | `GET /specialist/dashboard`                                  | Purple dashboard, risk badges | Shape **TBD**                     |
 | Assigned children     | `GET /specialist/children`                                   | child cards                   |                                   |
-| Review assessment     | **GAP**                                                      | AI evaluation / reports       |                                   |
+| Review assessment     | `GET /initial-assessment/{childId}/result` (child profile)   | AI evaluation / reports       | Verified 2026-10-10               |
 | View plan             | `GET /TrainingPlan/specialist/children/{childId}`            | IEP (free text)               | Concepts differ                   |
 | Available activities  | `GET …/available-activities?type=`                           | assign modal                  |                                   |
 | Add / remove activity | `POST` / `DELETE …/activities`                               | assign modal (no remove)      |                                   |
@@ -87,13 +105,13 @@ Assigned child → Review → Training plan → Add activities → Assign teache
 Assigned child → View plan → Follow child → Submit feedback
 ```
 
-| Step              | API                                                                            | Replit                       | Notes                        |
-| ----------------- | ------------------------------------------------------------------------------ | ---------------------------- | ---------------------------- |
-| Dashboard         | `GET /Teacher/dashboard`                                                       | Teacher dashboard            |                              |
-| Assigned children | `GET /Teacher/children`                                                        | student cards                |                              |
-| View plan         | `GET /TrainingPlan/children/{childId}/activities` (_role TBD_)                 | child profile activities tab |                              |
-| Follow progress   | plan activity results (`score`, `isCompleted`)                                 | charts                       | No history/progress endpoint |
-| Feedback CRUD     | `POST /Teacher/children/{childId}/notes`, `GET/PUT/DELETE /Teacher/notes/{id}` | none                         | List notes **GAP**           |
+| Step              | API                                                                                                  | Replit                       | Notes                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------- |
+| Dashboard         | `GET /Teacher/dashboard`                                                                             | Teacher dashboard            |                                                           |
+| Assigned children | `GET /Teacher/children`                                                                              | student cards                |                                                           |
+| View plan         | `GET /TrainingPlan/children/{childId}/activities` (_role TBD_)                                       | child profile activities tab |                                                           |
+| Follow progress   | plan counts (`correctAnswers`, `wrongAnswers`, `isCompleted`, `completedAt`) after the child submits | charts                       | `…/result` endpoint 403 for our roles; Teacher unverified |
+| Feedback CRUD     | `POST /Teacher/children/{childId}/notes`, `GET/PUT/DELETE /Teacher/notes/{id}`                       | none                         | List notes **GAP**                                        |
 
 ## 6. Reporting
 

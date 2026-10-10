@@ -1,96 +1,81 @@
 # Backend requests
 
-For the backend developer — **only what is still needed**, re-verified live on 2026-10-08 against
-`https://earlystep22.runasp.net/api/` after your update. Thank you for the fixes: anonymous access
-on `Admin/categoriesActivity` and `initial-assessment/{id}/answer` (now 401), "delete all options",
-forgot-password (same answer for every email), the `Teacher/feedbacks` endpoint, and the first plan
-activity (works once a teacher is assigned) are all confirmed working.
+For the backend developer — **only what is still needed**, re-verified live on 2026-10-10 against
+`https://earlystep22.runasp.net/api/` after your update.
 
-Production hardening (CORS, Swagger exposure, refresh tokens, notifications) is listed separately
-in `SECURITY.md` and is **not** part of this list.
+**Confirmed working since the last list (thank you):** `GET initial-assessment/{childId}/result`
+(same object as `complete`, readable by Parent, Specialist, Admin, Super Admin);
+`POST TrainingPlan/children/{childId}/activities/{planActivityId}/submit` (all three types,
+`selectedOptionIds` / `orderedOptionIds`, correct scoring, counts saved on the plan); the two
+option-less assessment questions are gone (every child can complete the assessment again);
+`GET Chats/users` works again and returns only related users; `Auth/register` no longer takes a
+`Role`. These are integrated in the frontend.
 
-## Blocking (please fix)
+Production hardening (CORS, Swagger exposure, refresh tokens, notifications) is in `SECURITY.md`
+and is not part of this list.
 
-### 1. No child can finish the initial assessment right now
+## Please fix
 
-- **Now:** the live assessment contains two questions with **no options**:
-  `95fb31c4-b1cf-49bc-8466-04fcd09c4eea` (SingleChoice) and `10b71e85-203c-4d29-8e84-08b55da47119`
-  (MultiSelect). They cannot be answered, and `complete` requires every question →
-  `400 "لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة."` for every child.
-- **Fix:** add options to those questions or remove them from the assessment. Suggested guard:
-  reject adding a question without options to the assessment (or let `complete` ignore them).
+### 1. Admin cannot read the initial-assessment composition (regression)
 
-### 2. `GET Chats/users` returns 500 for Parent and Specialist
+- **Now:** `GET initial-assessment/categories` → **403 for Admin** (and Super Admin, Parent); only
+  the Specialist gets 200. On 2026-10-08 the Admin got 200. The fallback flag
+  `isInInitialAssessment` in `Admin/categoriesActivity` is `false` for every category.
+- **Impact:** the admin assessment page cannot show which categories are in the assessment (the
+  frontend now shows "status unknown"; add/remove still work).
+- **Fix:** allow Admin on `GET initial-assessment/categories` (and/or return the real
+  `isInInitialAssessment` flag).
 
-- **Now:** empty `500` for Parent and Specialist (Admin and Super Admin get 200). Yesterday it
-  returned 200 for everyone. Conversations, messages, send and seen still work.
-- **Impact:** parents and specialists cannot start a new conversation.
-- **Expected:** `200 [{ id, name, role }]` — ideally only the people related to the user's
-  children (yesterday a parent received every user).
+### 2. Initial assessment: MultiSelect and Sequence answers
 
-## Needed for the workflow
+- **Now:** `POST initial-assessment/{assessmentId}/answer` still takes one `selectedOptionId`
+  (Swagger `SubmitInitialAssessmentAnswerRequest`); `selectedOptionIds` / `orderedOptionIds` are
+  ignored (→ 404 "option not found"). A MultiSelect is correct when the one option is correct;
+  **a Sequence is always scored incorrect** (choosing the `CorrectOrder` 1 option → `isCorrect: false`).
+- **Fix:** accept the same fields as the plan `submit` (`selectedOptionIds`, `orderedOptionIds`) and
+  score them the same way. The frontend player already builds these answers for plan activities
+  and will switch the assessment as soon as the endpoint accepts them.
 
-### 3. Assessment result after the session
+### 3. Plan activity result: who can read it?
 
-- **Now (documented flow):** `POST initial-assessment/{assessmentId}/complete` returns
-  `{ childId, childName, parentId, parentName, overallScore, categories: [{ categoryName, percentage }] }`.
-  The frontend shows it right after completion. Afterwards it cannot be read again: there is no GET,
-  and `start` for a completed child returns 404, so the frontend never learns the `assessmentId`.
-- **Needed:** the specialist (who writes the report) and the parent see the result later.
-- **Suggested:** `GET initial-assessment/children/{childId}/result` → the same object plus
-  `assessmentId` and `completedAt` (404 when not completed).
+- **Now:** `GET TrainingPlan/children/{childId}/activities/{planActivityId}/result` → **403 for
+  Parent, Specialist, Admin and Super Admin**, before and after a submit (401 anonymous). We could
+  not test a Teacher (no account).
+- **Needed:** the parent (child's result screen) and the specialist (progress) read it. Until then
+  the frontend shows the counts from the specialist plan (`correctAnswers`, `wrongAnswers`,
+  `isCompleted`, `completedAt`).
 
-### 4. MultiSelect and Sequence scoring
+### 4. Plan activity submit: clear errors
 
-- **Now:** every type takes one `{ questionId, selectedOptionId }`; a second answer → 400
-  "تمت الإجابة على هذا السؤال مسبقًا"; array fields are ignored. MultiSelect = correct when the one
-  chosen option is a correct one. **Sequence can never be correct** — its options have
-  `IsCorrect = false`, so choosing the right first step returned `isCorrect: false`.
-- **Please confirm one of:** (a) this single-option behaviour is intended (then Sequence needs a
-  rule, e.g. "correct = the option with `CorrectOrder` 1"), or (b) accept
-  `selectedOptionIds: [guid]` (MultiSelect) / `orderedOptionIds: [guid]` (Sequence). The frontend
-  sends one option today and can switch to (b) as soon as it exists.
+| Case                                  | Now         | Suggested                                       |
+| ------------------------------------- | ----------- | ----------------------------------------------- |
+| Second submit of a completed activity | empty `500` | `400 { message: "تم إرسال هذا النشاط مسبقاً" }` |
+| `answers: []`                         | empty `500` | `400 { message }`                               |
 
-### 5. Saving a child's plan-activity answers
-
-- **Now:** plan activities expose `score`, `correctAnswers`, `wrongAnswers`, `isCompleted`, but no
-  endpoint sets them, so progress never changes when a child plays.
-- **Suggested:** `POST TrainingPlan/children/{childId}/activities/{activityId}/answers`
-  `{ answers: [{ questionId, selectedOptionId }] }` → `{ score, correctAnswers, wrongAnswers, isCompleted, completedAt }`.
-  If this exists under another route, please share it.
-
-### 6. Real-time chat (SignalR) on the deployed server
-
-- **Now:** Apidog documents `wss://localhost:7256/chatHub`; on `earlystep22.runasp.net`,
-  `POST /chatHub/negotiate?negotiateVersion=1` (and `/api/chatHub/...`) returns 404 with or
-  without a token. Swagger lists no hub.
-- **Needed:** the deployed hub path (`app.MapHub<…>("…")`), how the JWT is passed (`access_token`
-  query string?), and the server → client event names (new message, seen). The frontend uses
-  REST + polling until then.
+Also: after a completed activity the plan's `score` stays `null` and `specialist/children`
+`progressPercentage` stays `0` — please confirm whether they should change.
 
 ## Small fixes
 
-| #   | Now                                                                                                             | Suggested                                                                           |
-| --- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| 7   | First plan activity for a child **without a teacher** → empty `500`, nothing created                            | `400 { message: "أسند معلماً للطفل أولاً" }` (or create the plan without a teacher) |
-| 8   | `specialist/CreateReport` accepts a **second** report for the same child (one-report rule)                      | `409 { message }`, or update the existing report                                    |
-| 9   | `isInInitialAssessment` in `Admin/categoriesActivity` is `false` for all, while the assessment has 3 categories | Return the real flag (the frontend uses `initial-assessment/categories`)            |
+| #   | Now                                                                                                                                           | Suggested                                                            |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 5   | First plan activity for a child **without a teacher** → empty `500`, nothing created                                                          | `400 { message: "أسند معلماً للطفل أولاً" }`                         |
+| 6   | `specialist/CreateReport` accepts a **second** report for the same child; `Reports/child` returned the newest on 10-08 and the first on 10-10 | `409 { message }` (one report per child), or update the existing one |
+| 7   | Assessment result has no `completedAt` / `assessmentId`                                                                                       | Add both (the profile would show the completion date)                |
 
 ## Questions
 
-10. **Public registration role:** our rule is _public registration creates Parent accounts only_;
-    staff accounts are created by seed data or an admin-only flow. Please confirm the server
-    ignores (or rejects) any other `Role` value on `POST Auth/register`. We did not test this by
-    sending privileged roles, because a created account could not be deleted.
-11. **Teacher feedback readers:** `GET Teacher/feedbacks` returns 403 for Specialist, Parent, Admin
-    and Super Admin. Should the specialist (and parent) be able to read a child's feedback? If yes,
-    which endpoint?
-12. **Forgot password:** both `Auth/ForgotPassword` and `Auth/forgot-password` answer neutrally.
-    Which one is canonical? The frontend uses `Auth/ForgotPassword` with the reset-code flow.
+8. **Teacher feedback readers:** `GET Teacher/feedbacks` is Teacher-only (403 for everyone else).
+   Should the specialist read a child's feedback? If yes, which endpoint?
+9. **SignalR:** nothing new is exposed — `POST /chatHub/negotiate` (and `/api/chatHub/…`) is 404
+   on the deployed server and Swagger lists no hub. Please share the deployed hub path, how the
+   JWT is passed, and the event names; until then the frontend uses REST + polling.
+10. **Forgot password:** `Auth/ForgotPassword` and `Auth/forgot-password` both exist — which one is
+    canonical?
 
 ## Accounts / data
 
-- A **Teacher demo account** with at least one assigned child (Teacher endpoints, including the new
-  feedback list, are unverified).
-- Two chat messages "E2E TEST MESSAGE — SAFE TO DELETE" (demo parent → demo specialist, from
+- A **Teacher demo account** with an assigned child (Teacher endpoints, the feedback list and
+  probably the plan result are unverified without it).
+- Two chat messages "E2E TEST MESSAGE — SAFE TO DELETE" (demo parent → demo specialist,
   2026-10-07) remain — there is no delete endpoint; please delete them in the database.

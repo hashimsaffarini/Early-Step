@@ -1,7 +1,7 @@
 # Backend integration status
 
-Branch `feature/backend-integration` · updated 2026-10-08 (re-verification after the backend
-update) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results:
+Branch `feature/backend-integration` · updated 2026-10-10 (re-verification after the backend
+updates) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results:
 `API_VERIFICATION_MATRIX.md` · shapes: `api/LIVE_CONTRACTS.md` · open backend items:
 `BACKEND_REQUESTS.md` · players: `PLAYER_BACKEND_COMPATIBILITY.md`.
 
@@ -31,44 +31,45 @@ update) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results
 
 ### Auth & core
 
-| Capability                          | API                   | Status                     | Notes                                                        |
-| ----------------------------------- | --------------------- | -------------------------- | ------------------------------------------------------------ |
-| Login, role normalization, expiry   | `POST Auth/login`     | **VERIFIED LIVE**          | JWT 120 h                                                    |
-| Server authorization                | —                     | **VERIFIED LIVE**          | anonymous → 401 everywhere checked; cross-role → 403         |
-| Forgot password                     | `Auth/ForgotPassword` | **VERIFIED LIVE**          | neutral answer for unknown emails (fixed 10-08)              |
-| Reset password                      | `Auth/reset-password` | BLOCKED BY MISSING ACCOUNT | needs a disposable mailbox                                   |
-| Parent registration                 | `POST Auth/register`  | MOCK TESTED                | not created live (no user delete); role rule to be confirmed |
-| Refresh token / server logout       | —                     | OUT OF SCOPE               | backend decision; production recommendation                  |
-| Change password, email confirmation | —                     | NOT REQUIRED               | no screen                                                    |
+| Capability                          | API                   | Status                     | Notes                                                                      |
+| ----------------------------------- | --------------------- | -------------------------- | -------------------------------------------------------------------------- |
+| Login, role normalization, expiry   | `POST Auth/login`     | **VERIFIED LIVE**          | JWT 120 h                                                                  |
+| Server authorization                | —                     | **VERIFIED LIVE**          | anonymous → 401 everywhere checked; cross-role → 403                       |
+| Forgot password                     | `Auth/ForgotPassword` | **VERIFIED LIVE**          | neutral answer for unknown emails (fixed 10-08)                            |
+| Reset password                      | `Auth/reset-password` | BLOCKED BY MISSING ACCOUNT | needs a disposable mailbox                                                 |
+| Parent registration                 | `POST Auth/register`  | MOCK TESTED                | no `Role` in the contract (parent-only); not created live (no user delete) |
+| Refresh token / server logout       | —                     | OUT OF SCOPE               | backend decision; production recommendation                                |
+| Change password, email confirmation | —                     | NOT REQUIRED               | no screen                                                                  |
 
 ### Parent & children
 
-| Capability                | API                                           | Status                    | Notes                                          |
-| ------------------------- | --------------------------------------------- | ------------------------- | ---------------------------------------------- |
-| My children, child detail | `GET Parent/GetMyChildren`, `GET Parent/{id}` | **VERIFIED LIVE**         |                                                |
-| Add / edit / delete child | `POST/PATCH/DELETE Parent`                    | **VERIFIED LIVE — WRITE** | delete cascades reports, assessment, plan      |
-| Plan activities + summary | `TrainingPlan/children/{id}/activities…`      | **VERIFIED LIVE**         |                                                |
-| Plan activity player      | `…/activities/{activityId}`                   | PARTIALLY VERIFIED        | plays; results cannot be saved (no endpoint)   |
-| Child report              | `GET Reports/child/{id}`                      | **VERIFIED LIVE**         | one report per child (confirmed business rule) |
-| Report PDF                | `GET Reports/{id}/download`                   | **VERIFIED LIVE**         |                                                |
+| Capability                         | API                                                      | Status                    | Notes                                                          |
+| ---------------------------------- | -------------------------------------------------------- | ------------------------- | -------------------------------------------------------------- |
+| My children, child detail          | `GET Parent/GetMyChildren`, `GET Parent/{id}`            | **VERIFIED LIVE**         |                                                                |
+| Add / edit / delete child          | `POST/PATCH/DELETE Parent`                               | **VERIFIED LIVE — WRITE** | delete cascades reports, assessment, plan                      |
+| Plan activities + summary          | `TrainingPlan/children/{id}/activities…`                 | **VERIFIED LIVE**         |                                                                |
+| Plan activity result               | `GET …/{planActivityId}/result`                          | BLOCKED BY BACKEND        | 403 for every available role                                   |
+| Plan activity player + save result | `…/activities/{activityId}`, `…/{planActivityId}/submit` | **VERIFIED LIVE — WRITE** | all 3 types; one attempt; counts appear in the specialist plan |
+| Child report                       | `GET Reports/child/{id}`                                 | **VERIFIED LIVE**         | one report per child (confirmed business rule)                 |
+| Report PDF                         | `GET Reports/{id}/download`                              | **VERIFIED LIVE**         |                                                                |
 
 ### Initial assessment
 
-| Capability                         | API                           | Status                    | Notes                                                                   |
-| ---------------------------------- | ----------------------------- | ------------------------- | ----------------------------------------------------------------------- |
-| Start, answer (all 3 types)        | `POST initial-assessment/{…}` | **VERIFIED LIVE — WRITE** | one option per question for every type                                  |
-| Complete + result screen           | `complete` response           | BLOCKED BY BACKEND        | worked 10-07; **10-08 fails for every child** (2 option-less questions) |
-| Result later (profile, specialist) | —                             | BLOCKED BY BACKEND        | result only returned by `complete`; no GET                              |
-| MultiSelect / Sequence scoring     | —                             | PARTIALLY VERIFIED        | accepted with one option; Sequence always scored incorrect              |
+| Capability                          | API                                       | Status                    | Notes                                             |
+| ----------------------------------- | ----------------------------------------- | ------------------------- | ------------------------------------------------- |
+| Start, answer (all 3 types)         | `POST initial-assessment/{…}`             | **VERIFIED LIVE — WRITE** | one option per question for every type            |
+| Complete + result screen            | `complete` response                       | **VERIFIED LIVE — WRITE** | completes again (option-less questions removed)   |
+| Result later (profile, specialist)  | `GET initial-assessment/{childId}/result` | **VERIFIED LIVE**         | assessment page after refresh + child profile     |
+| MultiSelect / Sequence (assessment) | `…/answer`                                | PARTIALLY VERIFIED        | one option only; Sequence always scored incorrect |
 
 ### Admin content
 
-| Capability                                       | API                                        | Status                    | Notes                           |
-| ------------------------------------------------ | ------------------------------------------ | ------------------------- | ------------------------------- |
-| Lists and detail                                 | `GET Admin/…`                              | **VERIFIED LIVE**         |                                 |
-| Category / activity (test, game, icon) CRUD      | `Admin/categories`, `Admin/activities`     | **VERIFIED LIVE — WRITE** |                                 |
-| Questions (3 types), options, delete all options | `Admin/questions…`, `question-options`     | **VERIFIED LIVE — WRITE** | Matching removed by the backend |
-| Assessment composition                           | `initial-assessment/categories, questions` | **VERIFIED LIVE — WRITE** |                                 |
+| Capability                                       | API                                        | Status                    | Notes                                                        |
+| ------------------------------------------------ | ------------------------------------------ | ------------------------- | ------------------------------------------------------------ |
+| Lists and detail                                 | `GET Admin/…`                              | **VERIFIED LIVE**         |                                                              |
+| Category / activity (test, game, icon) CRUD      | `Admin/categories`, `Admin/activities`     | **VERIFIED LIVE — WRITE** |                                                              |
+| Questions (3 types), options, delete all options | `Admin/questions…`, `question-options`     | **VERIFIED LIVE — WRITE** | Matching removed by the backend                              |
+| Assessment composition (add/remove)              | `initial-assessment/categories, questions` | **VERIFIED LIVE — WRITE** | reading membership: Admin 403 since 10-10 → "status unknown" |
 
 ### Admin users & assignment
 
@@ -104,23 +105,23 @@ update) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results
 
 ### Chat & notifications
 
-| Capability                      | API                              | Status                    | Notes                                   |
-| ------------------------------- | -------------------------------- | ------------------------- | --------------------------------------- |
-| Contacts                        | `GET Chats/users`                | BLOCKED BY BACKEND        | 500 for Parent/Specialist (since 10-08) |
-| Conversations, messages, unread | `GET Chats/…`                    | **VERIFIED LIVE**         | REST + polling                          |
-| Send, mark seen                 | `POST Chats/send`, `mark-…-seen` | **VERIFIED LIVE — WRITE** |                                         |
-| Real-time hub (SignalR)         | —                                | BLOCKED BY BACKEND        | no hub on the deployed server           |
-| Notifications                   | —                                | OUT OF SCOPE              |                                         |
+| Capability                      | API                              | Status                    | Notes                                  |
+| ------------------------------- | -------------------------------- | ------------------------- | -------------------------------------- |
+| Contacts                        | `GET Chats/users`                | **VERIFIED LIVE**         | fixed 10-10; filtered to related users |
+| Conversations, messages, unread | `GET Chats/…`                    | **VERIFIED LIVE**         | REST + polling                         |
+| Send, mark seen                 | `POST Chats/send`, `mark-…-seen` | **VERIFIED LIVE — WRITE** |                                        |
+| Real-time hub (SignalR)         | —                                | BLOCKED BY BACKEND        | no hub on the deployed server          |
+| Notifications                   | —                                | OUT OF SCOPE              |                                        |
 
-## Totals (38 matrix rows)
+## Totals (39 matrix rows)
 
 | Status                     | Rows |
 | -------------------------- | ---: |
-| VERIFIED LIVE              |   13 |
-| VERIFIED LIVE — WRITE      |   11 |
-| PARTIALLY VERIFIED         |    2 |
+| VERIFIED LIVE              |   15 |
+| VERIFIED LIVE — WRITE      |   13 |
+| PARTIALLY VERIFIED         |    1 |
 | MOCK TESTED                |    1 |
-| BLOCKED BY BACKEND         |    5 |
+| BLOCKED BY BACKEND         |    3 |
 | BLOCKED BY MISSING ACCOUNT |    3 |
 | OUT OF SCOPE               |    2 |
 | NOT REQUIRED               |    1 |
