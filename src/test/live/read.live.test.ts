@@ -27,6 +27,7 @@ import {
 import { fetchAdminUser, fetchAdminUsers } from '@/features/users/api/usersApi';
 import { fetchUnreadMessagesCount } from '@/services/api/chatUnread';
 import { fetchChildPlanActivities, fetchChildPlanSummary } from '@/services/api/childPlan';
+import { fetchAssessmentResult } from '@/services/api/assessmentResult';
 import { fetchChildReport } from '@/services/api/childReports';
 import { fetchChildrenForRole } from '@/services/api/childrenLists';
 
@@ -40,7 +41,7 @@ describe.runIf(hasAccount('PARENT'))('live — Parent', () => {
     expect(session.expiresAt).toBeGreaterThan(Date.now());
   });
 
-  it('reads children, child detail, plan, summary, reports, activity detail', async () => {
+  it('reads children, child detail, plan, summary, report, assessment result, activity detail', async () => {
     const children = await fetchChildrenForRole('Parent');
     expect(Array.isArray(children)).toBe(true);
     for (const child of children) {
@@ -48,6 +49,8 @@ describe.runIf(hasAccount('PARENT'))('live — Parent', () => {
       await fetchParentChild(child.id);
       const plan = await fetchChildPlanActivities(child.id);
       await fetchChildPlanSummary(child.id);
+      const result = await fetchAssessmentResult(child.id);
+      expect(result === null || typeof result.overallScore === 'number').toBe(true);
       const report = await fetchChildReport(child.id);
       expect(report === null || typeof report.id === 'string').toBe(true);
       const first = plan[0];

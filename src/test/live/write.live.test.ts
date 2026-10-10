@@ -5,6 +5,10 @@
  * Not included: chat messages (the API cannot delete them) and Parent registration (no user delete).
  */
 import {
+  fetchPlanActivityDetail,
+  submitPlanActivity,
+} from '@/features/activities/api/planActivityApi';
+import {
   completeAssessment,
   startAssessment,
   submitAnswer,
@@ -52,6 +56,7 @@ import {
 } from '@/features/training-plans/api/trainingPlansApi';
 import { assignChildrenToSpecialist } from '@/features/users/api/usersApi';
 import { fetchChildReport } from '@/services/api/childReports';
+import { fetchAssessmentResult } from '@/services/api/assessmentResult';
 import { fetchChildPlanActivities } from '@/services/api/childPlan';
 import { fetchChildrenForRole } from '@/services/api/childrenLists';
 import { isAppError } from '@/services/http/apiError';
@@ -141,8 +146,9 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     expect(detail).toMatchObject({ fullName: NAME('Child Edited'), age: 7, gender: 'بنت' });
   });
 
-  it('Parent: initial assessment start → answer → complete returns a result', async () => {
+  it('Parent: initial assessment start → answer → complete → GET result (same object)', async () => {
     await signInLive('PARENT');
+    expect(await fetchAssessmentResult(childId)).toBeNull();
     const started = await startAssessment(childId);
     expect(started.questions.length).toBeGreaterThan(0);
     for (const question of started.questions) {
@@ -157,6 +163,10 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     const result = await completeAssessment(started.assessmentId);
     expect(result).not.toBeNull();
     expect(typeof result?.overallScore).toBe('number');
+    // Persisted: readable again later (GET initial-assessment/{childId}/result), also by staff.
+    expect(await fetchAssessmentResult(childId)).toEqual(result);
+    await signInLive('SPECIALIST');
+    expect(await fetchAssessmentResult(childId)).toEqual(result);
   });
 
   it('Admin → Specialist: assign the specialist, then the specialist assigns a teacher', async () => {
@@ -282,18 +292,35 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     expect(
       (await fetchChildPlanActivities(childId)).some((a) => a.activityId === activityIds.test),
     ).toBe(true);
+    // The child plays it and the result is saved (POST …/activities/{planActivityId}/submit).
+    const played = await fetchPlanActivityDetail(childId, activityIds.test);
+    const playedQuestion = played.questions[0];
+    const playedOption = playedQuestion?.options[0];
+    expect(playedOption).toBeDefined();
+    await submitPlanActivity(childId, played.activity.id, [
+      { questionId: playedQuestion?.id ?? '', selectedOptionId: playedOption?.id ?? '' },
+    ]);
     await signInLive('SPECIALIST');
+    const saved = (await fetchSpecialistPlan(childId)).activities.find(
+      (a) => a.activityId === activityIds.test,
+    );
+    expect(saved).toMatchObject({ isCompleted: true, correctAnswers: 1, wrongAnswers: 0 });
     await removeActivity(childId, activityIds.test);
     await signInLive('ADMIN');
 
     await addCategoryToAssessment(categoryId);
     track({ kind: 'assessmentCategory', id: categoryId, account: 'ADMIN' });
+    // Live 2026-10-10: initial-assessment/categories is readable by the Specialist only (Admin 403).
+    await signInLive('SPECIALIST');
     expect(await fetchAssessmentCategoryIds()).toContain(categoryId);
+    await signInLive('ADMIN');
     await addQuestionsToAssessment([questionId]);
     await removeQuestionFromAssessment(questionId);
     await removeCategoryFromAssessment(categoryId);
     untrack('assessmentCategory', categoryId);
+    await signInLive('SPECIALIST');
     expect(await fetchAssessmentCategoryIds()).not.toContain(categoryId);
+    await signInLive('ADMIN');
 
     await deleteQuestion(questionId);
     untrack('question', questionId);
