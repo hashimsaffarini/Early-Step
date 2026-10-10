@@ -225,6 +225,24 @@ describe('AssessmentPage (initial assessment)', () => {
     LONG_FLOW,
   );
 
+  it('shows the saved result instead of a new start when the child already completed it', async () => {
+    server.use(
+      http.get(apiUrl('initial-assessment/:childId/result'), () =>
+        HttpResponse.json({
+          overallScore: 90,
+          categories: [{ categoryName: 'الرياضيات', percentage: 90 }],
+        }),
+      ),
+    );
+    renderAssessment();
+
+    expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('progressbar', { name: 'النتيجة العامة للتقييم المبدئي' }),
+    ).toHaveAttribute('aria-valuenow', '90');
+    expect(screen.queryByRole('button', { name: /ابدأ/ })).not.toBeInTheDocument();
+  });
+
   it('shows a network error on start', async () => {
     server.use(http.post(apiUrl('initial-assessment/:childId/start'), () => HttpResponse.error()));
     renderAssessment();

@@ -2,10 +2,12 @@ import { ClipboardCheck } from 'lucide-react';
 
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Card } from '@/components/ui/Card';
+import { ProgressBar } from '@/components/ui/Feedback';
+import { useAssessmentResult } from '@/hooks/api/childResources';
 
-import { ASSESSMENT_RESULTS_UNAVAILABLE } from './assessmentCopy';
 import styles from './profile.module.css';
 import { StartAssessmentLink } from './StartAssessmentLink';
+import { QueryStatus } from './TabStatus';
 
 const HEADING_ID = 'profile-assessment-title';
 
@@ -16,15 +18,40 @@ export interface AssessmentSummaryCardProps {
   canStart: boolean;
 }
 
-/**
- * Initial assessment. No endpoint returns a child's assessment status or results
- * (BLOCKED BY BACKEND), so the card never claims a state — it only offers to start one.
- */
+/** Initial assessment: the saved overall result, or an invitation to start it. */
 export function AssessmentSummaryCard({
   childId,
   childName,
   canStart,
 }: AssessmentSummaryCardProps) {
+  const query = useAssessmentResult(childId);
+  let body;
+  if (query.isPending || query.isError) {
+    body = <QueryStatus query={query} errorTitle="تعذّر تحميل نتيجة التقييم" />;
+  } else if (query.data) {
+    body = (
+      <ProgressBar
+        label="النتيجة العامة للتقييم المبدئي"
+        value={query.data.overallScore}
+        max={100}
+        showLabel
+      />
+    );
+  } else {
+    body = (
+      <>
+        <p className={styles.muted}>
+          يتكوّن التقييم المبدئي من أنشطة وألعاب قصيرة مناسبة لعمر الطفل.
+        </p>
+        {canStart ? (
+          <div className={styles.footer}>
+            <StartAssessmentLink childId={childId} childName={childName} />
+          </div>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <Card as="section" className={styles.card} aria-labelledby={HEADING_ID}>
       <SectionHeader
@@ -33,15 +60,7 @@ export function AssessmentSummaryCard({
         icon={ClipboardCheck}
         iconTone="primary"
       />
-      <p className={styles.muted}>
-        يتكوّن التقييم المبدئي من أنشطة وألعاب قصيرة مناسبة لعمر الطفل.
-      </p>
-      <p className={styles.muted}>{ASSESSMENT_RESULTS_UNAVAILABLE}</p>
-      {canStart ? (
-        <div className={styles.footer}>
-          <StartAssessmentLink childId={childId} childName={childName} />
-        </div>
-      ) : null}
+      {body}
     </Card>
   );
 }

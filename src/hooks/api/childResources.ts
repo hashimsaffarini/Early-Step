@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import type { AreaRole } from '@/constants/routes';
 
+import { fetchAssessmentResult } from '@/services/api/assessmentResult';
 import { fetchChildPlanActivities, fetchChildPlanSummary } from '@/services/api/childPlan';
 import { fetchChildReport } from '@/services/api/childReports';
 import { CHILDREN_LIST_PATH, fetchChildrenForRole } from '@/services/api/childrenLists';
@@ -12,6 +13,15 @@ export function useChildReport(childId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.reports.byChild(childId ?? ''),
     queryFn: () => fetchChildReport(childId ?? ''),
+    enabled: Boolean(childId),
+  });
+}
+
+/** The child's initial-assessment result (null until an assessment is completed). */
+export function useAssessmentResult(childId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.assessments.result(childId ?? ''),
+    queryFn: () => fetchAssessmentResult(childId ?? ''),
     enabled: Boolean(childId),
   });
 }

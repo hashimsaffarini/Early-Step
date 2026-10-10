@@ -1,4 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { queryKeys } from '@/services/api/queryKeys';
 
 import { completeAssessment, startAssessment, submitAnswer } from './assessmentApi';
 
@@ -13,5 +15,10 @@ export function useSubmitAnswer() {
 }
 
 export function useCompleteAssessment() {
-  return useMutation({ mutationFn: completeAssessment });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: completeAssessment,
+    // The saved result is now readable with GET initial-assessment/{childId}/result.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all }),
+  });
 }

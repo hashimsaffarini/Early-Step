@@ -4,6 +4,11 @@ import { AppError } from '@/services/http/apiError';
 import { httpClient } from '@/services/http/httpClient';
 
 import type { AssessmentQuestion, AssessmentQuestionType, StartedAssessment } from '../types';
+import {
+  assessmentResultSchema,
+  mapAssessmentResult,
+  type AssessmentResult,
+} from '@/services/api/assessmentResult';
 
 /**
  * Initial assessment endpoints (Swagger `/api/initial-assessment/*`).
@@ -150,34 +155,12 @@ export async function submitAnswer(input: AnswerInput): Promise<void> {
   assertNotKnownFailure(data);
 }
 
-/**
- * VERIFIED LIVE (2026-10-07): `complete` returns the result —
- * `{ childId, childName, parentId, parentName, overallScore, categories: [{ categoryName, percentage }] }`
- * — and returns the same result when called again. There is no GET endpoint to read it later
- * (requested from the backend).
- */
-const assessmentResultSchema = z.looseObject({
-  overallScore: z.number(),
-  categories: z
-    .array(z.looseObject({ categoryName: z.string().nullish(), percentage: z.number() }))
-    .nullish(),
-});
-
-export interface AssessmentResult {
-  overallScore: number;
-  categories: { name: string; percentage: number }[];
-}
+/** `complete` returns the result; it can be read again later with `fetchAssessmentResult`. */
+export type { AssessmentResult };
 
 export async function completeAssessment(assessmentId: string): Promise<AssessmentResult | null> {
   const { data } = await httpClient.post<unknown>(ASSESSMENT_PATHS.complete(assessmentId));
   assertNotKnownFailure(data);
   const parsed = assessmentResultSchema.safeParse(data);
-  if (!parsed.success) return null;
-  return {
-    overallScore: parsed.data.overallScore,
-    categories: (parsed.data.categories ?? []).map((category) => ({
-      name: category.categoryName?.trim() ?? '',
-      percentage: category.percentage,
-    })),
-  };
+  return parsed.success ? mapAssessmentResult(parsed.data) : null;
 }

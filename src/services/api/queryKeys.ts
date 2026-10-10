@@ -26,6 +26,10 @@ export const queryKeys = {
     available: (childId: string, type?: string) =>
       ['trainingPlans', 'specialist', childId, 'available', type ?? 'all'] as const,
   },
+  assessments: {
+    all: ['assessments'] as const,
+    result: (childId: string) => ['assessments', 'result', childId] as const,
+  },
   content: {
     all: ['content'] as const,
     categories: () => ['content', 'categories'] as const,

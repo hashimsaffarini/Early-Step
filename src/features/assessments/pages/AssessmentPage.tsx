@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { Button, getButtonClassName } from '@/components/ui/Button';
-import { useChildrenForRole } from '@/hooks/api/childResources';
+import { useAssessmentResult, useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 
 import { useCompleteAssessment, useStartAssessment } from '../api/assessmentMutations';
@@ -21,8 +21,8 @@ const EMOJI = '🎯';
 
 /**
  * Initial assessment (Replit `/assessment/:id`) — full-screen, light child style.
- * Parent only: start → answer each question → complete (Swagger `initial-assessment/*`).
- * Shapes NOT LIVE-VERIFIED; no results endpoint (completion stays neutral).
+ * Parent only: start → answer each question → complete (Swagger `initial-assessment/*`). A child
+ * who already completed it sees the saved result (`GET initial-assessment/{childId}/result`).
  */
 export function AssessmentPage() {
   const { childId = '' } = useParams();
@@ -55,12 +55,13 @@ function ParentAssessment({ childId }: { childId: string }) {
   const children = useChildrenForRole('Parent');
   const start = useStartAssessment();
   const complete = useCompleteAssessment();
+  const savedResult = useAssessmentResult(childId);
   const [answered, setAnswered] = useState<number | null>(null);
 
   const profilePath = paths.childProfile(childId);
   const shell = { exitTo: profilePath, category: 'attention' as const, emoji: EMOJI };
 
-  if (children.isPending) {
+  if (children.isPending || savedResult.isPending) {
     return (
       <PlayerShell {...shell} title={TITLE}>
         <LoadingState />
@@ -106,6 +107,16 @@ function ParentAssessment({ childId }: { childId: string }) {
   };
 
   const renderBody = () => {
+    if (!assessment && savedResult.data) {
+      return (
+        <AssessmentResults
+          childName={child.fullName}
+          answered={null}
+          result={savedResult.data}
+          profilePath={profilePath}
+        />
+      );
+    }
     if (!assessment) {
       return (
         <AssessmentIntro

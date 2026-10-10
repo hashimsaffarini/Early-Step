@@ -14,16 +14,17 @@ import styles from './AssessmentResults.module.css';
 
 export interface AssessmentResultsProps {
   childName: string;
-  /** Answers the server accepted. */
-  answered: number;
-  /** Result returned by `complete` (null if the server sent none). */
+  /** Answers the server accepted in this session; null when showing a saved result. */
+  answered: number | null;
+  /** Result from `complete` or `GET …/result` (null if the server sent none). */
   result: AssessmentResult | null;
   profilePath: string;
 }
 
 /**
- * Shown only after `complete` succeeded. Shows exactly the result the server returned (overall
- * score + per-category percentage) in neutral words — no diagnosis or interpretation is added.
+ * Shown after `complete` succeeded, or when the child already has a saved result. Shows exactly
+ * the result the server returned (overall score + per-category percentage) in neutral words — no
+ * diagnosis or interpretation is added.
  */
 export function AssessmentResults({
   childName,
@@ -49,7 +50,11 @@ export function AssessmentResults({
       </div>
 
       <Card className={styles.card}>
-        <p className={styles.rowTitle}>{`تم إرسال ${formatQuestionCount(answered)} إلى المنصة.`}</p>
+        {answered === null ? null : (
+          <p
+            className={styles.rowTitle}
+          >{`تم إرسال ${formatQuestionCount(answered)} إلى المنصة.`}</p>
+        )}
         {result ? (
           <>
             <ProgressBar

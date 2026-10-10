@@ -134,17 +134,43 @@ describe('ChildProfilePage — tabs from the API', () => {
     expect(await screen.findByText('لا يوجد تقرير بعد')).toBeInTheDocument();
   });
 
-  it('is honest that assessment results are not available, with a start link for the parent', async () => {
+  it('offers the parent to start the assessment while no result exists', async () => {
     renderProfile('Parent', YOUSEF);
     await heading('يوسف');
 
     await userEvent.click(tab(/التقييمات/));
 
-    expect(screen.getByText('سجل التقييمات غير متاح بعد')).toBeInTheDocument();
+    expect(await screen.findByText('لم يُكمل الطفل التقييم المبدئي بعد')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'بدء التقييم المبدئي لـ يوسف' })[0]).toHaveAttribute(
       'href',
       getAreaPaths('Parent').assessment(YOUSEF),
     );
+  });
+
+  it('shows the saved assessment result from GET initial-assessment/{childId}/result', async () => {
+    server.use(
+      http.get(apiUrl('initial-assessment/:childId/result'), () =>
+        HttpResponse.json({
+          childId: YOUSEF,
+          overallScore: 80,
+          categories: [{ categoryName: 'القراءة', percentage: 60 }],
+        }),
+      ),
+    );
+    renderProfile('Specialist', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/التقييمات/));
+
+    const region = await screen.findByRole('region', { name: 'نتيجة التقييم المبدئي' });
+    expect(
+      within(region).getByRole('progressbar', { name: 'النتيجة العامة للتقييم المبدئي' }),
+    ).toHaveAttribute('aria-valuenow', '80');
+    expect(within(region).getByRole('progressbar', { name: 'القراءة' })).toHaveAttribute(
+      'aria-valuenow',
+      '60',
+    );
+    expect(within(region).getByText(/وليست تشخيصاً/)).toBeInTheDocument();
   });
 
   it('does not offer to start an assessment to staff', async () => {
