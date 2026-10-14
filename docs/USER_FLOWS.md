@@ -4,8 +4,10 @@
 > assessment takes real MultiSelect / Sequence answers; the admin picks specialists from
 > `GET Admin/specialists`; the specialist sees each activity's score, the plan progress, the
 > child's answers (`…/result`) and the teacher's notes (`Teacher/children/{childId}/feedbacks`).
-> New blockers: the parent cannot re-read the saved assessment result (403), and a child with a
-> played activity cannot be deleted. Current list: `BACKEND_REQUESTS.md`.
+> Business rules (2026-10-14): the parent's assessment flow ends with the submission (the saved
+> result is for staff); a child with saved results and a played activity are kept (delete /
+> remove are blocked in the app); chat is REST + polling. Remaining blocker: staff created by the
+> Super Admin cannot log in. Current list: `BACKEND_REQUESTS.md`.
 
 > **Update 2026-10-10 (live-verified):** the assessment result is saved and readable later
 > (`GET initial-assessment/{childId}/result` — assessment page after refresh, child profile for
@@ -52,16 +54,16 @@ Register → Login → Dashboard → Add Child → Child Profile
 Select child → Intro → Start → Section → Question/Activity → Submit answer → Complete → Results
 ```
 
-| Step             | API                                                              | Replit                                 | Notes                                                                                                   |
-| ---------------- | ---------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Select child     | from children list                                               | "ابدأ التقييم الأولي" on child profile |                                                                                                         |
-| Intro            | —                                                                | Section grid (4 domains), "play all"   | Intro content **TBD**                                                                                   |
-| Start            | `POST /initial-assessment/{childId}/start`                       | none (client only)                     | Response **TBD**                                                                                        |
-| Sections         | by category (_inference_)                                        | 4 hard-coded mini-games                |                                                                                                         |
-| Answer           | `POST /initial-assessment/{id}/answer`                           | client-scored                          | Verified 2026-10-14: one option / exact set / exact order per type                                      |
-| Complete         | `POST /initial-assessment/{id}/complete`                         | `POST` 4 scores                        |                                                                                                         |
-| Results (parent) | `complete` response + `GET /initial-assessment/{childId}/result` | Client results screen                  | `complete` works; the GET is 403 for the Parent since 2026-10-14 (staff 200, with per-question details) |
-| Who operates     | **TBD**                                                          | parent's session                       | Child login not supported by either                                                                     |
+| Step          | API                                                              | Replit                                 | Notes                                                                                             |
+| ------------- | ---------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Select child  | from children list                                               | "ابدأ التقييم الأولي" on child profile |                                                                                                   |
+| Intro         | —                                                                | Section grid (4 domains), "play all"   | Intro content **TBD**                                                                             |
+| Start         | `POST /initial-assessment/{childId}/start`                       | none (client only)                     | Response **TBD**                                                                                  |
+| Sections      | by category (_inference_)                                        | 4 hard-coded mini-games                |                                                                                                   |
+| Answer        | `POST /initial-assessment/{id}/answer`                           | client-scored                          | Verified 2026-10-14: one option / exact set / exact order per type                                |
+| Complete      | `POST /initial-assessment/{id}/complete`                         | `POST` 4 scores                        |                                                                                                   |
+| Done (parent) | `complete` response + `GET /initial-assessment/{childId}/result` | Client results screen                  | The parent sees a submission confirmation only; the saved result is staff-only (product decision) |
+| Who operates  | **TBD**                                                          | parent's session                       | Child login not supported by either                                                               |
 
 See `docs/ACTIVITY_ENGINE.md`.
 

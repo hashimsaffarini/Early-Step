@@ -134,10 +134,13 @@ roles }` (`features/auth/api/currentUser.ts`, role normalized, unknown → refus
   `selectedOptionId`, MultiSelect `selectedOptionIds`, Sequence `orderedOptionIds`. The assessment
   sends one per question (`submitAnswer({ assessmentId, answer })`); the plan sends all at once
   (`submitPlanActivity`, every question required; 400 / 409 shown as sent).
-- **Assessment result:** `AssessmentResult` (`services/api/assessmentResult.ts`) — `assessmentId`,
-  per category `totalQuestions` / `correctAnswers` (null when 0, as `complete` sends) and
-  `questions` (type, verdict, child's and correct answers). Details render only when the server
-  sends them (staff).
+- **Assessment result:** `complete` only completes (its body is not read). The result
+  (`AssessmentResult`, `services/api/assessmentResult.ts`: `assessmentId`, per category
+  `totalQuestions` / `correctAnswers`, `questions` with type, verdict, child's and correct answers)
+  is read from `GET initial-assessment/{childId}/result` by staff only — never from the Parent UI
+  (product decision 2026-10-14).
+- **Results are kept:** the parent cannot delete a child whose plan has a completed activity, and
+  the specialist has no remove action for played activities (product rule).
 - **Plans:** `PlanActivity.score`; `SpecialistPlan.progress`; `fetchPlanActivityResult`
   (`training-plans`, query key `trainingPlans.activityResult`, loaded when "عرض إجابات الطفل" opens;
   Specialist only). The first activity without a teacher shows the server's 400 message.
@@ -151,9 +154,9 @@ roles }` (`features/auth/api/currentUser.ts`, role normalized, unknown → refus
 - **Reports:** one report per child — `fetchChildReport(childId)`; the backend answers 409 to a
   second one.
 - **Registration:** no `Role` is sent (public registration = Parent).
-- **Chat:** REST + polling; no SignalR hub is deployed.
+- **Chat:** REST + polling (SignalR out of scope).
 
 ## Unknowns (TBD)
 
-Deployed SignalR hub path/events · teacher-feedback item fields · API versioning. Current backend
+Teacher-feedback item fields (no data yet) · API versioning. SignalR is out of scope. Current backend
 list: `BACKEND_REQUESTS.md`.

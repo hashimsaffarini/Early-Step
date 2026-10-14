@@ -166,3 +166,12 @@ Current list: `BACKEND_REQUESTS.md`. Earlier "missing" items above are supersede
   no usable Teacher account.
 - **Product note resolved:** the written flow (specialist monitors the teacher's feedback) now
   matches the backend — the specialist reads it in the child profile.
+
+### Business-rule clarifications (2026-10-14)
+
+Decided by the backend developer / product, so not gaps any more: the parent does not reopen the
+saved assessment result (staff-only; the app does not call it as Parent and ends the parent flow
+with a confirmation); records with results are kept (deleting such a child and removing a played
+activity are blocked in the app); `complete` only completes (the Result endpoint is the source of
+truth); no completion date; SignalR out of scope (REST + polling); teacher feedback works (lists
+were empty for lack of data). Remaining blocker: staff created by the Super Admin cannot log in.

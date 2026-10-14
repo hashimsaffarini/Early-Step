@@ -502,3 +502,27 @@ overrides an explicit `Authorization` header.
 One source of truth for who is signed in and for the routing role (the server's current role); no
 personal data in web storage; one extra request on login and on each reload; protected pages wait
 for `Auth/me` before rendering.
+
+## ADR-022 — Staff-only assessment results and kept result history
+
+### Status
+
+Accepted (2026-10-14, business-rule clarifications from the backend developer)
+
+### Context
+
+Live, the Parent gets 403 on `GET initial-assessment/{childId}/result`, and deleting a child or
+removing a plan activity with saved results fails. The backend developer clarified that both are
+intended.
+
+### Decision
+
+The Result endpoint is staff-only: the Parent UI never calls it, and the parent's assessment ends
+with a confirmation (no score; `complete` only completes). Records with results are kept: the
+parent's delete action is disabled for a child whose plan has a completed activity, and played
+plan activities have no remove action. No frontend workaround is added for backend errors.
+
+### Consequences
+
+Parents see their child's progress through the specialist (reports, plan), not raw assessment
+scores. The empty 500 on such deletes remains a small backend improvement (descriptive 400/409).

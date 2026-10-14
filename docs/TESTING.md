@@ -83,7 +83,7 @@ exist — ADR required; credentials only via CI secrets.
 
 ## Current tests (2026-10-14)
 
-**341 tests in 66 files** (`npm run test`), all against MSW:
+**342 tests in 66 files** (`npm run test`), all against MSW:
 
 | Area                                                  | Files | Covers                                                                                                                                                                                    |
 | ----------------------------------------------------- | ----: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -98,15 +98,19 @@ exist — ADR required; credentials only via CI secrets.
 | Chat                                                  |     1 | conversations, seen, send, polling, older messages                                                                                                                                        |
 | Landing                                               |     1 | hero, CTAs, no fabricated stats                                                                                                                                                           |
 
-**Live suites (2026-10-14):** `test:live:read` **12/13** — the only failure is the Parent 403 on
-`GET initial-assessment/{childId}/result` (backend regression, `BACKEND_REQUESTS.md` §1); covers
-`Auth/me` for every role + anonymous 401, `Admin/specialists` (= the specialist users, Specialist
-403), Admin assessment membership, specialist results and teacher feedback lists.
-`test:live:write` **6/7** — same single failure; covers every question type in the assessment,
-staff result details, `Admin/specialists` assignment, no-teacher 400, empty / partial submit 400,
-plan result 403 / 404, duplicate report 409; cleanup verified. A successful plan submission
-(score, 409, result) runs only with `E2E_PLAN_SUBMIT=1`, because the backend then cannot delete
-the child (`BACKEND_REQUESTS.md` §2); it was verified with Python on 2026-10-14.
+**Live suites (2026-10-14, after the business-rule clarifications):** `test:live:read` **13/13**
+— `Auth/me` for every role + anonymous 401, `Admin/specialists` (= the specialist users,
+Specialist 403), Admin assessment membership, parent reads (the saved assessment result is
+staff-only and not read as Parent), specialist results and teacher feedback lists.
+`test:live:write` **6/6** — every question type in the assessment, staff result details,
+`Admin/specialists` assignment, no-teacher 400, empty / partial submit 400, plan result 403 / 404,
+duplicate report 409; cleanup verified. A successful plan submission (score, 409, result) runs only
+with `E2E_PLAN_SUBMIT=1`: by product rule a child with saved results is kept, so it would leave a
+record behind (verified with Python on 2026-10-14).
+
+**Product rules covered by unit tests (2026-10-14):** the parent never calls the saved-result
+endpoint (assessment page and profile) and finishes with a confirmation without scores; deleting
+a child with saved activity results is disabled; played plan activities have no remove action.
 
 **Browser regression (2026-10-14, development mock mode, localhost):** every role signed in with
 the mock fixture accounts — login → `Auth/me` → area, direct-URL reload restore, invalid stored token

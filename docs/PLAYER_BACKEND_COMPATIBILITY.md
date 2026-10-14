@@ -2,7 +2,7 @@
 
 Re-verified live 2026-10-14 with disposable `E2E Test …` questions of every type (9 assessment
 cases + 2 plan activities), added to the initial assessment and to a training plan, answered,
-completed, read back, then deleted (cleanup verified; one child is stuck — `BACKEND_REQUESTS.md` §2).
+completed, read back, then deleted (cleanup verified; one child with saved results is kept by the results rule).
 
 **Question types:** `SingleChoice`, `MultiSelect`, `Sequence` (`CorrectOrder`). **Matching does not
 exist** — absent from the Swagger `QuestionType` enum (re-checked 10-14) and not in the frontend.
@@ -18,8 +18,8 @@ Both players build answers with the shared `components/players/choiceAnswer.ts`.
 
 A second answer to a question → `400 "This question has already been answered."`. `complete` needs
 every question answered. Scores: category `percentage` = rounded % correct (4 of 9 → 44),
-`overallScore` = % over all questions (5 of 12 → 41.67). `GET initial-assessment/{childId}/result`
-adds per question: `questionType`, `isCorrect`, `childAnswers` (in the child's order) and
+`overallScore` = % over all questions (5 of 12 → 41.67). `complete` only completes (the parent then sees a
+confirmation, no score); `GET initial-assessment/{childId}/result` (staff only) adds per question: `questionType`, `isCorrect`, `childAnswers` (in the child's order) and
 `correctAnswers` (in the right order) — shown to staff in the child profile. The child gets no
 right/wrong feedback.
 

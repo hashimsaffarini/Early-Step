@@ -1,7 +1,7 @@
 # Backend integration status
 
-Branch `feature/backend-integration` · updated 2026-10-14 (re-verification after the third
-backend update) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results:
+Branch `feature/backend-integration` · updated 2026-10-14 (third backend update + business-rule
+clarifications) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results:
 `API_VERIFICATION_MATRIX.md` · shapes: `api/LIVE_CONTRACTS.md` · open backend items:
 `BACKEND_REQUESTS.md` · players: `PLAYER_BACKEND_COMPATIBILITY.md`.
 
@@ -45,32 +45,32 @@ backend update) · backend `https://earlystep22.runasp.net/api/` · per-endpoint
 
 ### Parent & children
 
-| Capability                         | API                                                      | Status                    | Notes                                                                                           |
-| ---------------------------------- | -------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------- |
-| My children, child detail          | `GET Parent/GetMyChildren`, `GET Parent/{id}`            | **VERIFIED LIVE**         |                                                                                                 |
-| Add / edit / delete child          | `POST/PATCH/DELETE Parent`                               | PARTIALLY VERIFIED        | delete cascades — **except** a child with a submitted plan activity (empty 500)                 |
-| Plan activities + summary          | `TrainingPlan/children/{id}/activities…`                 | **VERIFIED LIVE**         |                                                                                                 |
-| Plan activity player + save result | `…/activities/{activityId}`, `…/{planActivityId}/submit` | **VERIFIED LIVE — WRITE** | all 3 types; every question required; 409 on a 2nd attempt                                      |
-| Saved assessment result (parent)   | `GET initial-assessment/{childId}/result`                | BLOCKED BY BACKEND        | **Parent 403 since 10-14** (worked 10-10); the result screen right after `complete` still works |
-| Child report                       | `GET Reports/child/{id}`                                 | **VERIFIED LIVE**         | one report per child, enforced by the backend (409)                                             |
-| Report PDF                         | `GET Reports/{id}/download`                              | **VERIFIED LIVE**         |                                                                                                 |
+| Capability                         | API                                                      | Status                    | Notes                                                                                                                                                      |
+| ---------------------------------- | -------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| My children, child detail          | `GET Parent/GetMyChildren`, `GET Parent/{id}`            | **VERIFIED LIVE**         |                                                                                                                                                            |
+| Add / edit / delete child          | `POST/PATCH/DELETE Parent`                               | **VERIFIED LIVE — WRITE** | a child with saved activity results is kept (product rule): delete is disabled in the app; the server answers an empty 500 (message improvement requested) |
+| Plan activities + summary          | `TrainingPlan/children/{id}/activities…`                 | **VERIFIED LIVE**         |                                                                                                                                                            |
+| Plan activity player + save result | `…/activities/{activityId}`, `…/{planActivityId}/submit` | **VERIFIED LIVE — WRITE** | all 3 types; every question required; 409 on a 2nd attempt                                                                                                 |
+| Assessment completion (parent)     | `complete`                                               | **VERIFIED LIVE — WRITE** | the parent flow ends with the submission; the saved result is staff-only (product decision) and not called as Parent                                       |
+| Child report                       | `GET Reports/child/{id}`                                 | **VERIFIED LIVE**         | one report per child, enforced by the backend (409)                                                                                                        |
+| Report PDF                         | `GET Reports/{id}/download`                              | **VERIFIED LIVE**         |                                                                                                                                                            |
 
 ### Initial assessment
 
-| Capability                                          | API                                       | Status                    | Notes                                                              |
-| --------------------------------------------------- | ----------------------------------------- | ------------------------- | ------------------------------------------------------------------ |
-| Start, answer SingleChoice / MultiSelect / Sequence | `POST initial-assessment/{…}`             | **VERIFIED LIVE — WRITE** | exact set (any order) / exact order, scored correctly              |
-| Complete + result screen                            | `complete` response                       | **VERIFIED LIVE — WRITE** | `assessmentId` added; no per-question details here                 |
-| Result with per-question details (staff)            | `GET initial-assessment/{childId}/result` | **VERIFIED LIVE**         | Specialist, Admin; child profile "التقييمات" tab; no `completedAt` |
+| Capability                                          | API                                       | Status                    | Notes                                                                             |
+| --------------------------------------------------- | ----------------------------------------- | ------------------------- | --------------------------------------------------------------------------------- |
+| Start, answer SingleChoice / MultiSelect / Sequence | `POST initial-assessment/{…}`             | **VERIFIED LIVE — WRITE** | exact set (any order) / exact order, scored correctly                             |
+| Complete                                            | `complete` response                       | **VERIFIED LIVE — WRITE** | completes only; its body is not read (the Result endpoint is the source of truth) |
+| Result with per-question details (staff)            | `GET initial-assessment/{childId}/result` | **VERIFIED LIVE**         | Specialist, Admin; child profile "التقييمات" tab                                  |
 
 ### Admin content
 
-| Capability                                       | API                                        | Status                    | Notes                                                    |
-| ------------------------------------------------ | ------------------------------------------ | ------------------------- | -------------------------------------------------------- |
-| Lists and detail                                 | `GET Admin/…`                              | **VERIFIED LIVE**         |                                                          |
-| Category / activity (test, game, icon) CRUD      | `Admin/categories`, `Admin/activities`     | **VERIFIED LIVE — WRITE** |                                                          |
-| Questions (3 types), options, delete all options | `Admin/questions…`, `question-options`     | **VERIFIED LIVE — WRITE** | no Matching in the backend                               |
-| Assessment composition (read + add/remove)       | `initial-assessment/categories, questions` | **VERIFIED LIVE — WRITE** | Admin can read membership again (10-14); badges restored |
+| Capability                                       | API                                        | Status                    | Notes                                                                                     |
+| ------------------------------------------------ | ------------------------------------------ | ------------------------- | ----------------------------------------------------------------------------------------- |
+| Lists and detail                                 | `GET Admin/…`                              | **VERIFIED LIVE**         |                                                                                           |
+| Category / activity (test, game, icon) CRUD      | `Admin/categories`, `Admin/activities`     | **VERIFIED LIVE — WRITE** |                                                                                           |
+| Questions (3 types), options, delete all options | `Admin/questions…`, `question-options`     | **VERIFIED LIVE — WRITE** | no Matching in the backend                                                                |
+| Assessment composition (read + add/remove)       | `initial-assessment/categories, questions` | **VERIFIED LIVE — WRITE** | Admin reads membership; `categoriesActivity.isInInitialAssessment` still false (not used) |
 
 ### Admin users & assignment
 
@@ -83,16 +83,16 @@ backend update) · backend `https://earlystep22.runasp.net/api/` · per-endpoint
 
 ### Specialist & training plans
 
-| Capability                                   | API                                   | Status                    | Notes                                                                       |
-| -------------------------------------------- | ------------------------------------- | ------------------------- | --------------------------------------------------------------------------- |
-| Dashboard, children, teachers                | `GET specialist/…`                    | **VERIFIED LIVE**         | `progressPercentage` still 0                                                |
-| Plan (score, progress), available activities | `GET TrainingPlan/specialist/…`       | **VERIFIED LIVE**         | `score` per activity and plan `progress` are filled now                     |
-| Child's answers to an activity               | `GET …/{planActivityId}/result`       | **VERIFIED LIVE**         | Specialist only; "عرض إجابات الطفل" in the plan                             |
-| Assign teacher                               | `POST specialist/assign-teacher`      | **VERIFIED LIVE — WRITE** |                                                                             |
-| Add first / further plan activities          | `POST …/activities`                   | **VERIFIED LIVE — WRITE** | no teacher → 400 with a message (shown as sent)                             |
-| Remove plan activity                         | `DELETE …/activities/{id}`            | PARTIALLY VERIFIED        | a submitted activity cannot be removed (empty 500)                          |
-| Report create / edit / delete                | `specialist/*`                        | **VERIFIED LIVE — WRITE** | 2nd report → 409                                                            |
-| Read the teacher's notes                     | `GET Teacher/children/{id}/feedbacks` | PARTIALLY VERIFIED        | Specialist 200 (lists empty — item fields unverified); "ملاحظات المعلم" tab |
+| Capability                                   | API                                   | Status                    | Notes                                                                                        |
+| -------------------------------------------- | ------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+| Dashboard, children, teachers                | `GET specialist/…`                    | **VERIFIED LIVE**         | `progressPercentage` still 0                                                                 |
+| Plan (score, progress), available activities | `GET TrainingPlan/specialist/…`       | **VERIFIED LIVE**         | `score` per activity and plan `progress` are filled now                                      |
+| Child's answers to an activity               | `GET …/{planActivityId}/result`       | **VERIFIED LIVE**         | Specialist only; "عرض إجابات الطفل" in the plan                                              |
+| Assign teacher                               | `POST specialist/assign-teacher`      | **VERIFIED LIVE — WRITE** |                                                                                              |
+| Add first / further plan activities          | `POST …/activities`                   | **VERIFIED LIVE — WRITE** | no teacher → 400 with a message (shown as sent)                                              |
+| Remove plan activity                         | `DELETE …/activities/{id}`            | **VERIFIED LIVE — WRITE** | unplayed activities only; played ones keep their results (no remove button)                  |
+| Report create / edit / delete                | `specialist/*`                        | **VERIFIED LIVE — WRITE** | 2nd report → 409                                                                             |
+| Read the teacher's notes                     | `GET Teacher/children/{id}/feedbacks` | **VERIFIED LIVE**         | Specialist 200; lists empty because no feedback exists yet (re-check with a Teacher account) |
 
 ### Teacher
 
@@ -111,23 +111,23 @@ backend update) · backend `https://earlystep22.runasp.net/api/` · per-endpoint
 
 ### Chat & notifications
 
-| Capability                      | API                              | Status                    | Notes                                        |
-| ------------------------------- | -------------------------------- | ------------------------- | -------------------------------------------- |
-| Contacts                        | `GET Chats/users`                | **VERIFIED LIVE**         | filtered to related users                    |
-| Conversations, messages, unread | `GET Chats/…`                    | **VERIFIED LIVE**         | REST + polling                               |
-| Send, mark seen                 | `POST Chats/send`, `mark-…-seen` | **VERIFIED LIVE — WRITE** |                                              |
-| Real-time hub (SignalR)         | —                                | BLOCKED BY BACKEND        | `/chatHub/negotiate` 404, nothing in Swagger |
-| Notifications                   | —                                | OUT OF SCOPE              |                                              |
+| Capability                      | API                              | Status                    | Notes                                              |
+| ------------------------------- | -------------------------------- | ------------------------- | -------------------------------------------------- |
+| Contacts                        | `GET Chats/users`                | **VERIFIED LIVE**         | filtered to related users                          |
+| Conversations, messages, unread | `GET Chats/…`                    | **VERIFIED LIVE**         | REST + polling                                     |
+| Send, mark seen                 | `POST Chats/send`, `mark-…-seen` | **VERIFIED LIVE — WRITE** |                                                    |
+| Real-time hub (SignalR)         | —                                | OUT OF SCOPE              | REST + polling is the accepted chat implementation |
+| Notifications                   | —                                | OUT OF SCOPE              |                                                    |
 
 ## Totals (44 matrix rows)
 
 | Status                     | Rows |
 | -------------------------- | ---: |
-| VERIFIED LIVE              |   18 |
-| VERIFIED LIVE — WRITE      |   12 |
-| PARTIALLY VERIFIED         |    4 |
+| VERIFIED LIVE              |   19 |
+| VERIFIED LIVE — WRITE      |   15 |
+| PARTIALLY VERIFIED         |    1 |
 | MOCK TESTED                |    1 |
-| BLOCKED BY BACKEND         |    3 |
+| BLOCKED BY BACKEND         |    1 |
 | BLOCKED BY MISSING ACCOUNT |    2 |
-| OUT OF SCOPE               |    2 |
+| OUT OF SCOPE               |    3 |
 | NOT REQUIRED               |    2 |
