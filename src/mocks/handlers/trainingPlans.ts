@@ -198,8 +198,8 @@ export const trainingPlansHandlers: HttpHandler[] = [
         (row) => row.childId === child.id && row.activityId === params.activityId,
       );
       if (index === -1) return notFound('النشاط غير موجود في الخطة التدريبية.');
-      // Live (2026-10-14): removing an activity that already has a submitted result fails with
-      // an empty 500 (reported to the backend).
+      // Live (2026-10-14): an activity with a submitted result is kept (product rule); the server
+      // answers an empty 500 instead of a descriptive 400/409.
       if (mockPlanActivities[index]?.isCompleted) return new HttpResponse(null, { status: 500 });
       mockPlanActivities.splice(index, 1);
       return HttpResponse.json({ message: 'تمت إزالة النشاط من الخطة التدريبية.' });

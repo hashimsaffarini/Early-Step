@@ -18,7 +18,7 @@ export function useCompleteAssessment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: completeAssessment,
-    // The saved result is now readable with GET initial-assessment/{childId}/result.
+    // Staff read the saved result with GET initial-assessment/{childId}/result.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all }),
   });
 }

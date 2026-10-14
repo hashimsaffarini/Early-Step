@@ -12,7 +12,10 @@ const TYPE_LABEL = { test: 'اختبار', game: 'لعبة' } as const;
 
 export interface PlanActivityListProps {
   activities: readonly PlanActivity[];
-  /** Specialist only: remove an activity (by its catalogue `activityId`). */
+  /**
+   * Specialist only: remove an activity (by its catalogue `activityId`). Completed activities
+   * keep their results and cannot be removed (product rule, 2026-10-14).
+   */
   onRemove?: ((activity: PlanActivity) => void) | undefined;
   /** Specialist only: lets completed activities open the child's answers. */
   resultChildId?: string | undefined;
@@ -60,7 +63,7 @@ export function PlanActivityList({ activities, onRemove, resultChildId }: PlanAc
               </div>
               {result ? <p className={styles.meta}>{result}</p> : null}
             </div>
-            {onRemove ? (
+            {onRemove && !activity.isCompleted ? (
               <Button
                 variant="ghost"
                 size="sm"

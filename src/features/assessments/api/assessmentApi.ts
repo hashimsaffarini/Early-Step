@@ -5,11 +5,6 @@ import { AppError } from '@/services/http/apiError';
 import { httpClient } from '@/services/http/httpClient';
 
 import type { AssessmentQuestion, StartedAssessment } from '../types';
-import {
-  assessmentResultSchema,
-  mapAssessmentResult,
-  type AssessmentResult,
-} from '@/services/api/assessmentResult';
 
 /**
  * Initial assessment endpoints (Swagger `/api/initial-assessment/*`).
@@ -147,12 +142,11 @@ export async function submitAnswer(input: AnswerInput): Promise<void> {
   assertNotKnownFailure(data);
 }
 
-/** `complete` returns the result; it can be read again later with `fetchAssessmentResult`. */
-export type { AssessmentResult };
-
-export async function completeAssessment(assessmentId: string): Promise<AssessmentResult | null> {
+/**
+ * `complete` only completes the assessment (backend decision 2026-10-14): its body is not read.
+ * The detailed result is for staff, from `GET initial-assessment/{childId}/result`.
+ */
+export async function completeAssessment(assessmentId: string): Promise<void> {
   const { data } = await httpClient.post<unknown>(ASSESSMENT_PATHS.complete(assessmentId));
   assertNotKnownFailure(data);
-  const parsed = assessmentResultSchema.safeParse(data);
-  return parsed.success ? mapAssessmentResult(parsed.data) : null;
 }

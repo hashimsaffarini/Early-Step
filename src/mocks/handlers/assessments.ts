@@ -112,15 +112,11 @@ export const assessmentsHandlers: HttpHandler[] = [
     return HttpResponse.json(mockResult(session, false));
   }),
 
-  // Live (2026-10-14): counts and per-question details filled; 404 plain text until completed.
-  // Live, the Parent (and Super Admin) now get 403 — a regression from 2026-10-10 reported to the
-  // backend; the mock keeps the intended contract (the parent reads their own child's result).
+  // Live (2026-10-14): staff only — Specialist and Admin (the parent does not reopen the result,
+  // product decision); counts and per-question details filled; 404 plain text until completed.
   http.get(apiUrl('initial-assessment/:childId/result'), ({ request, params }) => {
-    const user = requireRole(request, ['Parent', 'Specialist', 'Admin']);
+    const user = requireRole(request, ['Specialist', 'Admin']);
     if (user instanceof Response) return user;
-    if (user.role === 'Parent' && findMockChild(String(params.childId))?.parentId !== user.id) {
-      return forbidden();
-    }
     const session = [...mockAssessmentSessions.values()].find(
       (item) => item.childId === params.childId && item.completed,
     );

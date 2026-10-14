@@ -20,6 +20,8 @@ export interface ChildProfileHeaderProps {
   onEdit?: (() => void) | undefined;
   /** Parent only. */
   onDelete?: (() => void) | undefined;
+  /** Children with saved results stay (product rule): the delete action is shown disabled. */
+  isDeleteBlocked?: boolean;
 }
 
 const PLANS_LABEL: Record<AreaRole, string> = {
@@ -30,7 +32,17 @@ const PLANS_LABEL: Record<AreaRole, string> = {
 };
 
 /** Replit profile header: gradient card, large avatar, name, info pills (API fields), actions. */
-export function ChildProfileHeader({ child, role, onEdit, onDelete }: ChildProfileHeaderProps) {
+/** Shown when deletion is blocked; results must stay for the history of the child. */
+export const DELETE_BLOCKED =
+  'لا يمكن حذف ملف طفل لديه نتائج أنشطة محفوظة، حفاظاً على سجل متابعته.';
+
+export function ChildProfileHeader({
+  child,
+  role,
+  onEdit,
+  onDelete,
+  isDeleteBlocked = false,
+}: ChildProfileHeaderProps) {
   const { paths } = useRoleArea();
   const age = childAgeYears(child);
 
@@ -79,7 +91,13 @@ export function ChildProfileHeader({ child, role, onEdit, onDelete }: ChildProfi
             </Button>
           ) : null}
           {onDelete ? (
-            <Button variant="outline" iconStart={<Trash2 aria-hidden="true" />} onClick={onDelete}>
+            <Button
+              variant="outline"
+              iconStart={<Trash2 aria-hidden="true" />}
+              disabled={isDeleteBlocked}
+              title={isDeleteBlocked ? DELETE_BLOCKED : undefined}
+              onClick={onDelete}
+            >
               حذف الملف
             </Button>
           ) : null}

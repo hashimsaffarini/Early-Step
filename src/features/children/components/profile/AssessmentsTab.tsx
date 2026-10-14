@@ -15,8 +15,25 @@ export interface AssessmentsTabProps {
   canStart: boolean;
 }
 
-/** The child's initial-assessment result (`GET initial-assessment/{childId}/result`). */
+/**
+ * Staff: the child's initial-assessment result (`GET initial-assessment/{childId}/result`).
+ * Parent: only the way to start it — the saved result is for staff (product decision 2026-10-14).
+ */
 export function AssessmentsTab({ childId, childName, canStart }: AssessmentsTabProps) {
+  if (canStart) {
+    return (
+      <EmptyState
+        icon={<ClipboardCheck />}
+        title="التقييم المبدئي"
+        description="يُكمل طفلك التقييم المبدئي مرة واحدة، ويراجع الأخصائي النتيجة."
+        action={<StartAssessmentLink childId={childId} childName={childName} />}
+      />
+    );
+  }
+  return <StaffAssessmentResult childId={childId} />;
+}
+
+function StaffAssessmentResult({ childId }: { childId: string }) {
   const query = useAssessmentResult(childId);
   if (query.isPending || query.isError) {
     return <QueryStatus query={query} errorTitle="تعذّر تحميل نتيجة التقييم" />;
@@ -27,9 +44,6 @@ export function AssessmentsTab({ childId, childName, canStart }: AssessmentsTabP
         icon={<ClipboardCheck />}
         title="لم يُكمل الطفل التقييم المبدئي بعد"
         description="ستظهر النتيجة هنا بعد إنهاء التقييم المبدئي."
-        action={
-          canStart ? <StartAssessmentLink childId={childId} childName={childName} /> : undefined
-        }
       />
     );
   }

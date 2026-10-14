@@ -134,13 +134,19 @@ describe('ChildProfilePage — tabs from the API', () => {
     expect(await screen.findByText('لا يوجد تقرير بعد')).toBeInTheDocument();
   });
 
-  it('offers the parent to start the assessment while no result exists', async () => {
+  it('offers the parent to start the assessment and never reads the saved result', async () => {
+    let resultCalls = 0;
+    server.events.on('request:start', ({ request }) => {
+      if (request.url.includes('/result')) resultCalls += 1;
+    });
     renderProfile('Parent', YOUSEF);
     await heading('يوسف');
 
     await userEvent.click(tab(/التقييمات/));
 
-    expect(await screen.findByText('لم يُكمل الطفل التقييم المبدئي بعد')).toBeInTheDocument();
+    expect(await screen.findByText(/ويراجع الأخصائي النتيجة/)).toBeInTheDocument();
+    expect(resultCalls).toBe(0);
+    server.events.removeAllListeners();
     expect(screen.getAllByRole('link', { name: 'بدء التقييم المبدئي لـ يوسف' })[0]).toHaveAttribute(
       'href',
       getAreaPaths('Parent').assessment(YOUSEF),
@@ -294,21 +300,31 @@ describe('ChildProfilePage — parent edit and delete', () => {
     });
   });
 
-  it('keeps the child when deletion is cancelled', async () => {
+  it('does not offer to delete a child with saved activity results (product rule)', async () => {
     renderProfile('Parent', YOUSEF);
     await heading('يوسف');
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'حذف الملف' })).toBeDisabled();
+    });
+    expect(screen.getByText(/لا يمكن حذف ملف طفل لديه نتائج أنشطة محفوظة/)).toBeInTheDocument();
+  });
+
+  it('keeps the child when deletion is cancelled', async () => {
+    renderProfile('Parent', REEM);
+    await heading('ريم');
 
     await userEvent.click(screen.getByRole('button', { name: 'حذف الملف' }));
     const confirm = screen.getByRole('dialog', { name: 'حذف ملف الطفل' });
     await userEvent.click(within(confirm).getByRole('button', { name: 'إلغاء' }));
 
-    expect(findMockChild(YOUSEF)).toBeDefined();
-    expect(screen.getByRole('heading', { level: 1, name: 'يوسف' })).toBeInTheDocument();
+    expect(findMockChild(REEM)).toBeDefined();
+    expect(screen.getByRole('heading', { level: 1, name: 'ريم' })).toBeInTheDocument();
   });
 
-  it('deletes the child after confirmation and returns to the list without it', async () => {
-    const { router } = renderProfile('Parent', YOUSEF);
-    await heading('يوسف');
+  it('deletes a child without results after confirmation and returns to the list', async () => {
+    const { router } = renderProfile('Parent', REEM);
+    await heading('ريم');
 
     await userEvent.click(screen.getByRole('button', { name: 'حذف الملف' }));
     const confirm = screen.getByRole('dialog', { name: 'حذف ملف الطفل' });
@@ -317,9 +333,9 @@ describe('ChildProfilePage — parent edit and delete', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(getAreaPaths('Parent').children);
     });
-    expect(findMockChild(YOUSEF)).toBeUndefined();
-    expect(await screen.findByRole('heading', { name: 'نور' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'يوسف' })).not.toBeInTheDocument();
+    expect(findMockChild(REEM)).toBeUndefined();
+    expect(await screen.findByRole('heading', { name: 'يوسف' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'ريم' })).not.toBeInTheDocument();
   });
 
   it('gives staff no edit or delete actions', async () => {

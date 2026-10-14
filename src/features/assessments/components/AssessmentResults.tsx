@@ -4,34 +4,24 @@ import { Link } from 'react-router';
 
 import { getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { ProgressBar } from '@/components/ui/Feedback';
 import { cx } from '@/utils/classNames';
 
-import type { AssessmentResult } from '../api/assessmentApi';
 import { formatQuestionCount } from '../format';
 
 import styles from './AssessmentResults.module.css';
 
 export interface AssessmentResultsProps {
   childName: string;
-  /** Answers the server accepted in this session; null when showing a saved result. */
-  answered: number | null;
-  /** Result from `complete` or `GET …/result` (null if the server sent none). */
-  result: AssessmentResult | null;
+  /** Answers the server accepted in this session. */
+  answered: number;
   profilePath: string;
 }
 
 /**
- * Shown after `complete` succeeded, or when the child already has a saved result. Shows exactly
- * the result the server returned (overall score + per-category percentage) in neutral words — no
- * diagnosis or interpretation is added.
+ * Shown after `complete` succeeded. The parent's flow ends with the submission (product decision
+ * 2026-10-14): the result itself is reviewed by the specialist, so no score is shown here.
  */
-export function AssessmentResults({
-  childName,
-  answered,
-  result,
-  profilePath,
-}: AssessmentResultsProps) {
+export function AssessmentResults({ childName, answered, profilePath }: AssessmentResultsProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     headingRef.current?.focus();
@@ -50,40 +40,10 @@ export function AssessmentResults({
       </div>
 
       <Card className={styles.card}>
-        {answered === null ? null : (
-          <p
-            className={styles.rowTitle}
-          >{`تم إرسال ${formatQuestionCount(answered)} إلى المنصة.`}</p>
-        )}
-        {result ? (
-          <>
-            <ProgressBar
-              label="النتيجة العامة للتقييم المبدئي"
-              value={result.overallScore}
-              max={100}
-              showLabel
-            />
-            {result.categories.length > 0 ? (
-              <ul className={styles.list} aria-label="النتيجة حسب التصنيف">
-                {result.categories.map((category) => (
-                  <li key={category.name}>
-                    <ProgressBar
-                      label={category.name}
-                      value={category.percentage}
-                      max={100}
-                      showLabel
-                    />
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </>
-        ) : null}
+        <p className={styles.rowTitle}>{`تم إرسال ${formatQuestionCount(answered)} إلى المنصة.`}</p>
         <p className={styles.note}>
           <Info aria-hidden="true" />
-          {result
-            ? 'هذه نتيجة مبدئية يراجعها الأخصائي، وليست تشخيصاً.'
-            : 'لم يُرجع الخادم نتيجة لهذا التقييم.'}
+          يراجع الأخصائي نتيجة التقييم ويتابع معك الخطوات التالية.
         </p>
       </Card>
 

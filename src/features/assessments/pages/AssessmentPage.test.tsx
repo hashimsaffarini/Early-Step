@@ -104,7 +104,7 @@ describe('AssessmentPage (initial assessment)', () => {
   );
 
   it(
-    'shows the result returned by complete (live contract) without a diagnosis',
+    'ends with a confirmation, not a score: the specialist reviews the result',
     async () => {
       renderAssessment();
       expect(await screen.findByRole('heading', { name: 'مرحباً يا يوسف!' })).toBeInTheDocument();
@@ -112,14 +112,8 @@ describe('AssessmentPage (initial assessment)', () => {
       await answerAll();
 
       expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
-      // All five answers are right in the mock (exact set, exact order) → 100.
-      expect(
-        screen.getByRole('progressbar', { name: 'النتيجة العامة للتقييم المبدئي' }),
-      ).toHaveAttribute('aria-valuenow', '100');
-      expect(screen.getByRole('list', { name: 'النتيجة حسب التصنيف' })).toBeInTheDocument();
-      expect(
-        screen.getByText('هذه نتيجة مبدئية يراجعها الأخصائي، وليست تشخيصاً.'),
-      ).toBeInTheDocument();
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      expect(screen.getByText(/يراجع الأخصائي نتيجة التقييم/)).toBeInTheDocument();
     },
     LONG_FLOW,
   );
@@ -252,22 +246,16 @@ describe('AssessmentPage (initial assessment)', () => {
     LONG_FLOW,
   );
 
-  it('shows the saved result instead of a new start when the child already completed it', async () => {
-    server.use(
-      http.get(apiUrl('initial-assessment/:childId/result'), () =>
-        HttpResponse.json({
-          overallScore: 90,
-          categories: [{ categoryName: 'الرياضيات', percentage: 90 }],
-        }),
-      ),
-    );
+  it('never reads the saved result as the parent (staff-only, product decision)', async () => {
+    let resultCalls = 0;
+    server.events.on('request:start', ({ request }) => {
+      if (request.url.includes('/result')) resultCalls += 1;
+    });
     renderAssessment();
 
-    expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
-    expect(
-      screen.getByRole('progressbar', { name: 'النتيجة العامة للتقييم المبدئي' }),
-    ).toHaveAttribute('aria-valuenow', '90');
-    expect(screen.queryByRole('button', { name: /ابدأ/ })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'ابدأ التقييم' })).toBeInTheDocument();
+    expect(resultCalls).toBe(0);
+    server.events.removeAllListeners();
   });
 
   it('shows a network error on start', async () => {

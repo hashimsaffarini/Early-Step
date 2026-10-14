@@ -20,6 +20,7 @@ import { Alert } from '@/components/ui/Feedback';
 import { ConfirmDialog } from '@/components/ui/Modal';
 import { Tabs, type TabItem } from '@/components/ui/Tabs';
 import type { AreaRole } from '@/constants/routes';
+import { useChildPlanActivities } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import type { ChildSummary } from '@/services/api/childrenLists';
 
@@ -27,7 +28,7 @@ import { useDeleteChild } from '../api/childrenQueries';
 import { ChildFormDialog } from '../components/ChildFormDialog';
 import { ActivitiesTab } from '../components/profile/ActivitiesTab';
 import { AssessmentsTab } from '../components/profile/AssessmentsTab';
-import { ChildProfileHeader } from '../components/profile/ChildProfileHeader';
+import { ChildProfileHeader, DELETE_BLOCKED } from '../components/profile/ChildProfileHeader';
 import { OverviewTab } from '../components/profile/OverviewTab';
 import { ReportsTab } from '../components/profile/ReportsTab';
 import { TeacherFeedbackTab } from '../components/profile/TeacherFeedbackTab';
@@ -68,6 +69,9 @@ function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const deleteMutation = useDeleteChild();
   const isParent = role === 'Parent';
+  // Product rule (2026-10-14): a child with saved activity results is not deleted.
+  const plan = useChildPlanActivities(isParent ? child.id : undefined);
+  const hasResults = plan.data?.some((activity) => activity.isCompleted) ?? false;
 
   return (
     <>
@@ -88,7 +92,9 @@ function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }
               }
             : undefined
         }
+        isDeleteBlocked={hasResults}
       />
+      {isParent && hasResults ? <p className={styles.deleteNote}>{DELETE_BLOCKED}</p> : null}
       {savedMessage ? <Alert tone="success">{savedMessage}</Alert> : null}
       <ApiErrorAlert error={deleteMutation.error} />
       <Tabs

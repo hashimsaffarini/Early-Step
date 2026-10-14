@@ -76,7 +76,8 @@ describe.runIf(hasAccount('PARENT'))('live — Parent', () => {
     expect(session.expiresAt).toBeGreaterThan(Date.now());
   });
 
-  it('reads children, child detail, plan, summary, report, assessment result, activity detail', async () => {
+  // The saved assessment result is staff-only by product decision (not read as Parent).
+  it('reads children, child detail, plan, summary, report, activity detail', async () => {
     const children = await fetchChildrenForRole('Parent');
     expect(Array.isArray(children)).toBe(true);
     for (const child of children) {
@@ -84,8 +85,6 @@ describe.runIf(hasAccount('PARENT'))('live — Parent', () => {
       await fetchParentChild(child.id);
       const plan = await fetchChildPlanActivities(child.id);
       await fetchChildPlanSummary(child.id);
-      const result = await fetchAssessmentResult(child.id);
-      expect(result === null || typeof result.overallScore === 'number').toBe(true);
       const report = await fetchChildReport(child.id);
       expect(report === null || typeof report.id === 'string').toBe(true);
       const first = plan[0];
