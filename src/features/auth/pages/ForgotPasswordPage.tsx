@@ -8,7 +8,6 @@ import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { FormField, Input } from '@/components/ui/Field';
 import { ROUTE_PATHS } from '@/constants/routes';
-import { HTTP_STATUS } from '@/services/http/httpStatus';
 
 import { useForgotPasswordMutation } from '../api/authMutations';
 import { AuthSplitShell } from '../components/AuthSplitShell';
@@ -61,22 +60,15 @@ export function ForgotPasswordPage() {
 
   const forgotMutation = useForgotPasswordMutation();
 
-  /*
-   * The backend answers 400 "Email not found." for unknown emails. The UI shows the same neutral
-   * confirmation either way so it does not reveal which emails have accounts.
-   */
+  // `POST Auth/ForgotPassword` (the only route since 2026-10-14) answers the same neutral 200 for
+  // known and unknown emails, so the confirmation does not reveal which emails have accounts.
   const onSubmit = handleSubmit((values) => {
     forgotMutation.mutate(values.email, {
       onSuccess: () => {
         setSubmittedEmail(values.email);
       },
-      onError: (error) => {
-        if (error.status === HTTP_STATUS.BAD_REQUEST) setSubmittedEmail(values.email);
-      },
     });
   });
-  const visibleError =
-    forgotMutation.error?.status === HTTP_STATUS.BAD_REQUEST ? null : forgotMutation.error;
 
   if (submittedEmail !== null) {
     const resetState: ResetPasswordLocationState = { email: submittedEmail };
@@ -118,7 +110,7 @@ export function ForgotPasswordPage() {
       <h1 className={styles.pageTitle}>{COPY.title}</h1>
       <p className={styles.pageSubtitle}>{COPY.subtitle}</p>
       <form className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
-        <ApiErrorAlert error={visibleError} />
+        <ApiErrorAlert error={forgotMutation.error} />
         <FormField label={COPY.email} error={errors.email?.message}>
           {(field) => (
             <Input

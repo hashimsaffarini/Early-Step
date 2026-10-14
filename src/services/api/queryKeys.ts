@@ -5,6 +5,9 @@
  * Logout/401 clears the whole cache, so no user's data survives an account switch.
  */
 export const queryKeys = {
+  auth: {
+    me: ['auth', 'me'] as const,
+  },
   children: {
     all: ['children'] as const,
     detail: (childId: string) => ['children', 'detail', childId] as const,
@@ -23,6 +26,8 @@ export const queryKeys = {
     childActivity: (childId: string, activityId: string) =>
       ['trainingPlans', 'child', childId, 'activity', activityId] as const,
     specialistPlan: (childId: string) => ['trainingPlans', 'specialist', childId] as const,
+    activityResult: (childId: string, planActivityId: string) =>
+      ['trainingPlans', 'specialist', childId, 'result', planActivityId] as const,
     available: (childId: string, type?: string) =>
       ['trainingPlans', 'specialist', childId, 'available', type ?? 'all'] as const,
   },
@@ -52,12 +57,13 @@ export const queryKeys = {
     admin: (role?: string, search?: string) =>
       ['users', 'admin', role ?? '', search ?? ''] as const,
     adminDetail: (userId: string) => ['users', 'admin', 'detail', userId] as const,
+    specialists: () => ['users', 'specialists'] as const,
     superAdmin: (role?: string, search?: string) =>
       ['users', 'superAdmin', role ?? '', search ?? ''] as const,
   },
   notes: {
     all: ['notes'] as const,
-    detail: (noteId: string) => ['notes', noteId] as const,
+    byChild: (childId: string) => ['notes', 'child', childId] as const,
   },
   chat: {
     all: ['chat'] as const,

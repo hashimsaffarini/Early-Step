@@ -1,6 +1,6 @@
 /**
  * Password rules taken from the Replit prototype (register / reset screens).
- * TBD: confirm against the backend's real password policy before integration.
+ * Shared by registration, password reset and Super Admin staff creation (the server validates too).
  */
 export const MIN_PASSWORD_LENGTH = 8;
 

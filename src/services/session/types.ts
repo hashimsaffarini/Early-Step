@@ -1,6 +1,6 @@
 import type { UserRole } from '@/types/roles';
 
-/** The signed-in user, as far as the login response tells us. Display + routing only. */
+/** The signed-in user from `GET Auth/me`. Display + routing only (the backend enforces access). */
 export interface SessionUser {
   id: string | null;
   name: string;

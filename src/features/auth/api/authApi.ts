@@ -2,6 +2,7 @@ import { toFormData } from '@/services/http/formData';
 import { httpClient } from '@/services/http/httpClient';
 import type { Session } from '@/services/session';
 
+import { fetchCurrentUser } from './currentUser';
 import { parseLoginResponse } from './loginResponse';
 
 /** Paths relative to `VITE_API_BASE_URL` (Swagger: `/api/Auth/*`). */
@@ -19,13 +20,18 @@ export interface LoginInput {
   rememberMe: boolean;
 }
 
-/** `multipart/form-data` (Swagger). Response shape NOT LIVE-VERIFIED — see `parseLoginResponse`. */
+/**
+ * `POST Auth/login` (`multipart/form-data`) for the token, then `GET Auth/me` for the user — the
+ * same call that restores the session after a reload, so both paths share one source of truth.
+ */
 export async function login(input: LoginInput): Promise<Session> {
   const { data } = await httpClient.post<unknown>(
     AUTH_PATHS.login,
     toFormData({ Email: input.email, Password: input.password, RememberMe: input.rememberMe }),
   );
-  return parseLoginResponse(data);
+  const token = parseLoginResponse(data);
+  const user = await fetchCurrentUser(token.accessToken);
+  return { ...token, user };
 }
 
 export interface RegisterInput {

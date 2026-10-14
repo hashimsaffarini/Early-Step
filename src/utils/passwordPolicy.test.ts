@@ -1,4 +1,4 @@
-import { evaluatePassword } from './password';
+import { evaluatePassword } from './passwordPolicy';
 
 describe('evaluatePassword', () => {
   it.each([

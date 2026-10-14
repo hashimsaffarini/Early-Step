@@ -9,37 +9,24 @@ function fakeUnsignedJwt(claims: Record<string, unknown>): string {
   return `${encode({ alg: 'none' })}.${encode(claims)}.test`;
 }
 
-describe('parseLoginResponse (contract NOT LIVE-VERIFIED)', () => {
-  it('reads token, role and name from ASP.NET-style JWT claims', () => {
-    const token = fakeUnsignedJwt({
-      'http://schemas.microsoft.com/ws/2008/06/identity/claims/role': 'ولي أمر',
-      'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name': 'محمد أحمد',
-      sub: 'u-1',
-      exp: 2_000_000_000,
-    });
+describe('parseLoginResponse (live shape { id, fullName, accessToken, role })', () => {
+  it('reads the token and its expiry; the user comes from Auth/me', () => {
+    const accessToken = fakeUnsignedJwt({ exp: 2_000_000_000 });
 
-    const session = parseLoginResponse({ token });
+    const token = parseLoginResponse({ id: 'u-1', fullName: 'م', accessToken, role: 'ولي أمر' });
 
-    expect(session.user).toEqual({ id: 'u-1', name: 'محمد أحمد', email: null, role: 'Parent' });
-    expect(session.expiresAt).toBe(2_000_000_000_000);
+    expect(token).toEqual({ accessToken, expiresAt: 2_000_000_000_000 });
   });
 
-  it('prefers explicit response fields and accepts accessToken / nested data', () => {
-    const session = parseLoginResponse({
-      data: { accessToken: 'opaque-token', role: 'Specialist', fullName: 'أ. ليلى' },
+  it('keeps an opaque token without an expiry', () => {
+    expect(parseLoginResponse({ accessToken: 'opaque-token' })).toEqual({
+      accessToken: 'opaque-token',
+      expiresAt: null,
     });
-
-    expect(session.accessToken).toBe('opaque-token');
-    expect(session.user.role).toBe('Specialist');
-    expect(session.expiresAt).toBeNull();
   });
 
   it('fails clearly when there is no token', () => {
     expect(() => parseLoginResponse({ message: 'ok' })).toThrow('استجابة غير متوقعة');
-  });
-
-  it('fails closed when the role is unknown', () => {
-    expect(() => parseLoginResponse({ token: 'x', role: 'Owner' })).toThrow('صلاحية');
   });
 
   it('decodes Arabic claim values', () => {

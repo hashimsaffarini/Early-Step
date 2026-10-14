@@ -1,14 +1,14 @@
 import { http, HttpResponse } from 'msw';
 
 import { MOCK_PASSWORD, MOCK_USERS } from '../db';
-import { apiUrl, badRequest, MOCK_TOKEN_PREFIX } from '../http';
+import { apiUrl, badRequest, currentUser, MOCK_TOKEN_PREFIX, unauthorized } from '../http';
 
 function field(form: FormData, name: string): string {
   const value = form.get(name);
   return typeof value === 'string' ? value : '';
 }
 
-/** Auth endpoints. Login response shape is an assumption (NOT LIVE-VERIFIED). */
+/** Auth endpoints, live shapes (login verified 2026-10-06, `Auth/me` 2026-10-14). */
 export const authHandlers = [
   http.post(apiUrl('Auth/login'), async ({ request }) => {
     const form = await request.formData();
@@ -32,11 +32,21 @@ export const authHandlers = [
       return HttpResponse.json({ title: 'Unauthorized', status: 401 }, { status: 401 });
     }
     return HttpResponse.json({
-      token: `${MOCK_TOKEN_PREFIX}${user.id}`,
+      id: user.id,
+      fullName: user.fullName,
+      accessToken: `${MOCK_TOKEN_PREFIX}${user.id}`,
+      role: user.roleValue,
+    });
+  }),
+
+  http.get(apiUrl('Auth/me'), ({ request }) => {
+    const user = currentUser(request);
+    if (!user) return unauthorized();
+    return HttpResponse.json({
       id: user.id,
       fullName: user.fullName,
       email: user.email,
-      role: user.roleValue,
+      roles: [user.roleValue],
     });
   }),
 
@@ -52,14 +62,12 @@ export const authHandlers = [
     return HttpResponse.json({ message: 'تم إنشاء الحساب بنجاح.' });
   }),
 
-  http.post(apiUrl('Auth/ForgotPassword'), async ({ request }) => {
-    const body = (await request.json()) as { email?: string };
-    // The live backend answers 400 "Email not found." — the UI shows a neutral message either way.
-    if (!MOCK_USERS.some((user) => user.email === body.email?.toLowerCase())) {
-      return badRequest('Email not found.');
-    }
-    return HttpResponse.json({ message: 'تم إرسال رمز إعادة التعيين.' });
-  }),
+  // Live (2026-10-14): the same neutral 200 for known and unknown emails.
+  http.post(apiUrl('Auth/ForgotPassword'), () =>
+    HttpResponse.json({
+      message: 'إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال تعليمات استعادة كلمة المرور.',
+    }),
+  ),
 
   http.post(apiUrl('Auth/reset-password'), async ({ request }) => {
     const body = (await request.json()) as { code?: string };
