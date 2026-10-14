@@ -10,10 +10,11 @@ import { httpClient } from '@/services/http/httpClient';
 import type { UserRole } from '@/types/roles';
 
 /**
- * Admin users (Swagger `Admin/users?Role=&Search=`, `Admin/users/{userId}`,
+ * Admin users (Swagger `Admin/users?Role=&Search=`, `Admin/users/{userId}`, `Admin/specialists`,
  * `POST Admin/assign-children-to-specialist`). List shape matches the documented
  * `{ totalUsers, totalParents, totalSpecialists, totalTeachers, users[] }`; detail follows the
- * Apidog example. The API has no create / edit / delete user endpoints (BLOCKED BY BACKEND).
+ * Apidog example. Creating / editing / deactivating staff is a Super Admin capability
+ * (`SuperAdmin/users`), not an Admin one.
  */
 const userItemSchema = z.looseObject({
   id: z.string(),
@@ -110,6 +111,35 @@ export async function fetchAdminUser(userId: string): Promise<AdminUserDetail> {
     phoneNumber: dto.phoneNumber ?? null,
     children: (dto.children ?? []).map(mapChildSummary),
   };
+}
+
+/** `GET Admin/specialists` ("Get Sp") — VERIFIED LIVE 2026-10-14 (Admin only; 403 for others). */
+const specialistSchema = z.looseObject({
+  id: z.string(),
+  fullName: z.string().nullish(),
+  email: z.string().nullish(),
+  isActive: z.boolean().nullish(),
+});
+
+export interface AdminSpecialist {
+  id: string;
+  name: string;
+  email: string | null;
+  /** Deactivated specialists stay listed; they cannot receive new children. */
+  isActive: boolean;
+}
+
+export async function fetchSpecialists(): Promise<AdminSpecialist[]> {
+  const { data } = await httpClient.get<unknown>('Admin/specialists');
+  return z
+    .array(specialistSchema)
+    .parse(data)
+    .map((dto) => ({
+      id: dto.id,
+      name: dto.fullName?.trim() ?? '',
+      email: dto.email ?? null,
+      isActive: dto.isActive ?? true,
+    }));
 }
 
 export interface AssignSpecialistInput {

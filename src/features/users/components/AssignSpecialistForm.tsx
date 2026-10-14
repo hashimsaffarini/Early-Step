@@ -25,7 +25,8 @@ export interface AssignSpecialistFormProps {
 
 /**
  * Assign a parent's children to a specialist (`POST Admin/assign-children-to-specialist`).
- * Specialists come from `Admin/users?Role=أخصائي/ة`. Confirmation step before sending.
+ * Specialists come from `GET Admin/specialists`; deactivated ones are listed but cannot be chosen.
+ * Confirmation step before sending.
  */
 export function AssignSpecialistForm({ childrenOfParent }: AssignSpecialistFormProps) {
   const headingId = useId();
@@ -36,9 +37,7 @@ export function AssignSpecialistForm({ childrenOfParent }: AssignSpecialistFormP
   const [errors, setErrors] = useState<{ specialist?: string; children?: string }>({});
   const [isConfirming, setIsConfirming] = useState(false);
 
-  const specialistOptions = (specialists.data?.users ?? []).filter(
-    (user) => user.role === 'Specialist',
-  );
+  const specialistOptions = specialists.data ?? [];
   const specialistName = specialistOptions.find((user) => user.id === specialistId)?.name ?? '';
 
   const toggleChild = (id: string) => {
@@ -87,8 +86,8 @@ export function AssignSpecialistForm({ childrenOfParent }: AssignSpecialistFormP
                 {specialists.isPending ? 'جارٍ تحميل الأخصائيين…' : 'اختر الأخصائي'}
               </option>
               {specialistOptions.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
+                <option key={user.id} value={user.id} disabled={!user.isActive}>
+                  {user.isActive ? user.name : `${user.name} (غير نشط)`}
                 </option>
               ))}
             </Select>

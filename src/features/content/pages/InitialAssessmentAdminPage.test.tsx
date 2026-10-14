@@ -24,7 +24,7 @@ describe('InitialAssessmentAdminPage', () => {
     expect(within(categories).getAllByText('ضمن التقييم')).toHaveLength(2);
   });
 
-  it('warns that membership is unknown when the server refuses the admin (live 403)', async () => {
+  it('shows an error with retry instead of guessing when membership cannot be read', async () => {
     server.use(
       http.get(
         apiUrl('initial-assessment/categories'),
@@ -33,10 +33,8 @@ describe('InitialAssessmentAdminPage', () => {
     );
     renderContent(ADMIN_PATHS.initialAssessment);
 
-    expect(await screen.findByText(/لا تظهر حالة كل\s+تصنيف/)).toBeInTheDocument();
-    const categories = screen.getByRole('list', { name: 'تصنيفات الاختبارات' });
-    expect(within(categories).queryByText('ضمن التقييم')).not.toBeInTheDocument();
-    expect(within(categories).getAllByText('الحالة غير معروفة').length).toBeGreaterThan(0);
+    expect(await screen.findByRole('button', { name: 'إعادة المحاولة' })).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'تصنيفات الاختبارات' })).not.toBeInTheDocument();
   });
 
   it('adds a question and reports only what happened in this session', async () => {

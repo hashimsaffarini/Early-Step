@@ -6,7 +6,7 @@ import {
   assignChildrenToSpecialist,
   fetchAdminUser,
   fetchAdminUsers,
-  ROLE_WIRE_VALUES,
+  fetchSpecialists,
   type AssignSpecialistInput,
 } from './usersApi';
 
@@ -17,9 +17,9 @@ export function useAdminUsers(role = '', search = '') {
   });
 }
 
-/** Specialists for the assignment picker (`Admin/users?Role=أخصائي/ة`). */
+/** Specialists for the assignment picker (`GET Admin/specialists`). */
 export function useAdminSpecialists() {
-  return useAdminUsers(ROLE_WIRE_VALUES.Specialist);
+  return useQuery({ queryKey: queryKeys.users.specialists(), queryFn: fetchSpecialists });
 }
 
 export function useAdminUser(userId: string | undefined) {

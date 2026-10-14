@@ -64,6 +64,43 @@ describe('AdminUserDetailPage', () => {
     });
   });
 
+  it('lists specialists from Admin/specialists, disables inactive ones and refreshes the child', async () => {
+    let usersCalls = 0;
+    server.use(
+      http.get(apiUrl('Admin/specialists'), () =>
+        HttpResponse.json([
+          { id: 'u-specialist', fullName: 'أ. ليلى حسن', email: 's@demo.test', isActive: true },
+          { id: 'u-old', fullName: 'أ. سابق', email: 'o@demo.test', isActive: false },
+        ]),
+      ),
+      http.get(apiUrl('Admin/users'), () => {
+        usersCalls += 1;
+        return HttpResponse.json({ users: [] });
+      }),
+    );
+    renderDetail('u-parent');
+    await screen.findByRole('heading', { level: 1, name: 'محمد أحمد' });
+
+    expect(await screen.findByRole('option', { name: 'أ. سابق (غير نشط)' })).toBeDisabled();
+    // The generic user list is no longer used to find specialists.
+    expect(usersCalls).toBe(0);
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: /الأخصائي/ }),
+      'u-specialist',
+    );
+    await userEvent.click(screen.getByRole('checkbox', { name: 'ريم' }));
+    await userEvent.click(screen.getByRole('button', { name: 'إسناد' }));
+    await userEvent.click(
+      within(screen.getByRole('dialog', { name: 'تأكيد الإسناد' })).getByRole('button', {
+        name: 'تأكيد',
+      }),
+    );
+
+    expect(
+      await screen.findByRole('checkbox', { name: 'ريم (الأخصائي الحالي: أ. ليلى حسن)' }),
+    ).toBeInTheDocument();
+  });
+
   it('shows the backend error when the assignment fails', async () => {
     server.use(
       http.post(apiUrl('Admin/assign-children-to-specialist'), () =>

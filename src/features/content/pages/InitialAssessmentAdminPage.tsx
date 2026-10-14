@@ -28,7 +28,8 @@ type QuestionAction = 'added' | 'removed';
 
 /**
  * Initial-assessment composition. Category membership comes from `initial-assessment/categories`
- * (VERIFIED LIVE; more reliable than the `isInInitialAssessment` flag). The API has **no endpoint listing the questions already in the
+ * (re-verified live 2026-10-14: Admin 200 again; the `isInInitialAssessment` flag of
+ * `categoriesActivity` is still always false, so it is not used). The API has **no endpoint listing the questions already in the
  * assessment** (BLOCKED BY BACKEND), so question actions only show what was done in this session.
  */
 export function InitialAssessmentAdminPage() {
@@ -41,15 +42,13 @@ export function InitialAssessmentAdminPage() {
   const [questionActions, setQuestionActions] = useState<Record<string, QuestionAction>>({});
   const memberIds = useAssessmentCategoryIds();
   const memberSet = new Set(memberIds.data ?? []);
-  // Live 2026-10-10: `initial-assessment/categories` answers 403 for Admin and the
-  // `isInInitialAssessment` flags are always false, so membership can be unknown.
-  const isMembershipUnknown = memberIds.isError;
-  const categories = (categoriesQuery.data ?? []).map((category) => ({
-    ...category,
-    isInInitialAssessment: memberIds.data
-      ? memberSet.has(category.id)
-      : category.isInInitialAssessment,
-  }));
+  // Rows need both lists: without membership the badges would be wrong.
+  const categories = memberIds.data
+    ? (categoriesQuery.data ?? []).map((category) => ({
+        ...category,
+        isInInitialAssessment: memberSet.has(category.id),
+      }))
+    : [];
 
   const runQuestion = (questionId: string, include: boolean) => {
     toggleQuestion.mutate(
@@ -75,17 +74,14 @@ export function InitialAssessmentAdminPage() {
         <ApiErrorAlert error={toggleCategory.error} />
         <QueryStatus
           isLoading={categoriesQuery.isPending || memberIds.isPending}
-          error={categoriesQuery.error}
+          error={categoriesQuery.error ?? memberIds.error}
           isEmpty={categories.length === 0}
           emptyTitle="لا توجد تصنيفات"
-          onRetry={() => void categoriesQuery.refetch()}
+          onRetry={() => {
+            void categoriesQuery.refetch();
+            void memberIds.refetch();
+          }}
         />
-        {isMembershipUnknown ? (
-          <Alert tone="warning">
-            تعذّر على الخادم إرجاع التصنيفات المضمّنة في التقييم لحساب المدير، لذلك لا تظهر حالة كل
-            تصنيف. ما زالت الإضافة والإزالة تعملان.
-          </Alert>
-        ) : null}
         {categories.length > 0 ? (
           <ul className={styles.list} aria-label="تصنيفات الاختبارات">
             {categories.map((category) => (
@@ -95,13 +91,9 @@ export function InitialAssessmentAdminPage() {
                   <h3 className={styles.rowTitle}>{category.name}</h3>
                   <ul className={styles.meta}>
                     <li>
-                      {isMembershipUnknown ? (
-                        <Badge hasDot>الحالة غير معروفة</Badge>
-                      ) : (
-                        <Badge tone={category.isInInitialAssessment ? 'success' : 'neutral'} hasDot>
-                          {category.isInInitialAssessment ? 'ضمن التقييم' : 'غير مضاف'}
-                        </Badge>
-                      )}
+                      <Badge tone={category.isInInitialAssessment ? 'success' : 'neutral'} hasDot>
+                        {category.isInInitialAssessment ? 'ضمن التقييم' : 'غير مضاف'}
+                      </Badge>
                     </li>
                     <li>
                       <Badge>{`${category.count.toString()} أنشطة`}</Badge>

@@ -1,6 +1,6 @@
 import { http, HttpResponse, type HttpHandler } from 'msw';
 
-import { MOCK_USERS, mockId, type MockUser } from '../db';
+import { MOCK_USERS, mockId, registerMockTable, type MockUser } from '../db';
 import { findMockChild, mockChildren } from '../fixtures/children';
 import { mockNotes } from '../fixtures/notes';
 import { mockReports } from '../fixtures/reports';
@@ -14,6 +14,17 @@ import { apiUrl, badRequest, forbidden, notFound, requireRole } from '../http';
 
 /** Users the Admin list returns (the live list showed parents, teachers and specialists). */
 const LISTED_ROLES: readonly MockUser['role'][] = ['Parent', 'Teacher', 'Specialist'];
+
+/** Accounts the Super Admin created in this mock session (soft-deactivated ones stay listed). */
+const createdUsers: MockUser[] = [];
+registerMockTable(() => {
+  createdUsers.splice(0, createdUsers.length);
+});
+
+const STAFF_ROLE_BY_WIRE: Record<string, MockUser['role']> = {
+  'معلم/ة': 'Teacher',
+  'أخصائي/ة': 'Specialist',
+};
 
 function childrenOf(user: MockUser) {
   return mockChildren.filter((child) => child.parentId === user.id);
@@ -34,7 +45,8 @@ function filterUsers(request: Request, roles: readonly MockUser['role'][]) {
   const params = new URL(request.url).searchParams;
   const role = params.get('Role') ?? params.get('role') ?? '';
   const search = (params.get('Search') ?? params.get('search') ?? '').trim().toLowerCase();
-  return MOCK_USERS.filter((user) => roles.includes(user.role))
+  return [...MOCK_USERS, ...createdUsers]
+    .filter((user) => roles.includes(user.role))
     .filter((user) => !role || user.roleValue === role)
     .filter(
       (user) =>
@@ -128,6 +140,19 @@ export const staffHandlers: HttpHandler[] = [
       })),
     });
   }),
+  // Live (2026-10-14): Admin only; `[{ id, fullName, email, isActive }]`.
+  http.get(apiUrl('Admin/specialists'), ({ request }) => {
+    const admin = requireRole(request, ['Admin']);
+    if (admin instanceof Response) return admin;
+    return HttpResponse.json(
+      MOCK_USERS.filter((user) => user.role === 'Specialist').map((user) => ({
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        isActive: true,
+      })),
+    );
+  }),
   http.post(apiUrl('Admin/assign-children-to-specialist'), async ({ request }) => {
     const admin = requireRole(request, ['Admin']);
     if (admin instanceof Response) return admin;
@@ -149,17 +174,68 @@ export const staffHandlers: HttpHandler[] = [
   }),
 
   // ── Super Admin ──────────────────────────────────────────────
+  // Live: a plain array of `{ id, fullName, email, role, emailConfirmed }` (no `isActive`).
   http.get(apiUrl('SuperAdmin/users'), ({ request }) => {
     const user = requireRole(request, ['SuperAdmin']);
     if (user instanceof Response) return user;
     return HttpResponse.json(
-      usersResponse(
-        filterUsers(
-          request,
-          MOCK_USERS.map((u) => u.role),
-        ),
-      ),
+      filterUsers(
+        request,
+        MOCK_USERS.map((u) => u.role),
+      ).map(({ id, fullName, email, roleValue }) => ({
+        id,
+        fullName,
+        email,
+        role: roleValue,
+        emailConfirmed: false,
+      })),
     );
+  }),
+  // Live (2026-10-14): 201 `{ message, id, fullName, email, role, isActive }`.
+  http.post(apiUrl('SuperAdmin/users'), async ({ request }) => {
+    const admin = requireRole(request, ['SuperAdmin']);
+    if (admin instanceof Response) return admin;
+    const body = (await request.json()) as Record<string, string | undefined>;
+    const role = STAFF_ROLE_BY_WIRE[body.role ?? ''];
+    const email = body.email?.trim().toLowerCase() ?? '';
+    if (!role || !body.fullName || !email || !body.password) {
+      return badRequest('One or more validation errors occurred.');
+    }
+    if ([...MOCK_USERS, ...createdUsers].some((user) => user.email === email)) {
+      return badRequest('البريد الإلكتروني مستخدم بالفعل.');
+    }
+    const user: MockUser = {
+      id: mockId(),
+      fullName: body.fullName,
+      email,
+      role,
+      roleValue: body.role ?? '',
+    };
+    createdUsers.push(user);
+    return HttpResponse.json(
+      {
+        message: 'User created successfully.',
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.roleValue,
+        isActive: true,
+      },
+      { status: 201 },
+    );
+  }),
+  // Live (2026-10-14): soft delete — 200 "User deactivated successfully."; 404 when unknown.
+  http.delete(apiUrl('SuperAdmin/users/:id'), ({ request, params }) => {
+    const admin = requireRole(request, ['SuperAdmin']);
+    if (admin instanceof Response) return admin;
+    const exists = [...MOCK_USERS, ...createdUsers].some((user) => user.id === params.id);
+    if (!exists) {
+      return HttpResponse.json(
+        { errors: [{ code: 'NotFound', description: 'User not found.' }] },
+        { status: 404 },
+      );
+    }
+    return HttpResponse.json({ message: 'User deactivated successfully.' });
   }),
   http.get(apiUrl('SuperAdmin/children'), ({ request }) => {
     const user = requireRole(request, ['SuperAdmin']);
@@ -180,6 +256,22 @@ export const staffHandlers: HttpHandler[] = [
   }),
 
   // ── Teacher notes ────────────────────────────────────────────
+  // Live (2026-10-14): the child's teacher and specialist read the list; others 403/404.
+  http.get(apiUrl('Teacher/children/:childId/feedbacks'), ({ request, params }) => {
+    const user = requireRole(request, ['Teacher', 'Specialist']);
+    if (user instanceof Response) return user;
+    const child = findMockChild(String(params.childId));
+    const isOwn =
+      user.role === 'Teacher' ? child?.teacherId === user.id : child?.specialistId === user.id;
+    if (!child || !isOwn) {
+      return notFound('الطفل غير موجود أو ليس لديك صلاحية لعرض ملاحظاته.');
+    }
+    return HttpResponse.json(
+      mockNotes
+        .filter((note) => note.childId === child.id)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    );
+  }),
   http.post(apiUrl('Teacher/children/:childId/notes'), async ({ request, params }) => {
     const user = requireRole(request, ['Teacher']);
     if (user instanceof Response) return user;
