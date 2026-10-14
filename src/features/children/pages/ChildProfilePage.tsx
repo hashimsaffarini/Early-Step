@@ -6,6 +6,7 @@ import {
   ListChecks,
   ServerOff,
   UserX,
+  NotebookPen,
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -29,12 +30,13 @@ import { AssessmentsTab } from '../components/profile/AssessmentsTab';
 import { ChildProfileHeader } from '../components/profile/ChildProfileHeader';
 import { OverviewTab } from '../components/profile/OverviewTab';
 import { ReportsTab } from '../components/profile/ReportsTab';
+import { TeacherFeedbackTab } from '../components/profile/TeacherFeedbackTab';
 import { useChildProfile } from '../hooks/useChildProfile';
 
 import { BACK_TO_CHILDREN } from './childrenCopy';
 import styles from './ChildProfilePage.module.css';
 
-type ProfileTab = 'overview' | 'assessments' | 'activities' | 'reports';
+type ProfileTab = 'overview' | 'assessments' | 'activities' | 'reports' | 'feedback';
 
 const TAB_ITEMS: readonly TabItem<ProfileTab>[] = [
   { value: 'overview', label: 'نظرة عامة', icon: <Activity aria-hidden="true" size={16} /> },
@@ -45,6 +47,16 @@ const TAB_ITEMS: readonly TabItem<ProfileTab>[] = [
   },
   { value: 'activities', label: 'الأنشطة', icon: <ListChecks aria-hidden="true" size={16} /> },
   { value: 'reports', label: 'التقرير', icon: <FileText aria-hidden="true" size={16} /> },
+];
+
+/** The specialist also reads the teacher's notes (the teacher writes them on their notes page). */
+const SPECIALIST_TAB_ITEMS: readonly TabItem<ProfileTab>[] = [
+  ...TAB_ITEMS,
+  {
+    value: 'feedback',
+    label: 'ملاحظات المعلم',
+    icon: <NotebookPen aria-hidden="true" size={16} />,
+  },
 ];
 
 function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }) {
@@ -81,7 +93,7 @@ function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }
       <ApiErrorAlert error={deleteMutation.error} />
       <Tabs
         label="أقسام ملف الطفل"
-        items={TAB_ITEMS}
+        items={role === 'Specialist' ? SPECIALIST_TAB_ITEMS : TAB_ITEMS}
         value={tab}
         onChange={setTab}
         className={styles.tabs}
@@ -104,6 +116,7 @@ function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }
         ) : null}
         {tab === 'activities' ? <ActivitiesTab childId={child.id} role={role} /> : null}
         {tab === 'reports' ? <ReportsTab childId={child.id} /> : null}
+        {tab === 'feedback' ? <TeacherFeedbackTab childId={child.id} /> : null}
       </Tabs>
       {isParent ? (
         <>

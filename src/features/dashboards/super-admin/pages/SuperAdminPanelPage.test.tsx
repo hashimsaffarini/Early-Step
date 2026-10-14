@@ -49,14 +49,64 @@ describe('SuperAdminPanelPage', () => {
     server.events.removeAllListeners();
   });
 
-  it('is read-only: no delete or role-change actions', async () => {
+  it('creates a teacher account with POST SuperAdmin/users and the backend role value', async () => {
+    let body: unknown;
+    server.events.on('request:start', ({ request }) => {
+      if (request.method === 'POST' && request.url.includes('SuperAdmin/users')) {
+        void request
+          .clone()
+          .json()
+          .then((json: unknown) => {
+            body = json;
+          });
+      }
+    });
     renderPanel();
 
     await userEvent.click(screen.getByRole('tab', { name: /المستخدمون/ }));
-    await screen.findByRole('list', { name: 'المستخدمون' });
+    await userEvent.click(await screen.findByRole('button', { name: 'إضافة موظف' }));
+    const dialog = screen.getByRole('dialog', { name: 'إضافة حساب موظف' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'إنشاء الحساب' }));
+    expect(within(dialog).getByText('الاسم مطلوب')).toBeInTheDocument();
 
-    expect(screen.queryByRole('button', { name: /حذف/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/لا يوفّر الخادم هذه العمليات بعد/)).toBeInTheDocument();
+    await userEvent.type(within(dialog).getByLabelText(/الاسم الكامل/), 'أ. هدى');
+    await userEvent.type(within(dialog).getByLabelText(/البريد الإلكتروني/), 'huda@demo.test');
+    await userEvent.type(within(dialog).getByLabelText(/كلمة المرور/), 'weak');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'إنشاء الحساب' }));
+    expect(within(dialog).getByText(/لا تستوفي الشروط/)).toBeInTheDocument();
+
+    await userEvent.clear(within(dialog).getByLabelText(/كلمة المرور/));
+    await userEvent.type(within(dialog).getByLabelText(/كلمة المرور/), 'Strong#Pass1');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'إنشاء الحساب' }));
+
+    expect(await screen.findByText('تم إنشاء حساب أ. هدى.')).toBeInTheDocument();
+    expect(body).toEqual({
+      fullName: 'أ. هدى',
+      email: 'huda@demo.test',
+      password: 'Strong#Pass1',
+      role: 'معلم/ة',
+    });
+    server.events.removeAllListeners();
+  });
+
+  it('deactivates an account after confirmation, never the super admin', async () => {
+    const deleted: string[] = [];
+    server.events.on('request:start', ({ request }) => {
+      if (request.method === 'DELETE') deleted.push(new URL(request.url).pathname);
+    });
+    renderPanel();
+
+    await userEvent.click(screen.getByRole('tab', { name: /المستخدمون/ }));
+    const list = await screen.findByRole('list', { name: 'المستخدمون' });
+    expect(within(list).queryByRole('button', { name: /إيقاف حساب عبدالله/ })).toBeNull();
+
+    await userEvent.click(within(list).getByRole('button', { name: 'إيقاف حساب أ. سارة خالد' }));
+    const dialog = screen.getByRole('dialog', { name: 'إيقاف الحساب' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'إيقاف' }));
+
+    expect(await screen.findByText('تم إيقاف حساب أ. سارة خالد.')).toBeInTheDocument();
+    expect(deleted).toEqual(['/api/SuperAdmin/users/u-teacher']);
+    server.events.removeAllListeners();
   });
 
   it('lists children from the server and searches by name', async () => {

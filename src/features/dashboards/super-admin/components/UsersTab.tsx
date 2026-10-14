@@ -1,4 +1,4 @@
-import { UserX } from 'lucide-react';
+import { UserMinus, UserPlus, UserX } from 'lucide-react';
 import { useState } from 'react';
 
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -9,11 +9,20 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
-import { ROLE_WIRE_VALUES, useSuperAdminUsers } from '@/features/dashboards/api/superAdminApi';
+import { ConfirmDialog } from '@/components/ui/Modal';
+import {
+  ROLE_WIRE_VALUES,
+  useDeactivateUser,
+  useSuperAdminUsers,
+  type PanelUser,
+} from '@/features/dashboards/api/superAdminApi';
+import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useSession } from '@/services/session';
 import type { UserRole } from '@/types/roles';
 
 import { ROLE_DISPLAY } from '../roleDisplay';
+import { CreateStaffDialog } from './CreateStaffDialog';
 
 import styles from './superAdmin.module.css';
 
@@ -23,10 +32,16 @@ type RoleFilter = UserRole | 'all';
 const FILTERABLE_ROLES = Object.keys(ROLE_WIRE_VALUES) as UserRole[];
 
 /**
- * Users from `GET SuperAdmin/users?Search=&Role=` (server-side search and filter). Read-only:
- * the API has no edit, role-change or delete endpoints (BLOCKED BY BACKEND).
+ * Users from `GET SuperAdmin/users?Search=&Role=` (server-side search and filter). The Super
+ * Admin creates teacher / specialist accounts and deactivates accounts (`SuperAdmin/users`).
+ * Editing is not offered: the list does not return `isActive`, which the edit endpoint requires.
  */
 export function UsersTab() {
+  const session = useSession();
+  const deactivate = useDeactivateUser();
+  const [isCreating, setIsCreating] = useState(false);
+  const [toDeactivate, setToDeactivate] = useState<PanelUser | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const search = useDebouncedValue(query.trim());
@@ -82,6 +97,20 @@ export function UsersTab() {
                   {role ? <role.icon aria-hidden="true" size={14} /> : null}
                   {role?.label ?? user.roleValue}
                 </Badge>
+                {user.role !== 'SuperAdmin' && user.id !== session?.user.id ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconStart={<UserMinus aria-hidden="true" />}
+                    aria-label={`إيقاف حساب ${user.name}`}
+                    onClick={() => {
+                      deactivate.reset();
+                      setToDeactivate(user);
+                    }}
+                  >
+                    إيقاف
+                  </Button>
+                ) : null}
               </div>
             </li>
           );
@@ -117,10 +146,52 @@ export function UsersTab() {
           ))}
         </div>
       </div>
-      <Alert tone="info">
-        تعديل المستخدمين أو تغيير أدوارهم أو حذفهم غير متاح: لا يوفّر الخادم هذه العمليات بعد.
-      </Alert>
+      <div className={styles.actions}>
+        <Button
+          iconStart={<UserPlus aria-hidden="true" />}
+          onClick={() => {
+            setNotice(null);
+            setIsCreating(true);
+          }}
+        >
+          إضافة موظف
+        </Button>
+      </div>
+      {notice ? <Alert tone="success">{notice}</Alert> : null}
+      <ApiErrorAlert error={deactivate.error} />
       {content}
+      <CreateStaffDialog
+        isOpen={isCreating}
+        onClose={() => {
+          setIsCreating(false);
+        }}
+        onCreated={(name) => {
+          setIsCreating(false);
+          setNotice(`تم إنشاء حساب ${name}.`);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={toDeactivate !== null}
+        title="إيقاف الحساب"
+        description={`لن يتمكن ${toDeactivate?.name ?? ''} من تسجيل الدخول بعد الإيقاف. يبقى الحساب ظاهراً في القائمة.`}
+        confirmLabel="إيقاف"
+        isConfirming={deactivate.isPending}
+        onConfirm={() => {
+          if (!toDeactivate) return;
+          const { id, name } = toDeactivate;
+          deactivate.mutate(id, {
+            onSuccess: () => {
+              setNotice(`تم إيقاف حساب ${name}.`);
+            },
+            onSettled: () => {
+              setToDeactivate(null);
+            },
+          });
+        }}
+        onCancel={() => {
+          setToDeactivate(null);
+        }}
+      />
     </div>
   );
 }

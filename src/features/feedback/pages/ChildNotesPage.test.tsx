@@ -29,26 +29,39 @@ function renderNotes(childId = YOUSEF) {
   );
 }
 
-afterEach(() => {
-  window.sessionStorage.clear();
-});
-
 async function addNote(text: string) {
   await userEvent.type(screen.getByLabelText(/ملاحظة جديدة/), text);
   await userEvent.click(screen.getByRole('button', { name: 'حفظ الملاحظة' }));
 }
 
 describe('ChildNotesPage', () => {
-  it('explains that earlier notes cannot be listed (no backend endpoint)', async () => {
+  it("lists the child's earlier notes from GET Teacher/children/{childId}/feedbacks", async () => {
+    server.use(
+      http.get(apiUrl('Teacher/children/:childId/feedbacks'), () =>
+        HttpResponse.json([
+          {
+            id: 'n-1',
+            content: 'ملاحظة سابقة',
+            createdAt: '2026-10-01T09:00:00Z',
+            updatedAt: null,
+          },
+        ]),
+      ),
+    );
     renderNotes();
 
     expect(
       await screen.findByRole('heading', { name: 'ملاحظات المعلم — يوسف' }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/لا يوفّر الخادم بعد طريقة لعرض الملاحظات السابقة/),
-    ).toBeInTheDocument();
-    expect(screen.getByText('لم تُضِف ملاحظات في هذه الجلسة بعد')).toBeInTheDocument();
+    const list = await screen.findByRole('list', { name: 'الملاحظات' });
+    expect(within(list).getByText('ملاحظة سابقة')).toBeInTheDocument();
+    expect(within(list).getByRole('button', { name: 'تعديل الملاحظة' })).toBeInTheDocument();
+  });
+
+  it('shows an empty state when the child has no notes', async () => {
+    renderNotes();
+
+    expect(await screen.findByText('لا توجد ملاحظات لهذا الطفل بعد')).toBeInTheDocument();
   });
 
   it('validates and creates a note, then shows it from the server', async () => {
@@ -107,7 +120,7 @@ describe('ChildNotesPage', () => {
       }),
     );
 
-    expect(await screen.findByText('لم تُضِف ملاحظات في هذه الجلسة بعد')).toBeInTheDocument();
+    expect(await screen.findByText('لا توجد ملاحظات لهذا الطفل بعد')).toBeInTheDocument();
   });
 
   it('shows the server error when saving fails and keeps the text', async () => {

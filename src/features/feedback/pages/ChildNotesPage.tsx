@@ -1,5 +1,5 @@
 import { ArrowRight, NotebookPen, UserX } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
@@ -10,27 +10,47 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Alert } from '@/components/ui/Feedback';
-import { useChildrenForRole } from '@/hooks/api/childResources';
+import { useChildFeedbacks, useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
-import { useSession } from '@/services/session';
 
 import { useCreateNote } from '../api/notesQueries';
 import { NoteCard } from '../components/NoteCard';
 import { NoteForm } from '../components/NoteForm';
 import styles from '../components/notes.module.css';
-import { useSessionNoteIds } from '../sessionNotes';
 
 import pageStyles from './ChildNotesPage.module.css';
 
-const HISTORY_NOTICE =
-  'تظهر هنا الملاحظات التي أضفتها في هذه الجلسة فقط: لا يوفّر الخادم بعد طريقة لعرض الملاحظات السابقة للطفل.';
-
-function NotesWorkspace({ childId, userId }: { childId: string; userId: string }) {
+function NotesWorkspace({ childId }: { childId: string }) {
   const headingId = useId();
   const create = useCreateNote(childId);
-  const { ids, add, remove } = useSessionNoteIds(userId, childId);
-  const [unidentified, setUnidentified] = useState<string[]>([]);
+  const notes = useChildFeedbacks(childId);
+
+  let list;
+  if (notes.isPending) {
+    list = <LoadingState label="جارٍ تحميل الملاحظات…" />;
+  } else if (notes.error) {
+    list = (
+      <ErrorState
+        title="تعذّر تحميل الملاحظات"
+        description={notes.error.message}
+        action={
+          <Button variant="outline" onClick={() => void notes.refetch()}>
+            إعادة المحاولة
+          </Button>
+        }
+      />
+    );
+  } else if (notes.data.length === 0) {
+    list = <EmptyState icon={<NotebookPen />} title="لا توجد ملاحظات لهذا الطفل بعد" />;
+  } else {
+    list = (
+      <ul className={styles.list} aria-label="الملاحظات">
+        {notes.data.map((note, index) => (
+          <NoteCard key={note.id ?? index} childId={childId} note={note} canEdit />
+        ))}
+      </ul>
+    );
+  }
 
   return (
     <>
@@ -41,30 +61,14 @@ function NotesWorkspace({ childId, userId }: { childId: string; userId: string }
           submitLabel="حفظ الملاحظة"
           isSubmitting={create.isPending}
           onSubmit={async (content) => {
-            const id = await create.mutateAsync(content);
-            if (id) add(id);
-            else setUnidentified((current) => [content, ...current]);
+            await create.mutateAsync(content);
           }}
         />
       </Card>
 
       <section className={pageStyles.section} aria-labelledby={headingId}>
-        <SectionHeader id={headingId} title="ملاحظاتي في هذه الجلسة" icon={NotebookPen} />
-        <Alert tone="info">{HISTORY_NOTICE}</Alert>
-        {unidentified.length > 0 ? (
-          <Alert tone="warning">
-            حُفظت ملاحظة لكن الخادم لم يُرجع معرّفها، لذا لا يمكن عرضها من الخادم أو تعديلها هنا.
-          </Alert>
-        ) : null}
-        {ids.length === 0 ? (
-          <EmptyState icon={<NotebookPen />} title="لم تُضِف ملاحظات في هذه الجلسة بعد" />
-        ) : (
-          <ul className={styles.list} aria-label="الملاحظات">
-            {ids.map((id) => (
-              <NoteCard key={id} noteId={id} onRemoved={remove} />
-            ))}
-          </ul>
-        )}
+        <SectionHeader id={headingId} title="ملاحظات الطفل" icon={NotebookPen} />
+        {list}
       </section>
     </>
   );
@@ -74,7 +78,6 @@ function NotesWorkspace({ childId, userId }: { childId: string; userId: string }
 export function ChildNotesPage() {
   const { childId = '' } = useParams();
   const { paths } = useRoleArea();
-  const session = useSession();
   const children = useChildrenForRole('Teacher');
   const child = children.data?.find((item) => item.id === childId);
 
@@ -123,7 +126,7 @@ export function ChildNotesPage() {
           title={`ملاحظات المعلم — ${child.fullName}`}
           subtitle="سجّل ملاحظاتك عن تقدّم الطفل في الخطة التدريبية."
         />
-        <NotesWorkspace childId={child.id} userId={session?.user.id ?? 'anonymous'} />
+        <NotesWorkspace childId={child.id} />
       </>
     );
   }

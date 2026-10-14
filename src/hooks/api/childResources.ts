@@ -7,6 +7,7 @@ import { fetchChildPlanActivities, fetchChildPlanSummary } from '@/services/api/
 import { fetchChildReport } from '@/services/api/childReports';
 import { CHILDREN_LIST_PATH, fetchChildrenForRole } from '@/services/api/childrenLists';
 import { queryKeys } from '@/services/api/queryKeys';
+import { fetchChildFeedbacks } from '@/services/api/teacherFeedback';
 
 /** Shared reads used by several features (same key → same cached shape everywhere). */
 export function useChildReport(childId: string | undefined) {
@@ -48,5 +49,14 @@ export function useChildrenForRole(role: AreaRole) {
     queryKey: queryKeys.children.byRole(role),
     queryFn: () => fetchChildrenForRole(role),
     enabled: CHILDREN_LIST_PATH[role] !== null,
+  });
+}
+
+/** Teacher feedback notes on a child (Teacher; Specialist read-only). */
+export function useChildFeedbacks(childId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.notes.byChild(childId ?? ''),
+    queryFn: () => fetchChildFeedbacks(childId ?? ''),
+    enabled: Boolean(childId),
   });
 }

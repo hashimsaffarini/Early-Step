@@ -1,4 +1,4 @@
-/** TEMPORARY MOCK DATA — teacher notes table (fictional). Starts empty: the API cannot list notes. */
+/** TEMPORARY MOCK DATA — teacher notes table (fictional). Starts empty. */
 import { registerMockTable } from '../db';
 
 export interface MockNoteRow {

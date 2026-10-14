@@ -173,6 +173,89 @@ describe('ChildProfilePage — tabs from the API', () => {
     expect(within(region).getByText(/وليست تشخيصاً/)).toBeInTheDocument();
   });
 
+  it('shows the per-question details the server sends to staff (live shape 2026-10-14)', async () => {
+    const option = (optionId: string, optionText: string) => ({
+      optionId,
+      optionText,
+      optionImageUrl: null,
+    });
+    server.use(
+      http.get(apiUrl('initial-assessment/:childId/result'), () =>
+        HttpResponse.json({
+          childId: YOUSEF,
+          childName: 'يوسف',
+          parentId: 'u-parent',
+          parentName: 'محمد أحمد',
+          overallScore: 66.67,
+          assessmentId: 'as-1',
+          categories: [
+            {
+              categoryId: 'cat-1',
+              categoryName: 'الرياضيات',
+              percentage: 67,
+              totalQuestions: 3,
+              correctAnswers: 2,
+              questions: [
+                {
+                  questionId: 'q1',
+                  questionText: 'اختر الأعداد الزوجية',
+                  questionType: 'MultiSelect',
+                  isCorrect: true,
+                  childAnswers: [option('o2', '4'), option('o1', '2')],
+                  correctAnswers: [option('o1', '2'), option('o2', '4')],
+                },
+                {
+                  questionId: 'q2',
+                  questionText: 'رتّب الأعداد',
+                  questionType: 'Sequence',
+                  isCorrect: false,
+                  childAnswers: [option('o4', '3'), option('o3', '1')],
+                  correctAnswers: [option('o3', '1'), option('o4', '3')],
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+    renderProfile('Specialist', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/التقييمات/));
+
+    const region = await screen.findByRole('region', { name: 'نتيجة التقييم المبدئي' });
+    expect(within(region).getByText('2 من 3 إجابات صحيحة')).toBeInTheDocument();
+    await userEvent.click(within(region).getByText('تفاصيل الأسئلة (2)'));
+    const questions = within(region).getByRole('list', { name: 'أسئلة الرياضيات' });
+    expect(within(questions).getByText('إجابة صحيحة')).toBeInTheDocument();
+    expect(within(questions).getByText('إجابة غير صحيحة')).toBeInTheDocument();
+    expect(within(questions).getByText('إجابة الطفل: 3 ← 1')).toBeInTheDocument();
+    expect(within(questions).getByText('الإجابة الصحيحة: 1 ← 3')).toBeInTheDocument();
+  });
+
+  it("gives the specialist a read-only tab with the teacher's notes", async () => {
+    server.use(
+      http.get(apiUrl('Teacher/children/:childId/feedbacks'), () =>
+        HttpResponse.json([{ id: 'n-1', content: 'يتحسّن في الحروف', createdAt: '2026-10-02' }]),
+      ),
+    );
+    renderProfile('Specialist', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/ملاحظات المعلم/));
+
+    const list = await screen.findByRole('list', { name: 'ملاحظات المعلم' });
+    expect(within(list).getByText('يتحسّن في الحروف')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'تعديل الملاحظة' })).not.toBeInTheDocument();
+  });
+
+  it('shows the teacher-notes tab to the specialist only', async () => {
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    expect(screen.queryByRole('tab', { name: /ملاحظات المعلم/ })).not.toBeInTheDocument();
+  });
+
   it('does not offer to start an assessment to staff', async () => {
     renderProfile('Teacher', YOUSEF);
     await heading('يوسف');

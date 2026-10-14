@@ -2,68 +2,33 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Spinner } from '@/components/ui/Feedback';
 import { IconButton } from '@/components/ui/IconButton';
 import { ConfirmDialog } from '@/components/ui/Modal';
-import { HTTP_STATUS } from '@/services/http/httpStatus';
+import type { TeacherFeedback } from '@/services/api/teacherFeedback';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
-import { useDeleteNote, useNote, useUpdateNote } from '../api/notesQueries';
+import { useDeleteNote, useUpdateNote } from '../api/notesQueries';
 
 import { NoteForm } from './NoteForm';
 import styles from './notes.module.css';
 
 export interface NoteCardProps {
-  noteId: string;
-  /** Called after deletion (or when the server no longer has the note). */
-  onRemoved: (noteId: string) => void;
+  childId: string;
+  note: TeacherFeedback;
+  /** The teacher edits and deletes their notes; the specialist only reads them. */
+  canEdit: boolean;
 }
 
-/** One saved note, loaded from `GET Teacher/notes/{id}`, with edit and confirmed delete. */
-export function NoteCard({ noteId, onRemoved }: NoteCardProps) {
-  const note = useNote(noteId);
-  const update = useUpdateNote(noteId);
-  const remove = useDeleteNote();
+/** One note from the child's list, with edit and confirmed delete for the teacher. */
+export function NoteCard({ childId, note, canEdit }: NoteCardProps) {
+  const noteId = note.id ?? '';
+  const update = useUpdateNote(childId, noteId);
+  const remove = useDeleteNote(childId);
   const [isEditing, setIsEditing] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-
-  if (note.isPending) {
-    return (
-      <Card as="li" className={styles.card}>
-        <Spinner />
-      </Card>
-    );
-  }
-
-  if (note.error) {
-    const isGone = note.error.status === HTTP_STATUS.NOT_FOUND;
-    return (
-      <Card as="li" className={styles.card}>
-        <ApiErrorAlert
-          error={note.error}
-          message={isGone ? 'لم تعد هذه الملاحظة موجودة.' : undefined}
-        />
-        {isGone ? (
-          <Button
-            variant="ghost"
-            onClick={() => {
-              onRemoved(noteId);
-            }}
-          >
-            إزالة من القائمة
-          </Button>
-        ) : (
-          <Button variant="outline" onClick={() => void note.refetch()}>
-            إعادة المحاولة
-          </Button>
-        )}
-      </Card>
-    );
-  }
-
-  const date = note.data.updatedAt ?? note.data.createdAt;
+  const date = note.updatedAt ?? note.createdAt;
+  const isEditable = canEdit && noteId !== '';
 
   return (
     <Card as="li" className={styles.card}>
@@ -73,7 +38,7 @@ export function NoteCard({ noteId, onRemoved }: NoteCardProps) {
           <NoteForm
             label="تعديل الملاحظة"
             submitLabel="حفظ التعديل"
-            initialContent={note.data.content}
+            initialContent={note.content}
             isSubmitting={update.isPending}
             onSubmit={async (content) => {
               await update.mutateAsync(content);
@@ -87,7 +52,7 @@ export function NoteCard({ noteId, onRemoved }: NoteCardProps) {
         </>
       ) : (
         <>
-          <p className={styles.content}>{note.data.content}</p>
+          <p className={styles.content}>{note.content}</p>
           <div className={styles.cardFooter}>
             {date ? (
               <time className={styles.date} dateTime={date}>
@@ -96,24 +61,26 @@ export function NoteCard({ noteId, onRemoved }: NoteCardProps) {
             ) : (
               <span />
             )}
-            <div className={styles.cardActions}>
-              <IconButton
-                label="تعديل الملاحظة"
-                icon={Pencil}
-                variant="muted"
-                onClick={() => {
-                  setIsEditing(true);
-                }}
-              />
-              <IconButton
-                label="حذف الملاحظة"
-                icon={Trash2}
-                variant="danger"
-                onClick={() => {
-                  setIsConfirming(true);
-                }}
-              />
-            </div>
+            {isEditable ? (
+              <div className={styles.cardActions}>
+                <IconButton
+                  label="تعديل الملاحظة"
+                  icon={Pencil}
+                  variant="muted"
+                  onClick={() => {
+                    setIsEditing(true);
+                  }}
+                />
+                <IconButton
+                  label="حذف الملاحظة"
+                  icon={Trash2}
+                  variant="danger"
+                  onClick={() => {
+                    setIsConfirming(true);
+                  }}
+                />
+              </div>
+            ) : null}
           </div>
           <ApiErrorAlert error={remove.error} />
         </>
@@ -128,7 +95,6 @@ export function NoteCard({ noteId, onRemoved }: NoteCardProps) {
           remove.mutate(noteId, {
             onSuccess: () => {
               setIsConfirming(false);
-              onRemoved(noteId);
             },
             onError: () => {
               setIsConfirming(false);
