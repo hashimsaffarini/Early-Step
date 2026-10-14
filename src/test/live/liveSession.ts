@@ -61,3 +61,8 @@ export async function signInLive(account: LiveAccount): Promise<Session> {
   token = session.accessToken;
   return session;
 }
+
+/** Drops the token: the next calls are anonymous. */
+export function signOutLive(): void {
+  token = null;
+}

@@ -3,6 +3,7 @@
  * Zod schemas and mappers accept the real responses. Assertions check structure only.
  */
 import { fetchPlanActivityDetail } from '@/features/activities/api/planActivityApi';
+import { fetchCurrentUser } from '@/features/auth/api/currentUser';
 import { fetchChatUsers, fetchConversations } from '@/features/chat/api/chatApi';
 import { fetchParentChild } from '@/features/children/api/childrenApi';
 import {
@@ -24,14 +25,48 @@ import {
   fetchSpecialistPlan,
   fetchTeachers,
 } from '@/features/training-plans/api/trainingPlansApi';
-import { fetchAdminUser, fetchAdminUsers } from '@/features/users/api/usersApi';
+import { fetchAdminUser, fetchAdminUsers, fetchSpecialists } from '@/features/users/api/usersApi';
 import { fetchUnreadMessagesCount } from '@/services/api/chatUnread';
 import { fetchChildPlanActivities, fetchChildPlanSummary } from '@/services/api/childPlan';
 import { fetchAssessmentResult } from '@/services/api/assessmentResult';
 import { fetchChildReport } from '@/services/api/childReports';
 import { fetchChildrenForRole } from '@/services/api/childrenLists';
+import { fetchChildFeedbacks } from '@/services/api/teacherFeedback';
+import { isAppError } from '@/services/http/apiError';
 
-import { hasAccount, signInLive } from './liveSession';
+import { hasAccount, signInLive, signOutLive, type LiveAccount } from './liveSession';
+
+async function statusOf(call: () => Promise<unknown>): Promise<number | 'ok'> {
+  try {
+    await call();
+    return 'ok';
+  } catch (error) {
+    return isAppError(error) ? (error.status ?? 0) : 0;
+  }
+}
+
+describe('live — GET Auth/me (AuthInfo)', () => {
+  it('answers 401 without a token', async () => {
+    signOutLive();
+    expect(await statusOf(() => fetchCurrentUser())).toBe(401);
+  });
+
+  const roles: [LiveAccount, string][] = [
+    ['PARENT', 'Parent'],
+    ['SPECIALIST', 'Specialist'],
+    ['ADMIN', 'Admin'],
+    ['SUPERADMIN', 'SuperAdmin'],
+  ];
+  it.each(roles.filter(([account]) => hasAccount(account)))(
+    '%s: login hydrates the user from Auth/me with the right role',
+    async (account, role) => {
+      const session = await signInLive(account);
+      expect(session.user.role).toBe(role);
+      expect(session.user.id).toBeTruthy();
+      expect(await fetchCurrentUser()).toEqual(session.user);
+    },
+  );
+});
 
 describe.runIf(hasAccount('PARENT'))('live — Parent', () => {
   it('signs in with the verified login contract', async () => {
@@ -80,6 +115,20 @@ describe.runIf(hasAccount('SPECIALIST'))('live — Specialist', () => {
     expect(Array.isArray(await fetchTeachers())).toBe(true);
     expect(Array.isArray(await fetchSpecialistReports())).toBe(true);
   });
+
+  it("reads each child's assessment result and the teacher's feedback list", async () => {
+    await signInLive('SPECIALIST');
+    for (const child of await fetchChildrenForRole('Specialist')) {
+      const result = await fetchAssessmentResult(child.id);
+      expect(result === null || typeof result.overallScore === 'number').toBe(true);
+      expect(Array.isArray(await fetchChildFeedbacks(child.id))).toBe(true);
+    }
+  });
+
+  it('is refused the Admin specialist list (403)', async () => {
+    await signInLive('SPECIALIST');
+    expect(await statusOf(fetchSpecialists)).toBe(403);
+  });
 });
 
 describe.runIf(hasAccount('ADMIN'))('live — Admin', () => {
@@ -90,8 +139,13 @@ describe.runIf(hasAccount('ADMIN'))('live — Admin', () => {
     const users = await fetchAdminUsers('', '');
     const parent = users.users.find((user) => user.role === 'Parent');
     if (parent) await fetchAdminUser(parent.id);
+    // `Admin/specialists` lists exactly the specialists of the user list.
+    const specialists = await fetchSpecialists();
+    expect(specialists.map((item) => item.id).sort()).toEqual(
+      (await fetchAdminUsers('أخصائي/ة', '')).users.map((user) => user.id).sort(),
+    );
     await fetchCategories();
-    await fetchAssessmentCategoryIds();
+    expect(Array.isArray(await fetchAssessmentCategoryIds())).toBe(true);
     for (const type of ['test', 'game'] as const) {
       await fetchCategoriesWithCounts(type);
       const activities = await fetchActivities(type);

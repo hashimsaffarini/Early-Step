@@ -3,11 +3,15 @@
  * Every record is named "E2E Test …", tracked when created and deleted in `afterAll`; the suite
  * FAILS if cleanup leaves anything behind. Uses the app's own API functions. No data is printed.
  * Not included: chat messages (the API cannot delete them) and Parent registration (no user delete).
+ * A SUCCESSFUL plan-activity submission is opt-in (`E2E_PLAN_SUBMIT=1`): live 2026-10-14, a child
+ * with a submitted activity can no longer be deleted (empty 500), so it would leave a record behind.
  */
 import {
   fetchPlanActivityDetail,
   submitPlanActivity,
+  type PlanQuestion,
 } from '@/features/activities/api/planActivityApi';
+import type { ChoiceAnswer } from '@/components/players';
 import {
   completeAssessment,
   startAssessment,
@@ -50,11 +54,12 @@ import {
 import {
   assignActivity,
   assignTeacher,
+  fetchPlanActivityResult,
   fetchSpecialistPlan,
   fetchTeachers,
   removeActivity,
 } from '@/features/training-plans/api/trainingPlansApi';
-import { assignChildrenToSpecialist } from '@/features/users/api/usersApi';
+import { assignChildrenToSpecialist, fetchSpecialists } from '@/features/users/api/usersApi';
 import { fetchChildReport } from '@/services/api/childReports';
 import { fetchAssessmentResult } from '@/services/api/assessmentResult';
 import { fetchChildPlanActivities } from '@/services/api/childPlan';
@@ -64,6 +69,38 @@ import { isAppError } from '@/services/http/apiError';
 import { hasAccount, signInLive, type LiveAccount } from './liveSession';
 
 const RUN = Date.now().toString(36);
+const PLAN_SUBMIT = process.env.E2E_PLAN_SUBMIT === '1';
+
+/** First option(s) of each question, in the payload its type needs (all options for a Sequence). */
+function firstAnswer(question: Pick<PlanQuestion, 'id' | 'type' | 'options'>): ChoiceAnswer | null {
+  const [first] = question.options;
+  if (!first) return null;
+  if (question.type === 'MultiSelect') {
+    return { questionId: question.id, selectedOptionIds: [first.id] };
+  }
+  if (question.type === 'Sequence') {
+    return { questionId: question.id, orderedOptionIds: question.options.map((o) => o.id) };
+  }
+  return { questionId: question.id, selectedOptionId: first.id };
+}
+
+async function statusOf(call: () => Promise<unknown>): Promise<number | 'ok'> {
+  try {
+    await call();
+    return 'ok';
+  } catch (error) {
+    return isAppError(error) ? (error.status ?? 0) : 0;
+  }
+}
+
+async function messageOf(call: () => Promise<unknown>): Promise<string> {
+  try {
+    await call();
+    return '';
+  } catch (error) {
+    return error instanceof Error ? error.message : '';
+  }
+}
 const NAME = (what: string) => `E2E Test ${what} ${RUN}`;
 
 interface Tracked {
@@ -146,39 +183,46 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     expect(detail).toMatchObject({ fullName: NAME('Child Edited'), age: 7, gender: 'بنت' });
   });
 
-  it('Parent: initial assessment start → answer → complete → GET result (same object)', async () => {
-    await signInLive('PARENT');
+  let completedResult: Awaited<ReturnType<typeof completeAssessment>> = null;
+
+  it('Parent: initial assessment start → answer every type → complete; staff GET the details', async () => {
+    await signInLive('SPECIALIST');
     expect(await fetchAssessmentResult(childId)).toBeNull();
+    await signInLive('PARENT');
     const started = await startAssessment(childId);
     expect(started.questions.length).toBeGreaterThan(0);
     for (const question of started.questions) {
-      const option = question.options[0];
-      if (!option) continue;
-      await submitAnswer({
-        assessmentId: started.assessmentId,
-        questionId: question.id,
-        selectedOptionId: option.id,
-      });
+      const answer = firstAnswer(question);
+      if (answer) await submitAnswer({ assessmentId: started.assessmentId, answer });
     }
-    const result = await completeAssessment(started.assessmentId);
-    expect(result).not.toBeNull();
-    expect(typeof result?.overallScore).toBe('number');
-    // Persisted: readable again later (GET initial-assessment/{childId}/result), also by staff.
-    expect(await fetchAssessmentResult(childId)).toEqual(result);
+    completedResult = await completeAssessment(started.assessmentId);
+    expect(completedResult?.assessmentId).toBe(started.assessmentId);
+    expect(typeof completedResult?.overallScore).toBe('number');
+    // Persisted: the GET returns the same scores plus per-question details (staff).
     await signInLive('SPECIALIST');
-    expect(await fetchAssessmentResult(childId)).toEqual(result);
+    const saved = await fetchAssessmentResult(childId);
+    expect(saved?.assessmentId).toBe(started.assessmentId);
+    expect(saved?.overallScore).toBe(completedResult?.overallScore);
+    const answered = saved?.categories.flatMap((category) => category.questions) ?? [];
+    expect(answered).toHaveLength(started.questions.length);
+    expect(saved?.categories.every((c) => c.totalQuestions === c.questions.length)).toBe(true);
   });
 
-  it('Admin → Specialist: assign the specialist, then the specialist assigns a teacher', async () => {
+  it('Parent: reads the saved result of their own child (GET …/result)', async () => {
+    await signInLive('PARENT');
+    expect((await fetchAssessmentResult(childId))?.overallScore).toBe(
+      completedResult?.overallScore,
+    );
+  });
+
+  it('Admin: picks the specialist from Admin/specialists and assigns the child', async () => {
     const specialist = await signInLive('SPECIALIST');
     specialistId = specialist.user.id ?? '';
     await signInLive('ADMIN');
+    expect((await fetchSpecialists()).some((item) => item.id === specialistId)).toBe(true);
     await assignChildrenToSpecialist({ specialistId, childIds: [childId] });
     await signInLive('SPECIALIST');
     expect((await fetchChildrenForRole('Specialist')).some((c) => c.id === childId)).toBe(true);
-    const teachers = await fetchTeachers();
-    const teacher = teachers[0];
-    if (teacher) await assignTeacher(teacher.id, [childId]);
   });
 
   it('Specialist: report create → edit → PDF → delete; parent sees it while it exists', async () => {
@@ -202,6 +246,18 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     expect((await fetchSpecialistReports()).some((r) => r.title === NAME('Report Edited'))).toBe(
       true,
     );
+
+    // One report per child: a second one is refused (409).
+    expect(
+      await statusOf(() =>
+        createReport({
+          childId,
+          title: NAME('Report 2'),
+          weaknesses: 'E2E',
+          recommendations: 'E2E',
+        }),
+      ),
+    ).toBe(409);
 
     const pdf = await downloadReportPdf(reportId);
     // Browsers receive a Blob; the Node test adapter delivers the same bytes as a string.
@@ -263,9 +319,22 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
         { text: 'E2E B', image: null, isCorrect: false, correctOrder: null },
       ],
     });
+    await createQuestion(activityIds.test, {
+      text: NAME('Question 2'),
+      image: null,
+      type: 'MultiSelect',
+      options: [
+        { text: 'E2E C', image: null, isCorrect: true, correctOrder: null },
+        { text: 'E2E D', image: null, isCorrect: true, correctOrder: null },
+      ],
+    });
     const detail = await fetchActivity('test', activityIds.test);
     expect(detail.title).toBe(NAME('Activity test edited'));
-    const question = detail.questions[0];
+    for (const item of detail.questions) {
+      if (item.text === NAME('Question 2'))
+        track({ kind: 'question', id: item.id, account: 'ADMIN' });
+    }
+    const question = detail.questions.find((item) => item.text === NAME('Question'));
     expect(question).toBeDefined();
     const questionId = question?.id ?? '';
     track({ kind: 'question', id: questionId, account: 'ADMIN' });
@@ -282,8 +351,14 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
       expect((await fetchQuestion(questionId)).options).toHaveLength(1);
     }
 
-    // First plan activity for a child without a plan (teacher assigned above) creates the plan.
+    // The first plan activity needs a teacher: without one → 400 with a clear message.
     await signInLive('SPECIALIST');
+    expect(await messageOf(() => assignActivity(childId, activityIds.test))).toBe(
+      'يجب تعيين معلم للطفل قبل إنشاء الخطة التدريبية.',
+    );
+    const [teacher] = await fetchTeachers();
+    expect(teacher).toBeDefined();
+    await assignTeacher(teacher?.id ?? '', [childId]);
     await assignActivity(childId, activityIds.test);
     expect((await fetchSpecialistPlan(childId)).activities.map((a) => a.activityId)).toContain(
       activityIds.test,
@@ -292,19 +367,34 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     expect(
       (await fetchChildPlanActivities(childId)).some((a) => a.activityId === activityIds.test),
     ).toBe(true);
-    // The child plays it and the result is saved (POST …/activities/{planActivityId}/submit).
+    // Submissions the server refuses save nothing: empty answers and partial answers → 400.
     const played = await fetchPlanActivityDetail(childId, activityIds.test);
-    const playedQuestion = played.questions[0];
-    const playedOption = playedQuestion?.options[0];
-    expect(playedOption).toBeDefined();
-    await submitPlanActivity(childId, played.activity.id, [
-      { questionId: playedQuestion?.id ?? '', selectedOptionId: playedOption?.id ?? '' },
-    ]);
+    expect(played.questions).toHaveLength(2);
+    const answers = played.questions.map(firstAnswer).filter((a) => a !== null);
+    expect(await statusOf(() => submitPlanActivity(childId, played.activity.id, []))).toBe(400);
+    expect(
+      await messageOf(() => submitPlanActivity(childId, played.activity.id, answers.slice(0, 1))),
+    ).toBe('All activity questions must be answered.');
+    // The result exists only after a submission (Specialist; Parent 403).
+    expect(await statusOf(() => fetchPlanActivityResult(childId, played.activity.id))).toBe(403);
     await signInLive('SPECIALIST');
-    const saved = (await fetchSpecialistPlan(childId)).activities.find(
-      (a) => a.activityId === activityIds.test,
-    );
-    expect(saved).toMatchObject({ isCompleted: true, correctAnswers: 1, wrongAnswers: 0 });
+    expect(await statusOf(() => fetchPlanActivityResult(childId, played.activity.id))).toBe(404);
+    if (PLAN_SUBMIT) {
+      // Opt-in: leaves the child undeletable on the live backend (see the header).
+      await signInLive('PARENT');
+      await submitPlanActivity(childId, played.activity.id, answers);
+      expect(await statusOf(() => submitPlanActivity(childId, played.activity.id, answers))).toBe(
+        409,
+      );
+      await signInLive('SPECIALIST');
+      const result = await fetchPlanActivityResult(childId, played.activity.id);
+      expect(result.activity).toMatchObject({ isCompleted: true, score: 50, correctAnswers: 1 });
+      expect(result.questions.map((q) => q.isCorrect)).toEqual([true, false]);
+      const row = (await fetchSpecialistPlan(childId)).activities.find(
+        (a) => a.activityId === activityIds.test,
+      );
+      expect(row).toMatchObject({ isCompleted: true, score: 50 });
+    }
     await removeActivity(childId, activityIds.test);
     await signInLive('ADMIN');
 
@@ -322,9 +412,11 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     expect(await fetchAssessmentCategoryIds()).not.toContain(categoryId);
     await signInLive('ADMIN');
 
-    await deleteQuestion(questionId);
-    untrack('question', questionId);
-    expect(await isGone(() => fetchQuestion(questionId))).toBe(true);
+    for (const item of detail.questions) {
+      await deleteQuestion(item.id);
+      untrack('question', item.id);
+      expect(await isGone(() => fetchQuestion(item.id))).toBe(true);
+    }
     for (const type of ['test', 'game'] as const) {
       await deleteActivity(type, activityIds[type]);
       untrack('activity', activityIds[type]);
