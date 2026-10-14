@@ -49,11 +49,15 @@ function PlanSection({
   action,
   emptyText,
   onRemove,
+  progress,
+  resultChildId,
 }: {
   activities: readonly PlanActivity[];
   action?: ReactNode;
   emptyText: string;
   onRemove?: (activity: PlanActivity) => void;
+  progress?: number | null;
+  resultChildId?: string;
 }) {
   return (
     <Card as="section" className={cardStyles.card} aria-labelledby="plan-activities-title">
@@ -75,8 +79,12 @@ function PlanSection({
         />
       ) : (
         <>
-          <PlanProgress activities={activities} />
-          <PlanActivityList activities={activities} onRemove={onRemove} />
+          <PlanProgress activities={activities} progress={progress} />
+          <PlanActivityList
+            activities={activities}
+            onRemove={onRemove}
+            resultChildId={resultChildId}
+          />
         </>
       )}
     </Card>
@@ -152,6 +160,8 @@ function SpecialistPlanEditor({ child }: { child: PlanChild }) {
             : 'لا توجد خطة تدريبية لهذا الطفل بعد. أسنِد له معلماً، ثم أضف أول نشاط لبدء الخطة.'
         }
         onRemove={setToRemove}
+        progress={plan.data.progress}
+        resultChildId={child.id}
       />
       <AssignActivityDialog
         isOpen={isPickerOpen}

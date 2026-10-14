@@ -6,32 +6,110 @@ import { HTTP_STATUS } from '@/services/http/httpStatus';
 
 /**
  * Initial-assessment result (shared by the assessment flow and the child profile). Verified live
- * 2026-10-10: `POST initial-assessment/{assessmentId}/complete` and
- * `GET initial-assessment/{childId}/result` return the same object —
- * `{ childId, childName, parentId, parentName, overallScore, categories: [{ categoryName, percentage }] }`
- * (no completion date, no assessment id). The GET is readable by Parent, Specialist, Admin and
- * Super Admin; before completion it answers 404 (plain text).
+ * 2026-10-14: `POST initial-assessment/{assessmentId}/complete` and
+ * `GET initial-assessment/{childId}/result` return `{ childId, childName, parentId, parentName,
+ * overallScore, assessmentId, categories: [{ categoryId, categoryName, percentage, totalQuestions,
+ * correctAnswers, questions: [{ questionId, questionText, questionType, isCorrect,
+ * childAnswers: [{ optionId, optionText, optionImageUrl }], correctAnswers: [...] }] }] }` (no
+ * completion date). `complete` leaves `totalQuestions`/`correctAnswers` at 0 and `questions` empty;
+ * the GET fills them. The GET is readable by Specialist and Admin (Parent and Super Admin: 403 since
+ * 2026-10-14); before completion it answers 404 (plain text). Per-question details are shown only
+ * when the server sends them, so the server decides who sees correct answers.
  */
+const resultOptionSchema = z.looseObject({
+  optionId: z.string().nullish(),
+  optionText: z.string().nullish(),
+  optionImageUrl: z.string().nullish(),
+});
+
+const resultQuestionSchema = z.looseObject({
+  questionId: z.string(),
+  questionText: z.string().nullish(),
+  questionType: z.string().nullish(),
+  isCorrect: z.boolean().nullish(),
+  childAnswers: z.array(resultOptionSchema).nullish(),
+  correctAnswers: z.array(resultOptionSchema).nullish(),
+});
+
 export const assessmentResultSchema = z.looseObject({
   childId: z.string().nullish(),
+  assessmentId: z.string().nullish(),
   overallScore: z.number(),
   categories: z
-    .array(z.looseObject({ categoryName: z.string().nullish(), percentage: z.number() }))
+    .array(
+      z.looseObject({
+        categoryId: z.string().nullish(),
+        categoryName: z.string().nullish(),
+        percentage: z.number(),
+        totalQuestions: z.number().nullish(),
+        correctAnswers: z.number().nullish(),
+        questions: z.array(resultQuestionSchema).nullish(),
+      }),
+    )
     .nullish(),
 });
 
+export interface AssessmentResultOption {
+  id: string | null;
+  text: string;
+  imageUrl: string | null;
+}
+
+export interface AssessmentResultQuestion {
+  id: string;
+  text: string;
+  /** Backend question type as sent (`SingleChoice`, `MultiSelect`, `Sequence`). */
+  type: string | null;
+  isCorrect: boolean | null;
+  /** In the child's order (the order matters for Sequence). */
+  childAnswers: AssessmentResultOption[];
+  correctAnswers: AssessmentResultOption[];
+}
+
+export interface AssessmentResultCategory {
+  name: string;
+  percentage: number;
+  /** Null when the server did not count them (`complete` sends 0 / 0). */
+  totalQuestions: number | null;
+  correctAnswers: number | null;
+  questions: AssessmentResultQuestion[];
+}
+
 export interface AssessmentResult {
+  assessmentId: string | null;
   overallScore: number;
-  categories: { name: string; percentage: number }[];
+  categories: AssessmentResultCategory[];
+}
+
+function mapOption(dto: z.infer<typeof resultOptionSchema>): AssessmentResultOption {
+  return {
+    id: dto.optionId ?? null,
+    text: dto.optionText?.trim() ?? '',
+    imageUrl: dto.optionImageUrl ?? null,
+  };
 }
 
 export function mapAssessmentResult(dto: z.infer<typeof assessmentResultSchema>): AssessmentResult {
   return {
+    assessmentId: dto.assessmentId ?? null,
     overallScore: dto.overallScore,
-    categories: (dto.categories ?? []).map((category) => ({
-      name: category.categoryName?.trim() ?? '',
-      percentage: category.percentage,
-    })),
+    categories: (dto.categories ?? []).map((category) => {
+      const counted = (category.totalQuestions ?? 0) > 0;
+      return {
+        name: category.categoryName?.trim() ?? '',
+        percentage: category.percentage,
+        totalQuestions: counted ? (category.totalQuestions ?? null) : null,
+        correctAnswers: counted ? (category.correctAnswers ?? null) : null,
+        questions: (category.questions ?? []).map((question) => ({
+          id: question.questionId,
+          text: question.questionText?.trim() ?? '',
+          type: question.questionType ?? null,
+          isCorrect: question.isCorrect ?? null,
+          childAnswers: (question.childAnswers ?? []).map(mapOption),
+          correctAnswers: (question.correctAnswers ?? []).map(mapOption),
+        })),
+      };
+    }),
   };
 }
 

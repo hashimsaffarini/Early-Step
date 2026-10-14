@@ -10,7 +10,8 @@ import { normalizeActivityType, type ActivityType } from './activityType';
  * - `GET TrainingPlan/children/{id}/activities?type=` → `{ planActivityId, activityId, title, iconUrl, type, isCompleted }`
  * - `GET TrainingPlan/children/{id}/activities/{activityId}` → the above + `description`, `questions`
  * - `GET TrainingPlan/specialist/children/{id}` → `activities[]` with `trainingPlanActivityId`,
- *   `description, order, assignedAt, score, correctAnswers, wrongAnswers, completedAt`
+ *   `description, order, assignedAt, score, correctAnswers, wrongAnswers, completedAt` (`score` =
+ *   rounded % of correct answers once submitted — verified 2026-10-14)
  * `type` is the Arabic label (`اختبارات`); `iconUrl` is server-relative (`/uploads/...`).
  */
 export const planActivityDtoSchema = z.looseObject({
@@ -41,6 +42,8 @@ export interface PlanActivity {
   assignedAt: string | null;
   isCompleted: boolean;
   completedAt: string | null;
+  /** Percentage of correct answers (0–100) once the child submitted the activity. */
+  score: number | null;
   correctAnswers: number | null;
   wrongAnswers: number | null;
 }
@@ -57,6 +60,7 @@ export function mapPlanActivity(dto: z.infer<typeof planActivityDtoSchema>): Pla
     assignedAt: dto.assignedAt ?? null,
     isCompleted: dto.isCompleted ?? false,
     completedAt: dto.completedAt ?? null,
+    score: dto.score ?? null,
     correctAnswers: dto.correctAnswers ?? null,
     wrongAnswers: dto.wrongAnswers ?? null,
   };

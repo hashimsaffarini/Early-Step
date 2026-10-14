@@ -1,14 +1,15 @@
+import {
+  CHOICE_QUESTION_TYPES,
+  CHOICE_TYPE_LABELS,
+  type ChoiceQuestionType,
+} from '@/components/players';
 import type { ActivityType } from '@/services/api/activityType';
 
-/** Question types from Swagger (`QuestionType` enum). `Matching` was removed by the backend (2026-10-08: 400). */
-export const QUESTION_TYPES = ['SingleChoice', 'MultiSelect', 'Sequence'] as const;
-export type QuestionType = (typeof QUESTION_TYPES)[number];
+/** Question types from Swagger (`QuestionType` enum: no Matching, re-checked 2026-10-14). */
+export const QUESTION_TYPES = CHOICE_QUESTION_TYPES;
+export type QuestionType = ChoiceQuestionType;
 
-export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
-  SingleChoice: 'اختيار إجابة واحدة',
-  MultiSelect: 'اختيار عدة إجابات',
-  Sequence: 'ترتيب',
-};
+export const QUESTION_TYPE_LABELS = CHOICE_TYPE_LABELS;
 
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   test: 'الاختبارات',

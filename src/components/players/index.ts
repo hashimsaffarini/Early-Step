@@ -12,3 +12,13 @@ export { StatPill, type StatPillProps } from './StatPill';
 export { playSoundEffect, type SoundEffect } from './soundEffects';
 export { useSoundEffects, type SoundEffects } from './useSoundEffects';
 export { starsForScore } from './scoring';
+export {
+  CHOICE_HINTS,
+  CHOICE_QUESTION_TYPES,
+  CHOICE_TYPE_LABELS,
+  nextChoiceSelection,
+  toChoiceAnswer,
+  toChoiceQuestionType,
+  type ChoiceAnswer,
+  type ChoiceQuestionType,
+} from './choiceAnswer';

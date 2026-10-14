@@ -1,9 +1,10 @@
+import type { ChoiceQuestionType } from '@/components/players';
+
 /**
- * Initial assessment as returned by `POST initial-assessment/{childId}/start`.
- * ⚠️ NOT LIVE-VERIFIED: the start response is undocumented (Swagger has no schema; Apidog only
- * shows an Arabic failure message). See `api/assessmentApi.ts` for the accepted shapes.
+ * Initial assessment as returned by `POST initial-assessment/{childId}/start` (verified live:
+ * `{ assessmentId, categories: [{ id, name, order, questions[] }] }`).
  */
-export type AssessmentQuestionType = 'SingleChoice' | 'MultiSelect' | 'Sequence';
+export type AssessmentQuestionType = ChoiceQuestionType;
 
 export interface AssessmentOption {
   id: string;

@@ -7,6 +7,7 @@ import {
   assignActivity,
   assignTeacher,
   fetchAvailableActivities,
+  fetchPlanActivityResult,
   fetchSpecialistPlan,
   fetchTeachers,
   removeActivity,
@@ -77,5 +78,14 @@ export function useRemoveActivityMutation(childId: string) {
   return useMutation({
     mutationFn: (activityId: string) => removeActivity(childId, activityId),
     onSuccess: invalidate,
+  });
+}
+
+/** A submitted activity's result (Specialist only), loaded when the specialist opens it. */
+export function usePlanActivityResult(childId: string, planActivityId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.trainingPlans.activityResult(childId, planActivityId),
+    queryFn: () => fetchPlanActivityResult(childId, planActivityId),
+    enabled,
   });
 }

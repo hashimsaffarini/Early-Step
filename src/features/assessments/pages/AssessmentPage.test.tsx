@@ -34,6 +34,31 @@ const start = async () => {
   await userEvent.click(await screen.findByRole('button', { name: 'ابدأ التقييم' }));
 };
 
+const tap = async (label: string) => {
+  await userEvent.click(await screen.findByRole('button', { name: new RegExp(`^${label}`) }));
+};
+const next = () => userEvent.click(screen.getByRole('button', { name: /التالي|إنهاء التقييم/ }));
+
+/** Answers the mock assessment: 3 single choices, a multi-select (4 then 2) and a sequence 1-3-5. */
+async function answerAll() {
+  for (const label of ['بطة', 'ق', '3']) {
+    await tap(label);
+    await next();
+  }
+  expect(
+    await screen.findByText('اختر كل الإجابات الصحيحة، ثم اضغط «التالي».'),
+  ).toBeInTheDocument();
+  await tap('4');
+  await tap('2');
+  await next();
+  expect(await screen.findByText('اضغط على الخيارات بالترتيب الصحيح.')).toBeInTheDocument();
+  await tap('1');
+  await tap('3');
+  expect(screen.getByRole('button', { name: 'إنهاء التقييم' })).toBeDisabled();
+  await tap('5');
+  await next();
+}
+
 describe('AssessmentPage (initial assessment)', () => {
   beforeEach(() => {
     // The app wires these in AuthHttpBridge; page-level renders register them directly.
@@ -61,19 +86,18 @@ describe('AssessmentPage (initial assessment)', () => {
       await start();
 
       expect(await screen.findByRole('heading', { name: 'القراءة' })).toBeInTheDocument();
-      for (const label of ['بطة', 'ق', '3']) {
-        await userEvent.click(await screen.findByRole('button', { name: new RegExp(`^${label}`) }));
-        await userEvent.click(screen.getByRole('button', { name: /التالي|إنهاء التقييم/ }));
-      }
+      await answerAll();
 
       expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
       expect(answers).toEqual([
         { questionId: 'q-read-1', selectedOptionId: 'q-read-1-o1' },
         { questionId: 'q-read-2', selectedOptionId: 'q-read-2-o1' },
         { questionId: 'q-math-1', selectedOptionId: 'q-math-1-o2' },
+        { questionId: 'q-math-2', selectedOptionIds: ['q-math-2-o3', 'q-math-2-o1'] },
+        { questionId: 'q-math-3', orderedOptionIds: ['q-math-3-o2', 'q-math-3-o3', 'q-math-3-o1'] },
       ]);
       expect(completed).toBe(true);
-      expect(screen.getByText(/تم إرسال 3 أسئلة/)).toBeInTheDocument();
+      expect(screen.getByText(/تم إرسال 5 أسئلة/)).toBeInTheDocument();
       expect(screen.queryByText(/%|درجة|نتيجتك/)).not.toBeInTheDocument();
     },
     LONG_FLOW,
@@ -85,16 +109,13 @@ describe('AssessmentPage (initial assessment)', () => {
       renderAssessment();
       expect(await screen.findByRole('heading', { name: 'مرحباً يا يوسف!' })).toBeInTheDocument();
       await start();
-
-      for (const label of ['بطة', 'ق', '3']) {
-        await userEvent.click(await screen.findByRole('button', { name: new RegExp(`^${label}`) }));
-        await userEvent.click(screen.getByRole('button', { name: /التالي|إنهاء التقييم/ }));
-      }
+      await answerAll();
 
       expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
+      // All five answers are right in the mock (exact set, exact order) → 100.
       expect(
         screen.getByRole('progressbar', { name: 'النتيجة العامة للتقييم المبدئي' }),
-      ).toHaveAttribute('aria-valuenow', '75');
+      ).toHaveAttribute('aria-valuenow', '100');
       expect(screen.getByRole('list', { name: 'النتيجة حسب التصنيف' })).toBeInTheDocument();
       expect(
         screen.getByText('هذه نتيجة مبدئية يراجعها الأخصائي، وليست تشخيصاً.'),
@@ -132,7 +153,7 @@ describe('AssessmentPage (initial assessment)', () => {
   });
 
   it(
-    'answers MultiSelect and Sequence with one option, as the live API requires',
+    'sends the exact set for MultiSelect and the tapped order for Sequence (reset re-orders)',
     async () => {
       const bodies: unknown[] = [];
       server.use(
@@ -147,6 +168,7 @@ describe('AssessmentPage (initial assessment)', () => {
                 options: [
                   { id: 'o1', optionText: 'قطة' },
                   { id: 'o2', optionText: 'كرسي' },
+                  { id: 'o5', optionText: 'أرنب' },
                 ],
               },
               {
@@ -174,16 +196,21 @@ describe('AssessmentPage (initial assessment)', () => {
 
       await start();
 
-      expect(await screen.findByText('اختر إجابة واحدة.')).toBeInTheDocument();
-      await userEvent.click(screen.getByRole('button', { name: /^قطة/ }));
-      await userEvent.click(screen.getByRole('button', { name: 'التالي' }));
-      await userEvent.click(await screen.findByRole('button', { name: /^أولاً/ }));
-      await userEvent.click(screen.getByRole('button', { name: 'إنهاء التقييم' }));
+      await tap('قطة');
+      await tap('كرسي');
+      await tap('كرسي');
+      await tap('أرنب');
+      await next();
+      await tap('أولاً');
+      await userEvent.click(screen.getByRole('button', { name: 'إعادة الترتيب' }));
+      await tap('ثانياً');
+      await tap('أولاً');
+      await next();
 
       expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
       expect(bodies).toEqual([
-        { questionId: 'q1', selectedOptionId: 'o1' },
-        { questionId: 'q2', selectedOptionId: 'o3' },
+        { questionId: 'q1', selectedOptionIds: ['o1', 'o5'] },
+        { questionId: 'q2', orderedOptionIds: ['o4', 'o3'] },
       ]);
     },
     LONG_FLOW,

@@ -1,10 +1,13 @@
-import { ArrowLeft, Flag, SkipForward } from 'lucide-react';
+import { ArrowLeft, Flag, RotateCcw, SkipForward } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import {
   AnswerTile,
+  CHOICE_HINTS,
   FeedbackMessage,
+  nextChoiceSelection,
   QuestionProgress,
+  toChoiceAnswer,
   type AnswerTileState,
 } from '@/components/players';
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
@@ -14,13 +17,12 @@ import { Card } from '@/components/ui/Card';
 import { resolveMediaUrl } from '@/services/api/mediaUrl';
 
 import { useSubmitAnswer } from '../api/assessmentMutations';
-import { isAnswerable, needsSingleAnswerHint } from '../state/assessmentRun';
+import { isAnswerable } from '../state/assessmentRun';
 import type { AssessmentQuestion } from '../types';
 
 import styles from './AssessmentQuestionRunner.module.css';
 
 const ANSWER_CHOSEN = 'رائع! تم اختيار إجابتك';
-const SINGLE_ANSWER_HINT = 'اختر إجابة واحدة.';
 
 export interface AssessmentQuestionRunnerProps {
   assessmentId: string;
@@ -29,9 +31,8 @@ export interface AssessmentQuestionRunnerProps {
   onFinished: (answered: number) => void;
 }
 
-function tileState(optionId: string, selected: string | null): AnswerTileState {
-  if (selected === null) return 'idle';
-  return optionId === selected ? 'selected' : 'dimmed';
+function tileState(optionId: string, selection: readonly string[]): AnswerTileState {
+  return selection.includes(optionId) ? 'selected' : 'idle';
 }
 
 /**
@@ -45,7 +46,7 @@ export function AssessmentQuestionRunner({
   onFinished,
 }: AssessmentQuestionRunnerProps) {
   const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selection, setSelection] = useState<string[]>([]);
   const [answered, setAnswered] = useState(0);
   const promptRef = useRef<HTMLParagraphElement>(null);
   const submit = useSubmitAnswer();
@@ -60,6 +61,9 @@ export function AssessmentQuestionRunner({
 
   if (!question) return null;
   const supported = isAnswerable(question);
+  const { type } = question;
+  const answer =
+    type === null ? null : toChoiceAnswer(question.id, type, question.options.length, selection);
   const imageUrl = resolveMediaUrl(question.imageUrl);
 
   const advance = (answeredCount: number) => {
@@ -68,7 +72,7 @@ export function AssessmentQuestionRunner({
       return;
     }
     submit.reset();
-    setSelected(null);
+    setSelection([]);
     setIndex(index + 1);
   };
 
@@ -77,9 +81,9 @@ export function AssessmentQuestionRunner({
       advance(answered);
       return;
     }
-    if (selected === null) return;
+    if (answer === null) return;
     submit.mutate(
-      { assessmentId, questionId: question.id, selectedOptionId: selected },
+      { assessmentId, answer },
       {
         onSuccess: () => {
           const next = answered + 1;
@@ -107,23 +111,41 @@ export function AssessmentQuestionRunner({
         </p>
         {imageUrl ? <img className={styles.image} src={imageUrl} alt="" /> : null}
 
-        {supported ? (
+        {supported && type !== null ? (
           <>
-            {needsSingleAnswerHint(question) ? <p>{SINGLE_ANSWER_HINT}</p> : null}
+            <p>{CHOICE_HINTS[type]}</p>
             <div className={styles.answers} role="group" aria-label="الإجابات">
-              {question.options.map((option) => (
-                <AnswerTile
-                  key={option.id}
-                  label={option.text}
-                  state={tileState(option.id, selected)}
-                  disabled={submit.isPending}
-                  onClick={() => {
-                    setSelected(option.id);
-                  }}
-                />
-              ))}
+              {question.options.map((option) => {
+                const position = selection.indexOf(option.id);
+                return (
+                  <AnswerTile
+                    key={option.id}
+                    label={option.text}
+                    badge={
+                      type === 'Sequence' && position >= 0 ? (position + 1).toString() : undefined
+                    }
+                    state={tileState(option.id, selection)}
+                    disabled={submit.isPending}
+                    onClick={() => {
+                      setSelection(nextChoiceSelection(type, selection, option.id));
+                    }}
+                  />
+                );
+              })}
             </div>
-            <FeedbackMessage kind={selected === null ? null : 'info'} text={ANSWER_CHOSEN} />
+            {type === 'Sequence' && selection.length > 0 ? (
+              <Button
+                variant="outline"
+                iconStart={<RotateCcw aria-hidden="true" />}
+                disabled={submit.isPending}
+                onClick={() => {
+                  setSelection([]);
+                }}
+              >
+                إعادة الترتيب
+              </Button>
+            ) : null}
+            <FeedbackMessage kind={answer === null ? null : 'info'} text={ANSWER_CHOSEN} />
           </>
         ) : (
           <Alert tone="warning">
@@ -137,7 +159,7 @@ export function AssessmentQuestionRunner({
         <div className={styles.actions}>
           <Button
             size="lg"
-            disabled={supported && selected === null}
+            disabled={supported && answer === null}
             isLoading={submit.isPending}
             iconStart={supported ? undefined : <SkipForward aria-hidden="true" />}
             iconEnd={isLast ? <Flag aria-hidden="true" /> : <ArrowLeft aria-hidden="true" />}

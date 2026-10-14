@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
+import { toChoiceQuestionType, type ChoiceAnswer } from '@/components/players';
 import { AppError } from '@/services/http/apiError';
 import { httpClient } from '@/services/http/httpClient';
 
-import type { AssessmentQuestion, AssessmentQuestionType, StartedAssessment } from '../types';
+import type { AssessmentQuestion, StartedAssessment } from '../types';
 import {
   assessmentResultSchema,
   mapAssessmentResult,
@@ -13,11 +14,9 @@ import {
 /**
  * Initial assessment endpoints (Swagger `/api/initial-assessment/*`).
  *
- * ⚠️ Response shapes are NOT LIVE-VERIFIED:
- * - start: undocumented. Accepted: an assessment id (`assessmentId` | `id`) with `questions[]`,
- *   or questions grouped under `categories[]` (`{ name, questions }`), optionally wrapped in
- *   `data`. Question fields follow the admin question model (`questionText`, `questionImageUrl`,
- *   `type`, `options[{ id, optionText, optionImageUrl }]`).
+ * - start (verified live): `{ assessmentId, categories: [{ id, name, order, questions: [{ id,
+ *   questionText, questionImageUrl, type, order, options: [{ id, optionText, optionImageUrl }] }] }] }`.
+ *   The parser stays lenient (flat `questions[]`, `id`, a `data` wrapper).
  * - Apidog shows failures returned as **HTTP 200 with `{ message }`** (e.g. "الطفل غير موجود أو
  *   لا يوجد تقييم أولي متاح."). A body with only a message is therefore treated as a failure for
  *   start, and the documented failure messages are treated as failures for answer/complete.
@@ -35,12 +34,6 @@ const KNOWN_FAILURE_MESSAGES = [
   'لا يمكن إرسال الإجابة.',
   'لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة.',
 ] as const;
-
-const QUESTION_TYPES: readonly AssessmentQuestionType[] = [
-  'SingleChoice',
-  'MultiSelect',
-  'Sequence',
-];
 
 const optionSchema = z.looseObject({
   id: z.string(),
@@ -73,10 +66,6 @@ const startSchema = z.looseObject({
   categories: z.array(categorySchema).nullish(),
 });
 
-function toQuestionType(value: string | null | undefined): AssessmentQuestionType | null {
-  return QUESTION_TYPES.find((type) => type.toLowerCase() === value?.toLowerCase()) ?? null;
-}
-
 function mapQuestion(
   dto: z.infer<typeof questionSchema>,
   sectionTitle: string | null,
@@ -85,7 +74,7 @@ function mapQuestion(
     id: dto.id,
     text: dto.questionText ?? dto.text ?? '',
     imageUrl: dto.questionImageUrl ?? null,
-    type: toQuestionType(dto.type),
+    type: toChoiceQuestionType(dto.type),
     options: (dto.options ?? []).map((option) => ({
       id: option.id,
       text: option.optionText ?? option.text ?? '',
@@ -142,16 +131,19 @@ export async function startAssessment(childId: string): Promise<StartedAssessmen
 
 export interface AnswerInput {
   assessmentId: string;
-  questionId: string;
-  selectedOptionId: string;
+  answer: ChoiceAnswer;
 }
 
-/** `{ questionId, selectedOptionId }` — one option per question (Swagger). */
+/**
+ * `SubmitInitialAssessmentAnswerRequest` — verified live 2026-10-14: `selectedOptionId`
+ * (SingleChoice), `selectedOptionIds` (MultiSelect, exact set), `orderedOptionIds` (Sequence, exact
+ * order); 200 `{ questionId, isCorrect }`. The result is not shown to the child.
+ */
 export async function submitAnswer(input: AnswerInput): Promise<void> {
-  const { data } = await httpClient.post<unknown>(ASSESSMENT_PATHS.answer(input.assessmentId), {
-    questionId: input.questionId,
-    selectedOptionId: input.selectedOptionId,
-  });
+  const { data } = await httpClient.post<unknown>(
+    ASSESSMENT_PATHS.answer(input.assessmentId),
+    input.answer,
+  );
   assertNotKnownFailure(data);
 }
 

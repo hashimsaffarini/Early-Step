@@ -215,3 +215,22 @@
   justify-content: flex-end;
   gap: var(--space-2);
 }
+
+/* Initial-assessment result: one answered question (staff view). */
+.resultQuestion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+}
+
+.resultQuestionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}

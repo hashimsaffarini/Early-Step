@@ -11,16 +11,8 @@ import { Alert } from '@/components/ui/Feedback';
 import { Modal } from '@/components/ui/Modal';
 import { Tabs, type TabItem } from '@/components/ui/Tabs';
 import type { ActivityType } from '@/services/api/activityType';
-import { HTTP_STATUS } from '@/services/http/httpStatus';
 
 import { useAssignActivityMutation, useAvailableActivities } from '../api/trainingPlansQueries';
-
-/**
- * VERIFIED LIVE (2026-10-08): the first activity creates the child's plan once a teacher is
- * assigned; without a teacher the server returns an empty HTTP 500 and creates nothing.
- */
-const FIRST_ACTIVITY_SERVER_ERROR =
-  'تعذّر إضافة النشاط. إذا لم تكن لدى الطفل خطة تدريبية بعد، فأسنِد له معلماً أولاً ثم أضف النشاط.';
 
 import styles from './plans.module.css';
 
@@ -122,15 +114,9 @@ export function AssignActivityDialog({
     >
       <div className={styles.picker}>
         {lastAdded ? <Alert tone="success">{`تمت إضافة «${lastAdded}» إلى الخطة.`}</Alert> : null}
-        <ApiErrorAlert
-          error={assignMutation.error}
-          message={
-            assignMutation.error &&
-            (assignMutation.error.status ?? 0) >= HTTP_STATUS.INTERNAL_SERVER_ERROR
-              ? FIRST_ACTIVITY_SERVER_ERROR
-              : undefined
-          }
-        />
+        {/* Live 2026-10-14: the server explains failures itself, e.g. 400 "يجب تعيين معلم للطفل
+            قبل إنشاء الخطة التدريبية." for a first activity without a teacher. */}
+        <ApiErrorAlert error={assignMutation.error} />
         <Tabs label="نوع النشاط" items={TYPE_TABS} value={type} onChange={setType}>
           <div className={styles.picker}>
             <SearchField

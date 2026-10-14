@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import type { PlanActivity } from '@/services/api/childPlan';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
+import { PlanActivityResultDetails } from './PlanActivityResultDetails';
 import styles from './plans.module.css';
 
 const TYPE_LABEL = { test: 'اختبار', game: 'لعبة' } as const;
@@ -13,10 +14,13 @@ export interface PlanActivityListProps {
   activities: readonly PlanActivity[];
   /** Specialist only: remove an activity (by its catalogue `activityId`). */
   onRemove?: ((activity: PlanActivity) => void) | undefined;
+  /** Specialist only: lets completed activities open the child's answers. */
+  resultChildId?: string | undefined;
 }
 
 function resultLine(activity: PlanActivity): string | null {
   const parts: string[] = [];
+  if (activity.score !== null) parts.push(`النتيجة: ${activity.score.toString()}%`);
   if (activity.correctAnswers !== null) parts.push(`إجابات صحيحة: ${activity.correctAnswers}`);
   if (activity.wrongAnswers !== null) parts.push(`إجابات غير صحيحة: ${activity.wrongAnswers}`);
   if (activity.completedAt) parts.push(`أُكمل في ${formatDisplayDate(activity.completedAt)}`);
@@ -24,7 +28,7 @@ function resultLine(activity: PlanActivity): string | null {
 }
 
 /** Activities of a child's training plan — only the server's fields, status in words + icon. */
-export function PlanActivityList({ activities, onRemove }: PlanActivityListProps) {
+export function PlanActivityList({ activities, onRemove, resultChildId }: PlanActivityListProps) {
   return (
     <ul className={styles.list} aria-label="أنشطة الخطة التدريبية">
       {activities.map((activity) => {
@@ -68,6 +72,13 @@ export function PlanActivityList({ activities, onRemove }: PlanActivityListProps
               >
                 إزالة
               </Button>
+            ) : null}
+            {resultChildId && activity.isCompleted ? (
+              <PlanActivityResultDetails
+                childId={resultChildId}
+                planActivityId={activity.id}
+                title={title}
+              />
             ) : null}
           </li>
         );

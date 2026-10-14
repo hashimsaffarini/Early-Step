@@ -1,23 +1,49 @@
 import { http, HttpResponse, type HttpHandler } from 'msw';
 
-import { mockId } from '../db';
+import { mockId, registerMockTable } from '../db';
 import {
+  isMockAnswerCorrect,
   MOCK_ACTIVITY_QUESTIONS,
   MOCK_ASSESSMENT_CATEGORIES,
   mockAssessmentSessions,
+  type MockAssessmentSession,
   type MockQuestion,
 } from '../fixtures/assessmentQuestions';
 import { findMockChild } from '../fixtures/children';
 import { mockPlanActivities } from '../fixtures/planActivities';
-import { apiUrl, currentUser, forbidden, notFound, requireRole, unauthorized } from '../http';
+import {
+  apiUrl,
+  badRequest,
+  currentUser,
+  forbidden,
+  notFound,
+  requireRole,
+  unauthorized,
+} from '../http';
 
 /*
- * Initial assessment. Mirrors Apidog: failures come back as HTTP 200 with `{ message }`.
- * Start response shape is an assumption (NOT LIVE-VERIFIED): `{ assessmentId, categories }`.
+ * Initial assessment, live shapes (verified 2026-10-14). Apidog documents some failures as HTTP 200
+ * with `{ message }`; those are kept for start/answer/complete.
  */
 const NOT_AVAILABLE = 'الطفل غير موجود أو لا يوجد تقييم أولي متاح.';
 const CANNOT_ANSWER = 'لا يمكن إرسال الإجابة.';
 const CANNOT_COMPLETE = 'لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة.';
+
+interface MockAnswerBody {
+  questionId?: string;
+  selectedOptionId?: string | null;
+  selectedOptionIds?: string[] | null;
+  orderedOptionIds?: string[] | null;
+}
+
+/** The option ids of an answer, in the child's order (one field per question type). */
+function chosenIds(answer: MockAnswerBody): string[] {
+  return (
+    answer.orderedOptionIds ??
+    answer.selectedOptionIds ??
+    (answer.selectedOptionId ? [answer.selectedOptionId] : [])
+  );
+}
 
 function hideAnswers(question: (typeof MOCK_ASSESSMENT_CATEGORIES)[number]['questions'][number]) {
   return {
@@ -41,7 +67,7 @@ export const assessmentsHandlers: HttpHandler[] = [
       id: assessmentId,
       childId: child.id,
       questions: MOCK_ASSESSMENT_CATEGORIES.flatMap((category) => category.questions),
-      answered: new Set(),
+      answers: new Map(),
       completed: false,
     });
     return HttpResponse.json({
@@ -57,56 +83,104 @@ export const assessmentsHandlers: HttpHandler[] = [
     const user = requireRole(request, ['Parent']);
     if (user instanceof Response) return user;
     const session = mockAssessmentSessions.get(String(params.assessmentId));
-    const body = (await request.json()) as { questionId?: string; selectedOptionId?: string };
+    const body = (await request.json()) as MockAnswerBody;
     const question = session?.questions.find((item) => item.id === body.questionId);
-    const optionExists = question?.options.some((option) => option.id === body.selectedOptionId);
-    if (!session || session.completed || !question || !optionExists) {
+    const ids = chosenIds(body);
+    const optionsExist =
+      ids.length > 0 && ids.every((id) => question?.options.some((option) => option.id === id));
+    if (!session || session.completed || !question || !optionsExist) {
       return HttpResponse.json({ message: CANNOT_ANSWER });
     }
-    session.answered.add(question.id);
-    // Live shape (verified 2026-10-07).
-    return HttpResponse.json({ questionId: question.id, isCorrect: true });
+    if (session.answers.has(question.id)) {
+      return badRequest('This question has already been answered.');
+    }
+    const isCorrect = isMockAnswerCorrect(question, ids);
+    session.answers.set(question.id, { optionIds: ids, isCorrect });
+    // Live shape (verified 2026-10-14).
+    return HttpResponse.json({ questionId: question.id, isCorrect });
   }),
 
   http.post(apiUrl('initial-assessment/:assessmentId/complete'), ({ request, params }) => {
     const user = requireRole(request, ['Parent']);
     if (user instanceof Response) return user;
     const session = mockAssessmentSessions.get(String(params.assessmentId));
-    if (!session || session.answered.size < session.questions.length) {
+    if (!session || session.answers.size < session.questions.length) {
       return HttpResponse.json({ message: CANNOT_COMPLETE });
     }
     session.completed = true;
-    // Live (verified 2026-10-07): complete returns the result (and returns it again if repeated).
-    return HttpResponse.json(mockResult(session.childId));
+    // Live (2026-10-14): complete returns the result without counts or question details.
+    return HttpResponse.json(mockResult(session, false));
   }),
 
-  // Live (verified 2026-10-10): same object as `complete`; 404 plain text until completed.
+  // Live (2026-10-14): counts and per-question details filled; 404 plain text until completed.
+  // Live, the Parent (and Super Admin) now get 403 — a regression from 2026-10-10 reported to the
+  // backend; the mock keeps the intended contract (the parent reads their own child's result).
   http.get(apiUrl('initial-assessment/:childId/result'), ({ request, params }) => {
-    const user = currentUser(request);
-    if (!user) return unauthorized();
-    const child = findMockChild(String(params.childId));
-    if (user.role === 'Parent' && child?.parentId !== user.id) return forbidden();
-    const completed = [...mockAssessmentSessions.values()].some(
-      (session) => session.childId === params.childId && session.completed,
+    const user = requireRole(request, ['Parent', 'Specialist', 'Admin']);
+    if (user instanceof Response) return user;
+    if (user.role === 'Parent' && findMockChild(String(params.childId))?.parentId !== user.id) {
+      return forbidden();
+    }
+    const session = [...mockAssessmentSessions.values()].find(
+      (item) => item.childId === params.childId && item.completed,
     );
-    if (!completed) {
+    if (!session) {
       return new HttpResponse('No completed assessment found for this child.', { status: 404 });
     }
-    return HttpResponse.json(mockResult(String(params.childId)));
+    return HttpResponse.json(mockResult(session, true));
   }),
 ];
 
-function mockResult(childId: string) {
+const percent = (part: number, total: number) => (total === 0 ? 0 : (part * 100) / total);
+
+function option(item: MockQuestion['options'][number]) {
+  return { optionId: item.id, optionText: item.optionText, optionImageUrl: item.optionImageUrl };
+}
+
+function correctOptions(question: MockQuestion) {
+  if (question.type === 'Sequence') {
+    return [...question.options]
+      .sort((a, b) => (a.correctOrder ?? 0) - (b.correctOrder ?? 0))
+      .map(option);
+  }
+  return question.options.filter((item) => item.isCorrect).map(option);
+}
+
+function mockResult(session: MockAssessmentSession, withDetails: boolean) {
+  const verdict = (id: string) => session.answers.get(id)?.isCorrect ?? false;
+  const all = session.questions;
   return {
-    childId,
-    childName: findMockChild(childId)?.fullName ?? 'طفل تجريبي',
+    childId: session.childId,
+    childName: findMockChild(session.childId)?.fullName ?? 'طفل تجريبي',
     parentId: 'u-parent',
     parentName: 'محمد أحمد',
-    overallScore: 75,
-    categories: MOCK_ASSESSMENT_CATEGORIES.map((category, index) => ({
-      categoryName: category.name,
-      percentage: index % 2 === 0 ? 100 : 50,
-    })),
+    overallScore: percent(all.filter((question) => verdict(question.id)).length, all.length),
+    categories: MOCK_ASSESSMENT_CATEGORIES.map((category, index) => {
+      const correct = category.questions.filter((question) => verdict(question.id)).length;
+      return {
+        categoryId: `cat-${index.toString()}`,
+        categoryName: category.name,
+        percentage: Math.round(percent(correct, category.questions.length)),
+        totalQuestions: withDetails ? category.questions.length : 0,
+        correctAnswers: withDetails ? correct : 0,
+        questions: withDetails
+          ? category.questions.map((question) => ({
+              questionId: question.id,
+              questionText: question.questionText,
+              questionType: question.type,
+              isCorrect: verdict(question.id),
+              childAnswers: (session.answers.get(question.id)?.optionIds ?? []).map((id) => {
+                const chosen = question.options.find((item) => item.id === id);
+                return chosen
+                  ? option(chosen)
+                  : { optionId: id, optionText: '', optionImageUrl: null };
+              }),
+              correctAnswers: correctOptions(question),
+            }))
+          : [],
+      };
+    }),
+    assessmentId: session.id,
   };
 }
 
@@ -144,25 +218,16 @@ export const planActivityDetailHandler = http.get(
 
 assessmentsHandlers.push(planActivityDetailHandler);
 
-interface MockActivityAnswer {
-  questionId?: string;
-  selectedOptionId?: string | null;
-  selectedOptionIds?: string[] | null;
-  orderedOptionIds?: string[] | null;
-}
-
-/** Correct when the chosen option(s) are exactly the correct ones (verified live 2026-10-10). */
-function isMockAnswerCorrect(question: MockQuestion, answer: MockActivityAnswer): boolean {
-  const chosen =
-    answer.selectedOptionIds ?? (answer.selectedOptionId ? [answer.selectedOptionId] : []);
-  const correct = question.options.filter((option) => option.isCorrect).map((option) => option.id);
-  return chosen.length === correct.length && chosen.every((id) => correct.includes(id));
-}
+/** Saved plan answers (for the result endpoint), keyed by plan activity id. */
+const planAnswers = new Map<string, Map<string, { optionIds: string[]; isCorrect: boolean }>>();
+registerMockTable(() => {
+  planAnswers.clear();
+});
 
 /**
- * `POST TrainingPlan/children/{childId}/activities/{planActivityId}/submit` — live (2026-10-10):
- * 200 `{ message }`; counts saved on the plan row; unanswered questions are not counted; a second
- * submit (or an empty list) is an empty 500.
+ * `POST TrainingPlan/children/{childId}/activities/{planActivityId}/submit` — live (2026-10-14):
+ * 200 `{ message }`; score/counts saved on the plan row; every question must be answered (400),
+ * empty answers → 400, a second submit → 409.
  */
 assessmentsHandlers.push(
   http.post(
@@ -177,19 +242,76 @@ assessmentsHandlers.push(
         (item) => item.childId === params.childId && item.id === params.planActivityId,
       );
       if (!row) return notFound('النشاط غير موجود في الخطة التدريبية.');
-      const body = (await request.json()) as { answers?: MockActivityAnswer[] };
+      const body = (await request.json()) as { answers?: MockAnswerBody[] };
       const answers = body.answers ?? [];
-      if (row.isCompleted || answers.length === 0) return new HttpResponse(null, { status: 500 });
+      if (row.isCompleted) {
+        return HttpResponse.json({ message: 'تم إرسال نتيجة هذا النشاط مسبقًا.' }, { status: 409 });
+      }
+      if (answers.length === 0) return badRequest('يجب إرسال إجابة واحدة على الأقل.');
       const questions = MOCK_ACTIVITY_QUESTIONS[row.activityId] ?? [];
-      const correct = answers.filter((answer) => {
-        const question = questions.find((item) => item.id === answer.questionId);
-        return question ? isMockAnswerCorrect(question, answer) : false;
-      }).length;
+      if (questions.some((question) => !answers.some((a) => a.questionId === question.id))) {
+        return badRequest('All activity questions must be answered.');
+      }
+      const saved = new Map<string, { optionIds: string[]; isCorrect: boolean }>();
+      for (const question of questions) {
+        const answer = answers.find((item) => item.questionId === question.id) ?? {};
+        const optionIds = chosenIds(answer);
+        saved.set(question.id, { optionIds, isCorrect: isMockAnswerCorrect(question, optionIds) });
+      }
+      planAnswers.set(row.id, saved);
+      const correct = [...saved.values()].filter((item) => item.isCorrect).length;
       row.correctAnswers = correct;
-      row.wrongAnswers = answers.length - correct;
+      row.wrongAnswers = questions.length - correct;
+      row.score = Math.round(percent(correct, questions.length));
       row.isCompleted = true;
       row.completedAt = new Date().toISOString();
-      return HttpResponse.json({ message: 'Activity submitted successfully.' });
+      return HttpResponse.json({ message: 'تم إرسال إجابات النشاط بنجاح.' });
+    },
+  ),
+);
+
+/**
+ * `GET TrainingPlan/children/{childId}/activities/{planActivityId}/result` — live (2026-10-14):
+ * Specialist only (Parent, Admin, Super Admin 403); 404 `{ message }` before the submission.
+ */
+assessmentsHandlers.push(
+  http.get(
+    apiUrl('TrainingPlan/children/:childId/activities/:planActivityId/result'),
+    ({ request, params }) => {
+      const user = requireRole(request, ['Specialist']);
+      if (user instanceof Response) return user;
+      const row = mockPlanActivities.find(
+        (item) => item.childId === params.childId && item.id === params.planActivityId,
+      );
+      if (!row) return notFound('النشاط غير موجود في الخطة التدريبية.');
+      if (!row.isCompleted) return notFound('لم يتم إرسال نتيجة هذا النشاط بعد.');
+      const saved = planAnswers.get(row.id);
+      const { id, childId: _childId, ...rest } = row;
+      return HttpResponse.json({
+        trainingPlanActivityId: id,
+        ...rest,
+        // Seeded completed rows have no saved answers: counts only.
+        questions: (saved ? (MOCK_ACTIVITY_QUESTIONS[row.activityId] ?? []) : []).map(
+          (question) => {
+            const answer = saved?.get(question.id);
+            return {
+              questionId: question.id,
+              questionText: question.questionText,
+              questionImageUrl: question.questionImageUrl,
+              type: question.type,
+              selectedOptions: (answer?.optionIds ?? []).map((optionId) => {
+                const chosen = question.options.find((item) => item.id === optionId);
+                return {
+                  id: optionId,
+                  optionText: chosen?.optionText ?? '',
+                  optionImageUrl: chosen?.optionImageUrl ?? null,
+                };
+              }),
+              isCorrect: answer?.isCorrect ?? false,
+            };
+          },
+        ),
+      });
     },
   ),
 );

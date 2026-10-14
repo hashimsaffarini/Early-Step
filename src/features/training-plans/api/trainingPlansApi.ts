@@ -24,8 +24,10 @@ export const TRAINING_PLAN_PATHS = {
 export interface SpecialistPlan {
   /** False when the backend answers 404 "لا توجد خطة تدريبية لهذا الطفل." (no plan yet). */
   hasPlan: boolean;
-  /** Plan status as sent by the backend (live value: `Active`). */
+  /** Plan status as sent by the backend (live values: `Active`, `Completed`). */
   status: string | null;
+  /** Server-computed % of completed activities. */
+  progress: number | null;
   teacherId: string | null;
   teacherName: string | null;
   activities: PlanActivity[];
@@ -41,12 +43,15 @@ const planSchema = z.looseObject({
   teacherId: z.string().nullish(),
   teacherName: z.string().nullish(),
   status: z.string().nullish(),
+  /** % of completed activities (verified 2026-10-14; status becomes `Completed` at 100). */
+  progress: z.number().nullish(),
   activities: z.array(planActivityDtoSchema),
 });
 
 const NO_PLAN: SpecialistPlan = {
   hasPlan: false,
   status: null,
+  progress: null,
   teacherId: null,
   teacherName: null,
   activities: [],
@@ -57,6 +62,7 @@ export function parseSpecialistPlan(data: unknown): SpecialistPlan {
   return {
     hasPlan: true,
     status: plan.status ?? null,
+    progress: plan.progress ?? null,
     teacherId: plan.teacherId ?? null,
     teacherName: plan.teacherName ?? null,
     activities: plan.activities.map(mapPlanActivity),
@@ -163,4 +169,70 @@ export async function fetchTeachers(): Promise<TeacherOption[]> {
 /** `POST specialist/assign-teacher { teacherId, childIds }` (Swagger). Response not verified (write). */
 export async function assignTeacher(teacherId: string, childIds: readonly string[]): Promise<void> {
   await httpClient.post('specialist/assign-teacher', { teacherId, childIds });
+}
+
+/**
+ * `GET TrainingPlan/children/{childId}/activities/{planActivityId}/result` — VERIFIED LIVE
+ * 2026-10-14: readable by the Specialist only (Parent, Admin, Super Admin 403); 404 `{ message }`
+ * before the child submits. Shape: the plan row (`score`, `correctAnswers`, `wrongAnswers`,
+ * `completedAt`, …) plus `questions: [{ questionId, questionText, questionImageUrl, type,
+ * selectedOptions: [{ id, optionText, optionImageUrl }], isCorrect }]` (no correct answers).
+ */
+const resultQuestionSchema = z.looseObject({
+  questionId: z.string(),
+  questionText: z.string().nullish(),
+  questionImageUrl: z.string().nullish(),
+  type: z.string().nullish(),
+  selectedOptions: z
+    .array(
+      z.looseObject({
+        id: z.string(),
+        optionText: z.string().nullish(),
+        optionImageUrl: z.string().nullish(),
+      }),
+    )
+    .nullish(),
+  isCorrect: z.boolean().nullish(),
+});
+
+const activityResultSchema = planActivityDtoSchema.extend({
+  questions: z.array(resultQuestionSchema).nullish(),
+});
+
+export interface PlanActivityResultQuestion {
+  id: string;
+  text: string;
+  /** Backend question type as sent. */
+  type: string | null;
+  /** The child's choices, in the child's order. */
+  selected: { id: string; text: string }[];
+  isCorrect: boolean | null;
+}
+
+export interface PlanActivityResult {
+  activity: PlanActivity;
+  questions: PlanActivityResultQuestion[];
+}
+
+export async function fetchPlanActivityResult(
+  childId: string,
+  planActivityId: string,
+): Promise<PlanActivityResult> {
+  const { data } = await httpClient.get<unknown>(
+    `TrainingPlan/children/${encodeURIComponent(childId)}/activities/${encodeURIComponent(planActivityId)}/result`,
+  );
+  const dto = activityResultSchema.parse(data);
+  return {
+    activity: mapPlanActivity(dto),
+    questions: (dto.questions ?? []).map((question) => ({
+      id: question.questionId,
+      text: question.questionText?.trim() ?? '',
+      type: question.type ?? null,
+      selected: (question.selectedOptions ?? []).map((option) => ({
+        id: option.id,
+        text: option.optionText?.trim() ?? '',
+      })),
+      isCorrect: question.isCorrect ?? null,
+    })),
+  };
 }

@@ -160,6 +160,58 @@ describe('ChildPlansPage — specialist', () => {
   });
 });
 
+describe('ChildPlansPage — results (specialist)', () => {
+  it("shows the score, the plan's progress and, on demand, the child's answers", async () => {
+    let resultCalls = 0;
+    server.use(
+      http.get(
+        apiUrl('TrainingPlan/children/:childId/activities/:planActivityId/result'),
+        ({ params }) => {
+          resultCalls += 1;
+          return HttpResponse.json({
+            trainingPlanActivityId: params.planActivityId,
+            activityId: 'a0000000-0000-4000-8000-000000000001',
+            title: 'اختبار الحروف',
+            score: 67,
+            correctAnswers: 2,
+            wrongAnswers: 1,
+            isCompleted: true,
+            completedAt: '2026-10-14T09:00:00Z',
+            questions: [
+              {
+                questionId: 'q1',
+                questionText: 'رتّب الحروف',
+                type: 'Sequence',
+                selectedOptions: [
+                  { id: 'o2', optionText: 'ب' },
+                  { id: 'o1', optionText: 'أ' },
+                ],
+                isCorrect: false,
+              },
+            ],
+          });
+        },
+      ),
+    );
+    renderPlans('Specialist', YOUSEF);
+
+    const list = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    expect(within(list).getByText(/النتيجة: 75%/)).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'الأنشطة المنجزة' })).toHaveAttribute(
+      'aria-valuenow',
+      '50',
+    );
+    // Loaded only when opened, and only for completed activities.
+    expect(within(list).getAllByText('عرض إجابات الطفل')).toHaveLength(1);
+    expect(resultCalls).toBe(0);
+    await userEvent.click(within(list).getByText('عرض إجابات الطفل'));
+
+    const answers = await screen.findByRole('list', { name: 'إجابات «اختبار الحروف»' });
+    expect(within(answers).getByText('إجابة غير صحيحة')).toBeInTheDocument();
+    expect(within(answers).getByText('ترتيب · إجابة الطفل: ب ← أ')).toBeInTheDocument();
+  });
+});
+
 describe('ChildPlansPage — first activity (live behaviour)', () => {
   async function addFirstActivity() {
     await userEvent.click(await screen.findByRole('button', { name: 'إضافة نشاط' }));
@@ -178,18 +230,22 @@ describe('ChildPlansPage — first activity (live behaviour)', () => {
     expect(await within(dialog).findByText(/إلى الخطة\.$/)).toBeInTheDocument();
   });
 
-  it('tells the specialist to assign a teacher first when the server answers 500', async () => {
+  it("shows the server's message when the child has no teacher yet (live 400)", async () => {
     server.use(
-      http.post(
-        apiUrl('TrainingPlan/specialist/children/:childId/activities'),
-        () => new HttpResponse(null, { status: 500 }),
+      http.post(apiUrl('TrainingPlan/specialist/children/:childId/activities'), () =>
+        HttpResponse.json(
+          { message: 'يجب تعيين معلم للطفل قبل إنشاء الخطة التدريبية.' },
+          { status: 400 },
+        ),
       ),
     );
     renderPlans('Specialist', NOUR);
 
     const dialog = await addFirstActivity();
 
-    expect(await within(dialog).findByText(/فأسنِد له معلماً أولاً/)).toBeInTheDocument();
+    expect(
+      await within(dialog).findByText('يجب تعيين معلم للطفل قبل إنشاء الخطة التدريبية.'),
+    ).toBeInTheDocument();
   });
 });
 

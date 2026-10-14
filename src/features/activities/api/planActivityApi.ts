@@ -2,6 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import {
+  toChoiceQuestionType,
+  type ChoiceAnswer,
+  type ChoiceQuestionType,
+} from '@/components/players';
+import {
   mapPlanActivity,
   planActivityDtoSchema,
   type PlanActivity,
@@ -37,10 +42,6 @@ const detailSchema = planActivityDtoSchema.extend({
   questions: z.array(questionSchema).nullish(),
 });
 
-/** Question types the backend accepts (`QuestionType`; Matching was removed). */
-export const PLAN_QUESTION_TYPES = ['SingleChoice', 'MultiSelect', 'Sequence'] as const;
-export type PlanQuestionType = (typeof PLAN_QUESTION_TYPES)[number];
-
 export interface PlanQuestionOption {
   id: string;
   text: string;
@@ -52,7 +53,7 @@ export interface PlanQuestion {
   text: string;
   imageUrl: string | null;
   /** null for unknown types — shown as not playable. */
-  type: PlanQuestionType | null;
+  type: ChoiceQuestionType | null;
   options: readonly PlanQuestionOption[];
 }
 
@@ -62,10 +63,6 @@ export interface PlanActivityDetail {
 }
 
 const NOT_IN_PLAN = 'النشاط غير موجود في الخطة التدريبية.';
-
-function normalizeType(value: string | null | undefined): PlanQuestionType | null {
-  return PLAN_QUESTION_TYPES.find((type) => type.toLowerCase() === value?.toLowerCase()) ?? null;
-}
 
 export function parsePlanActivityDetail(data: unknown): PlanActivityDetail {
   const parsed = detailSchema.safeParse(data);
@@ -82,7 +79,7 @@ export function parsePlanActivityDetail(data: unknown): PlanActivityDetail {
       id: question.questionId ?? question.id ?? question.planQuestionId ?? '',
       text: question.questionText ?? '',
       imageUrl: question.questionImageUrl ?? null,
-      type: normalizeType(question.type),
+      type: toChoiceQuestionType(question.type),
       options: (question.options ?? []).map((option) => ({
         id: option.id,
         text: option.optionText ?? '',
@@ -110,20 +107,15 @@ export function usePlanActivityDetail(childId: string, activityId: string) {
   });
 }
 
-/**
- * One answer per question (`ActivityAnswerRequest`): `selectedOptionId` (SingleChoice),
- * `selectedOptionIds` (MultiSelect), `orderedOptionIds` (Sequence, in the child's order).
- */
-export type PlanAnswer =
-  | { questionId: string; selectedOptionId: string }
-  | { questionId: string; selectedOptionIds: string[] }
-  | { questionId: string; orderedOptionIds: string[] };
+/** One answer per question (`ActivityAnswerRequest`), see `ChoiceAnswer`. */
+export type PlanAnswer = ChoiceAnswer;
 
 /**
  * `POST TrainingPlan/children/{childId}/activities/{planActivityId}/submit` `{ answers }` — verified
- * live 2026-10-10 (Parent): 200 `{ message }`; the plan then shows `correctAnswers`, `wrongAnswers`,
- * `isCompleted`, `completedAt` (unanswered questions are not counted). ONE attempt: a second
- * submit returns an empty 500.
+ * live 2026-10-14 (Parent only): 200 `{ message }`; the plan then shows `score` (rounded % correct),
+ * `correctAnswers`, `wrongAnswers`, `isCompleted`, `completedAt`. Every question must be answered
+ * (400 "All activity questions must be answered."), empty answers → 400, and there is ONE attempt
+ * (second submit → 409 "تم إرسال نتيجة هذا النشاط مسبقًا.").
  */
 export async function submitPlanActivity(
   childId: string,

@@ -34,7 +34,7 @@ const INITIAL: readonly MockPlanActivityRow[] = [
     type: 'اختبارات',
     order: 1,
     assignedAt: '2026-09-26T09:00:00Z',
-    score: null,
+    score: 75,
     correctAnswers: 3,
     wrongAnswers: 1,
     isCompleted: true,

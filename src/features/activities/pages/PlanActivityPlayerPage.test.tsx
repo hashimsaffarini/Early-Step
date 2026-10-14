@@ -152,6 +152,39 @@ describe('PlanActivityPlayerPage', () => {
     LONG_FLOW,
   );
 
+  it("shows the server's message when the activity was already submitted (live 409)", async () => {
+    server.use(
+      http.get(apiUrl('TrainingPlan/children/:childId/activities/:activityId'), () =>
+        HttpResponse.json({ ...liveActivity(), questions: [liveActivity().questions[0]] }),
+      ),
+      http.post(apiUrl('TrainingPlan/children/:childId/activities/:planActivityId/submit'), () =>
+        HttpResponse.json({ message: 'تم إرسال نتيجة هذا النشاط مسبقًا.' }, { status: 409 }),
+      ),
+    );
+    renderPlayer('a-1');
+
+    await userEvent.click(await screen.findByRole('button', { name: /^بطة/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'إنهاء النشاط وحفظ النتيجة' }));
+
+    expect(await screen.findByText('تم إرسال نتيجة هذا النشاط مسبقًا.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'إعادة محاولة الحفظ' })).not.toBeInTheDocument();
+  });
+
+  it('does not start an activity the server could never save (a question without options)', async () => {
+    server.use(
+      http.get(apiUrl('TrainingPlan/children/:childId/activities/:activityId'), () =>
+        HttpResponse.json({
+          ...liveActivity(),
+          questions: [liveActivity().questions[0], { ...liveActivity().questions[1], options: [] }],
+        }),
+      ),
+    );
+    renderPlayer('a-1');
+
+    expect(await screen.findByText('لا يمكن تشغيل هذا النشاط حالياً')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'التالي' })).not.toBeInTheDocument();
+  });
+
   it('shows a completed activity instead of a second attempt (the server allows one)', async () => {
     renderPlayer(COMPLETED_WITH_QUESTIONS);
 

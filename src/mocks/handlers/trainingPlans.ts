@@ -131,6 +131,8 @@ export const trainingPlansHandlers: HttpHandler[] = [
     const rows = rowsFor(child.id, null);
     // Live: a child without a plan answers 404 with this message.
     if (rows.length === 0) return notFound('لا توجد خطة تدريبية لهذا الطفل.');
+    // Live (2026-10-14): `progress` = % of completed activities; status `Completed` at 100.
+    const progress = Math.round((rows.filter((row) => row.isCompleted).length * 100) / rows.length);
     return HttpResponse.json({
       id: `plan-${child.id}`,
       childId: child.id,
@@ -139,7 +141,8 @@ export const trainingPlansHandlers: HttpHandler[] = [
       specialistName: child.specialistName,
       teacherId: child.teacherId,
       teacherName: child.teacherName,
-      status: 'Active',
+      status: progress === 100 ? 'Completed' : 'Active',
+      progress,
       activities: rows.map(specialistItem),
     });
   }),
@@ -152,13 +155,15 @@ export const trainingPlansHandlers: HttpHandler[] = [
       const body = (await request.json()) as { activityId?: string };
       const activity = MOCK_CATALOG_ACTIVITIES.find((item) => item.id === body.activityId);
       if (!activity) return notFound('النشاط غير موجود.');
-      // Live (verified 2026-10-08): the first activity creates the plan, but only once a teacher
-      // is assigned — without a teacher the server answers an empty 500 and creates nothing.
+      // Live (2026-10-14): the first activity creates the plan, but only once a teacher is
+      // assigned; a duplicate is a 400 with a generic message.
       if (rowsFor(child.id, null).length === 0 && !child.teacherId) {
-        return new HttpResponse(null, { status: 500 });
+        return badRequest('يجب تعيين معلم للطفل قبل إنشاء الخطة التدريبية.');
       }
       if (rowsFor(child.id, null).some((row) => row.activityId === activity.id)) {
-        return badRequest('النشاط موجود بالفعل في الخطة التدريبية.');
+        return badRequest(
+          'تعذر إضافة النشاط. تأكد أن الطفل تابع لك، وأن النشاط موجود وغير محذوف، وأنه غير مضاف مسبقًا.',
+        );
       }
       const row: MockPlanActivityRow = {
         id: mockId(),
@@ -193,6 +198,9 @@ export const trainingPlansHandlers: HttpHandler[] = [
         (row) => row.childId === child.id && row.activityId === params.activityId,
       );
       if (index === -1) return notFound('النشاط غير موجود في الخطة التدريبية.');
+      // Live (2026-10-14): removing an activity that already has a submitted result fails with
+      // an empty 500 (reported to the backend).
+      if (mockPlanActivities[index]?.isCompleted) return new HttpResponse(null, { status: 500 });
       mockPlanActivities.splice(index, 1);
       return HttpResponse.json({ message: 'تمت إزالة النشاط من الخطة التدريبية.' });
     },

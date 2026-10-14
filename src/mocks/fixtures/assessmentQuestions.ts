@@ -1,7 +1,7 @@
 /**
  * TEMPORARY MOCK DATA — initial-assessment questions and plan-activity questions served by the
- * MSW handlers (fictional, child-friendly). Shapes follow the admin question model (Apidog);
- * NOT LIVE-VERIFIED. Correct answers exist only server-side; the assessment UI never shows them.
+ * MSW handlers (fictional, child-friendly). Shapes follow the admin question model (verified live).
+ * Correct answers exist only server-side; the child never sees them.
  */
 import { registerMockTable } from '../db';
 
@@ -10,13 +10,15 @@ export interface MockOption {
   optionText: string;
   optionImageUrl: string | null;
   isCorrect: boolean;
+  /** Sequence position (1-based); null for other types. */
+  correctOrder: number | null;
 }
 
 export interface MockQuestion {
   id: string;
   questionText: string;
   questionImageUrl: string | null;
-  type: 'SingleChoice' | 'MultiSelect' | 'Sequence' | 'Matching';
+  type: 'SingleChoice' | 'MultiSelect' | 'Sequence';
   options: MockOption[];
 }
 
@@ -36,11 +38,45 @@ function single(
       optionText,
       optionImageUrl: null,
       isCorrect: index === correct,
+      correctOrder: null,
     })),
   };
 }
 
-/** Initial assessment: two categories (sections) of single-choice questions. */
+function multi(id: string, text: string, options: readonly [string, boolean][]): MockQuestion {
+  return {
+    id,
+    questionText: text,
+    questionImageUrl: null,
+    type: 'MultiSelect',
+    options: options.map(([optionText, isCorrect], index) => ({
+      id: `${id}-o${(index + 1).toString()}`,
+      optionText,
+      optionImageUrl: null,
+      isCorrect,
+      correctOrder: null,
+    })),
+  };
+}
+
+/** Options listed in display order; `order` gives each one's correct position. */
+function sequence(id: string, text: string, options: readonly [string, number][]): MockQuestion {
+  return {
+    id,
+    questionText: text,
+    questionImageUrl: null,
+    type: 'Sequence',
+    options: options.map(([optionText, order], index) => ({
+      id: `${id}-o${(index + 1).toString()}`,
+      optionText,
+      optionImageUrl: null,
+      isCorrect: false,
+      correctOrder: order,
+    })),
+  };
+}
+
+/** Initial assessment: two categories (sections) with every question type. */
 export const MOCK_ASSESSMENT_CATEGORIES: readonly { name: string; questions: MockQuestion[] }[] = [
   {
     name: 'القراءة',
@@ -53,6 +89,16 @@ export const MOCK_ASSESSMENT_CATEGORIES: readonly { name: string; questions: Moc
     name: 'الرياضيات',
     questions: [
       single('q-math-1', 'كم تفاحة إذا كان لديك تفاحتان وأضفت واحدة؟', ['2', '3', '4', '5'], 1),
+      multi('q-math-2', 'اختر الأعداد الزوجية', [
+        ['2', true],
+        ['3', false],
+        ['4', true],
+      ]),
+      sequence('q-math-3', 'رتّب الأعداد من الأصغر إلى الأكبر', [
+        ['5', 3],
+        ['1', 1],
+        ['3', 2],
+      ]),
     ],
   },
 ];
@@ -69,8 +115,23 @@ export interface MockAssessmentSession {
   id: string;
   childId: string;
   questions: MockQuestion[];
-  answered: Set<string>;
+  /** questionId → the option ids the child chose (in order) and the server's verdict. */
+  answers: Map<string, { optionIds: string[]; isCorrect: boolean }>;
   completed: boolean;
+}
+
+/** Scoring verified live 2026-10-14 (initial assessment and plan submit). */
+export function isMockAnswerCorrect(question: MockQuestion, optionIds: readonly string[]): boolean {
+  if (question.type === 'Sequence') {
+    const expected = [...question.options]
+      .sort((a, b) => (a.correctOrder ?? 0) - (b.correctOrder ?? 0))
+      .map((option) => option.id);
+    return (
+      expected.length === optionIds.length && expected.every((id, index) => optionIds[index] === id)
+    );
+  }
+  const correct = question.options.filter((option) => option.isCorrect).map((option) => option.id);
+  return correct.length === optionIds.length && optionIds.every((id) => correct.includes(id));
 }
 
 export const mockAssessmentSessions = new Map<string, MockAssessmentSession>();
