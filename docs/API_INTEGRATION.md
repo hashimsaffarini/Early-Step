@@ -61,10 +61,11 @@ Components only call feature hooks. They never import `httpClient` or Axios.
 
 - `AuthHttpBridge` (`app/providers`) registers `registerHttpAuthHooks({ getAccessToken, onUnauthorized })`
   at startup, keeping `services/http` independent of features.
-- Session = `services/session` (Zustand): token + user (name, role, id/email if present) +
-  expiry; sessionStorage, or localStorage with "تذكّرني". Details and limits: `SECURITY.md`.
-- No refresh token, `me` or logout endpoint exists: on expiry/401 the user signs in again;
-  logout is local (drop token, clear cache).
+- Session = `services/session` (Zustand): token + expiry stored (sessionStorage, or localStorage
+  with "تذكّرني"); the user lives in memory only and comes from `GET Auth/me` (login and reload).
+  Details and limits: `SECURITY.md`.
+- No refresh token or logout endpoint exists: on expiry/401 the user signs in again; logout is
+  local (drop token, clear cache).
 
 ## Error normalization
 
@@ -121,30 +122,38 @@ export const childrenKeys = {
 - Branded or aliased ID types (e.g. `type ChildId = string`) once ID formats are known.
 - Dates: keep as ISO strings at the boundary; format for display with `Intl` in `ar` locale.
 
-## Contract notes (re-verified 2026-10-10)
+## Contract notes (re-verified 2026-10-14)
 
-- **Initial assessment:** every question type is answered with one
-  `{ questionId, selectedOptionId }` (`features/assessments/state/assessmentRun.ts`). The result
-  (`AssessmentResult`, `services/api/assessmentResult.ts`) comes from `complete` and is readable
-  later with `GET initial-assessment/{childId}/result` (`fetchAssessmentResult`, query key
-  `assessments.result`, hook `useAssessmentResult`; 404 → `null`). `complete` invalidates
-  `assessments.all`.
-- **Plan activities:** `submitPlanActivity(childId, planActivityId, answers)` /
-  `useSubmitPlanActivity` (`features/activities/api/planActivityApi.ts`) posts
-  `{ answers: [{ questionId, selectedOptionId | selectedOptionIds | orderedOptionIds }] }` once and
-  invalidates `trainingPlans.all`; the plan's counts then update. `GET …/{planActivityId}/result`
-  is not wired (403 for every available role).
-- **Reports:** one report per child — `fetchChildReport(childId): ChildReport | null`
-  (`services/api/childReports.ts`, query key `reports.byChild`).
-- **Training plans:** the first `POST …/activities` creates the plan once a teacher is assigned;
-  an empty 500 is shown as "assign a teacher first".
-- **Registration:** no `Role` is sent (removed from the contract; public registration = Parent).
-- **Assessment composition:** `GET initial-assessment/categories` is Specialist-only since
-  2026-10-10; the admin page shows "status unknown" on 403.
+- **Session:** `login()` posts `Auth/login` for the token, then `GET Auth/me` with that token
+  (explicit header — the request interceptor never overrides one) for `{ id, fullName, email,
+roles }` (`features/auth/api/currentUser.ts`, role normalized, unknown → refused). Storage holds
+  only `{ accessToken, expiresAt }`; after a reload the token is `pending` and the guards render
+  `SessionRestore` (`GET Auth/me`, query key `auth.me`) until the user is known; 401 → sign out +
+  `queryClient.clear()`; other errors → retry.
+- **Answers:** both players use `components/players/choiceAnswer.ts` — SingleChoice
+  `selectedOptionId`, MultiSelect `selectedOptionIds`, Sequence `orderedOptionIds`. The assessment
+  sends one per question (`submitAnswer({ assessmentId, answer })`); the plan sends all at once
+  (`submitPlanActivity`, every question required; 400 / 409 shown as sent).
+- **Assessment result:** `AssessmentResult` (`services/api/assessmentResult.ts`) — `assessmentId`,
+  per category `totalQuestions` / `correctAnswers` (null when 0, as `complete` sends) and
+  `questions` (type, verdict, child's and correct answers). Details render only when the server
+  sends them (staff).
+- **Plans:** `PlanActivity.score`; `SpecialistPlan.progress`; `fetchPlanActivityResult`
+  (`training-plans`, query key `trainingPlans.activityResult`, loaded when "عرض إجابات الطفل" opens;
+  Specialist only). The first activity without a teacher shows the server's 400 message.
+- **Specialists:** `fetchSpecialists()` (`GET Admin/specialists`, key `users.specialists`).
+- **Teacher feedback:** `fetchChildFeedbacks(childId)` (`services/api/teacherFeedback.ts`, key
+  `notes.byChild`, hook `useChildFeedbacks`) — teacher notes page and the specialist's
+  "ملاحظات المعلم" tab; note writes invalidate the child's list. Item fields read leniently
+  (unverified: lists were empty).
+- **Super Admin:** `createStaffUser` (Teacher / Specialist wire roles), `deactivateUser`;
+  `PUT SuperAdmin/users/{id}` not used (no `isActive` in the list).
+- **Reports:** one report per child — `fetchChildReport(childId)`; the backend answers 409 to a
+  second one.
+- **Registration:** no `Role` is sent (public registration = Parent).
 - **Chat:** REST + polling; no SignalR hub is deployed.
 
 ## Unknowns (TBD)
 
-Deployed SignalR hub path/events · `Teacher/feedbacks` and plan-result response shapes (no Teacher
-account / 403) · canonical forgot-password route · API versioning. Current backend list:
-`BACKEND_REQUESTS.md`.
+Deployed SignalR hub path/events · teacher-feedback item fields · API versioning. Current backend
+list: `BACKEND_REQUESTS.md`.

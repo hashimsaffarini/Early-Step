@@ -149,3 +149,20 @@ Current list: `BACKEND_REQUESTS.md`. Earlier "missing" items above are supersede
   duplicate reports accepted; SignalR not deployed; Teacher account.
 - **Product note:** the written flow has the specialist reading teacher feedback, but
   `Teacher/feedbacks` stays Teacher-only — kept as a question, not assumed.
+
+### Re-verification after the third backend update (2026-10-14)
+
+- **Resolved:** `GET Auth/me` (session hydration on login and reload); `GET Admin/specialists`;
+  Admin reads `initial-assessment/categories` again; MultiSelect / Sequence in the initial
+  assessment (arrays accepted, scored by exact set / exact order); `assessmentId` + per-question
+  details in the result; plan result endpoint (Specialist), `score`, plan `progress`; clear 400 /
+  409 on plan submit; first activity without teacher → 400 message; duplicate report → 409;
+  Specialist reads teacher feedback (`Teacher/children/{childId}/feedbacks`); SuperAdmin staff
+  create / deactivate; one forgot-password route.
+- **New / still open:** Parent 403 on the saved assessment result (regression); a child with a
+  submitted plan activity cannot be deleted (and the activity cannot be removed); staff created via
+  `SuperAdmin/users` cannot log in; no `isActive` in the user list; unassigned specialists can read
+  any assessment result; `progressPercentage` still 0; no `completedAt`; SignalR not deployed;
+  no usable Teacher account.
+- **Product note resolved:** the written flow (specialist monitors the teacher's feedback) now
+  matches the backend — the specialist reads it in the child profile.

@@ -1,81 +1,78 @@
 # Backend requests
 
-For the backend developer — **only what is still needed**, re-verified live on 2026-10-10 against
+For the backend developer — **only what is still open**, re-verified live on 2026-10-14 against
 `https://earlystep22.runasp.net/api/` after your update.
 
-**Confirmed working since the last list (thank you):** `GET initial-assessment/{childId}/result`
-(same object as `complete`, readable by Parent, Specialist, Admin, Super Admin);
-`POST TrainingPlan/children/{childId}/activities/{planActivityId}/submit` (all three types,
-`selectedOptionIds` / `orderedOptionIds`, correct scoring, counts saved on the plan); the two
-option-less assessment questions are gone (every child can complete the assessment again);
-`GET Chats/users` works again and returns only related users; `Auth/register` no longer takes a
-`Role`. These are integrated in the frontend.
+**Confirmed working since the last list (thank you):** `GET Auth/me` (now the app's only source
+of the signed-in user, also after a reload); `GET Admin/specialists` (the assignment picker uses
+it); Admin can read `initial-assessment/categories` again; the initial assessment accepts
+`selectedOptionIds` / `orderedOptionIds` and scores MultiSelect (exact set) and Sequence (exact
+order) correctly; `assessmentId` and per-question details in the assessment result; the plan
+activity result endpoint (Specialist), `score` and plan `progress`; clear errors on plan submit
+(empty → 400, partial → 400, second attempt → 409); first plan activity without a teacher → 400
+with a message; a second report for a child → 409; the Specialist can read
+`Teacher/children/{childId}/feedbacks`; `SuperAdmin/users` create / deactivate; one forgot-password
+route. All of these are integrated in the frontend.
 
 Production hardening (CORS, Swagger exposure, refresh tokens, notifications) is in `SECURITY.md`
 and is not part of this list.
 
 ## Please fix
 
-### 1. Admin cannot read the initial-assessment composition (regression)
+### 1. The parent cannot read their child's saved assessment result (regression)
 
-- **Now:** `GET initial-assessment/categories` → **403 for Admin** (and Super Admin, Parent); only
-  the Specialist gets 200. On 2026-10-08 the Admin got 200. The fallback flag
-  `isInInitialAssessment` in `Admin/categoriesActivity` is `false` for every category.
-- **Impact:** the admin assessment page cannot show which categories are in the assessment (the
-  frontend now shows "status unknown"; add/remove still work).
-- **Fix:** allow Admin on `GET initial-assessment/categories` (and/or return the real
-  `isInInitialAssessment` flag).
+- **Now:** `GET initial-assessment/{childId}/result` → **403 for the Parent** (own children, every
+  child tried) and for Super Admin; Specialist and Admin get 200. On 2026-10-10 the Parent got 200.
+- **Impact:** after a reload the parent no longer sees the result (child profile "التقييمات" tab
+  and overview card show an error). The screen right after `complete` still shows it.
+- **Fix:** allow the Parent for their own children (as before).
 
-### 2. Initial assessment: MultiSelect and Sequence answers
+### 2. A child with a submitted plan activity cannot be deleted
 
-- **Now:** `POST initial-assessment/{assessmentId}/answer` still takes one `selectedOptionId`
-  (Swagger `SubmitInitialAssessmentAnswerRequest`); `selectedOptionIds` / `orderedOptionIds` are
-  ignored (→ 404 "option not found"). A MultiSelect is correct when the one option is correct;
-  **a Sequence is always scored incorrect** (choosing the `CorrectOrder` 1 option → `isCorrect: false`).
-- **Fix:** accept the same fields as the plan `submit` (`selectedOptionIds`, `orderedOptionIds`) and
-  score them the same way. The frontend player already builds these answers for plan activities
-  and will switch the assessment as soon as the endpoint accepts them.
+- **Now:** after `POST …/activities/{planActivityId}/submit`, `DELETE TrainingPlan/specialist/
+children/{childId}/activities/{activityId}` → empty **500**, and `DELETE Parent/{childId}` →
+  empty **500** (a child with only a completed assessment deletes fine). Probably the new saved
+  answers have no cascade delete.
+- **Impact:** parents cannot delete such a child; specialists cannot remove a played activity. Our
+  test child "E2E Test Child 6acf4742" is stuck (see Accounts / data).
+- **Fix:** cascade (or clean up) the saved answers when the plan activity / child is deleted, or
+  return a clear 400 if removing a played activity is not allowed.
 
-### 3. Plan activity result: who can read it?
+### 3. Accounts created with `POST SuperAdmin/users` cannot log in
 
-- **Now:** `GET TrainingPlan/children/{childId}/activities/{planActivityId}/result` → **403 for
-  Parent, Specialist, Admin and Super Admin**, before and after a submit (401 anonymous). We could
-  not test a Teacher (no account).
-- **Needed:** the parent (child's result screen) and the specialist (progress) read it. Until then
-  the frontend shows the counts from the specialist plan (`correctAnswers`, `wrongAnswers`,
-  `isCompleted`, `completedAt`).
-
-### 4. Plan activity submit: clear errors
-
-| Case                                  | Now         | Suggested                                       |
-| ------------------------------------- | ----------- | ----------------------------------------------- |
-| Second submit of a completed activity | empty `500` | `400 { message: "تم إرسال هذا النشاط مسبقاً" }` |
-| `answers: []`                         | empty `500` | `400 { message }`                               |
-
-Also: after a completed activity the plan's `score` stays `null` and `specialist/children`
-`progressPercentage` stays `0` — please confirm whether they should change.
+- **Now:** a teacher created with `{ fullName, email, password, role: "معلم/ة" }` → 201, but
+  `POST Auth/login` with its password → empty **500** (a wrong password for that email also gives
+  500; an unknown email gives 401). The account has `emailConfirmed: false`.
+- **Fix:** let staff created by the Super Admin log in (confirm the email on creation, or skip the
+  confirmation check for them), or tell us the intended activation step.
 
 ## Small fixes
 
-| #   | Now                                                                                                                                           | Suggested                                                            |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| 5   | First plan activity for a child **without a teacher** → empty `500`, nothing created                                                          | `400 { message: "أسند معلماً للطفل أولاً" }`                         |
-| 6   | `specialist/CreateReport` accepts a **second** report for the same child; `Reports/child` returned the newest on 10-08 and the first on 10-10 | `409 { message }` (one report per child), or update the existing one |
-| 7   | Assessment result has no `completedAt` / `assessmentId`                                                                                       | Add both (the profile would show the completion date)                |
+| #   | Now                                                                                                                                                                                                      | Suggested                                                               |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 4   | `GET SuperAdmin/users` has no `isActive`; a deactivated user looks like an active one, and `PUT SuperAdmin/users/{id}` needs `isActive` (so the app cannot offer editing without risking a deactivation) | Add `isActive` to the list items                                        |
+| 5   | `GET initial-assessment/{childId}/result` is readable by a specialist who is **not** assigned to the child                                                                                               | Limit it to the child's parent, assigned specialist / teacher and Admin |
+| 6   | `complete` returns `totalQuestions: 0`, `correctAnswers: 0`, `questions: []` per category (the GET fills them)                                                                                           | Return the same object as the GET                                       |
+| 7   | `specialist/children` → `progressPercentage` stays 0 although the plan's `progress` is 50 / 100                                                                                                          | Use the plan progress                                                   |
+| 8   | Assessment result has no completion date                                                                                                                                                                 | Add `completedAt` (optional improvement)                                |
+| 9   | `Admin/categoriesActivity` → `isInInitialAssessment` is false for categories that are in the assessment                                                                                                  | Fill it (the app uses `initial-assessment/categories` meanwhile)        |
 
 ## Questions
 
-8. **Teacher feedback readers:** `GET Teacher/feedbacks` is Teacher-only (403 for everyone else).
-   Should the specialist read a child's feedback? If yes, which endpoint?
-9. **SignalR:** nothing new is exposed — `POST /chatHub/negotiate` (and `/api/chatHub/…`) is 404
-   on the deployed server and Swagger lists no hub. Please share the deployed hub path, how the
-   JWT is passed, and the event names; until then the frontend uses REST + polling.
-10. **Forgot password:** `Auth/ForgotPassword` and `Auth/forgot-password` both exist — which one is
-    canonical?
+10. **SignalR:** still nothing deployed — `POST /chatHub/negotiate` is 404 and Swagger lists no hub.
+    Please share the deployed hub path, how the JWT is passed and the event names; until then the
+    frontend uses REST + polling (not a blocker).
+11. **Teacher feedback items:** every `Teacher/children/{childId}/feedbacks` list we could read was
+    empty, so we could not see an item. Please confirm the item fields (we expect
+    `id, content, createdAt, updatedAt`).
 
 ## Accounts / data
 
-- A **Teacher demo account** with an assigned child (Teacher endpoints, the feedback list and
-  probably the plan result are unverified without it).
-- Two chat messages "E2E TEST MESSAGE — SAFE TO DELETE" (demo parent → demo specialist,
-  2026-10-07) remain — there is no delete endpoint; please delete them in the database.
+- A **Teacher demo account** that can log in, with an assigned child (Teacher dashboard, children,
+  notes and chat are still unverified live; blocked by request 3 if created through Super Admin).
+- Please delete in the database (no API can):
+  - the child **"E2E Test Child 6acf4742"** (demo parent; stuck because of request 2);
+  - the deactivated user **"E2E Test Teacher 6acf46e5 Edited"** (created to test
+    `SuperAdmin/users`; `DELETE` only deactivates);
+  - two chat messages "E2E TEST MESSAGE — SAFE TO DELETE" (demo parent → demo specialist,
+    2026-10-07).

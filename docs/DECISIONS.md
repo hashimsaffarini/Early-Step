@@ -477,3 +477,28 @@ demo account could sign in, and the Admin controller was found unauthenticated (
 
 Every integration is testable deterministically; going live requires only working accounts to
 verify the lenient schemas (`BACKEND_INTEGRATION_STATUS.md` lists each one).
+
+## ADR-021 — Session user from `GET Auth/me`
+
+### Status
+
+Accepted (2026-10-14)
+
+### Context
+
+The backend added `GET Auth/me` (`{ id, fullName, email, roles }`). The session used to store the
+login response's user (name, email, role) in web storage and trust it after reloads.
+
+### Decision
+
+Login posts `Auth/login` for the token, then calls `Auth/me` (with the new token as an explicit
+header) for the user. Only `{ accessToken, expiresAt }` is stored. After a reload the store holds a
+`pending` token; the route guards render `SessionRestore`, which calls `Auth/me` and restores the
+session (401 → signed out, cache cleared; other errors → retry). The request interceptor never
+overrides an explicit `Authorization` header.
+
+### Consequences
+
+One source of truth for who is signed in and for the routing role (the server's current role); no
+personal data in web storage; one extra request on login and on each reload; protected pages wait
+for `Auth/me` before rendering.

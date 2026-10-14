@@ -81,22 +81,41 @@ exist — ADR required; credentials only via CI secrets.
 - Don't snapshot whole pages.
 - Don't commit real credentials or real children's data as fixtures.
 
-## Current tests (2026-10-10)
+## Current tests (2026-10-14)
 
-**317 tests in 62 files** (`npm run test`), all against MSW:
+**341 tests in 66 files** (`npm run test`), all against MSW:
 
-| Area                                                  | Files | Covers                                                                                                                                                                                       |
-| ----------------------------------------------------- | ----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Core (`services`, `constants`, `utils`, `components`) |    12 | error normalization, multipart builder, media URLs, role normalization, players, primitives                                                                                                  |
-| App (`app`)                                           |     3 | route guards (signed-out → login with return path, wrong role → unauthorized, signed-in away from login), logout clears session + cache, role navigation, shell unread badge                 |
-| Auth                                                  |     6 | login (multipart fields, session stored, wrong password, unknown role refused), register (role value, server errors), forgot (neutral for unknown email), reset (email + code, invalid code) |
-| Children                                              |     3 | list states, add/edit (multipart, age), delete with confirm, parent vs staff profile, 403/404 → not found, admin blocked                                                                     |
-| Assessment & activities                               |    16 | start → answer → complete bodies, unsupported types, errors, plan-activity player + "not saved", practice labels, game logic                                                                 |
-| Content (admin)                                       |     6 | categories/activities/questions/options CRUD, multipart per question type, initial-assessment composition                                                                                    |
-| Plans & reports                                       |     5 | plan add/remove, read-only views, reports per role, create/edit/delete, PDF download                                                                                                         |
-| Dashboards, users, notes                              |     8 | server-only stats, admin users params + assign specialist, super admin tabs, teacher notes CRUD                                                                                              |
-| Chat                                                  |     1 | conversations, seen, send without duplicates, polling, older messages, new conversation                                                                                                      |
-| Landing                                               |     1 | hero, CTAs, no fabricated stats                                                                                                                                                              |
+| Area                                                  | Files | Covers                                                                                                                                                                                    |
+| ----------------------------------------------------- | ----: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Core (`services`, `constants`, `utils`, `components`) |    14 | error normalization, multipart builder, media URLs, role normalization, password policy, shared choice answers (payload per type), players, primitives                                    |
+| App (`app`)                                           |     3 | route guards, session restore after reload (`Auth/me` ok / 401 → login / 5xx → retry / role from `Auth/me` for direct URLs), logout clears session + cache, role navigation, unread badge |
+| Auth                                                  |     7 | login → `Auth/me` (user and role from `Auth/me`, only the token stored, explicit header wins over a stale token), unknown role refused, register (no `Role`), forgot (neutral), reset     |
+| Children                                              |     3 | list states, add/edit/delete, parent vs staff profile, saved result with per-question details (staff), teacher-notes tab (specialist only)                                                |
+| Assessment & activities                               |    16 | start → answer (exact MultiSelect set, Sequence order + reset) → complete, plan player (all types, 409 without retry, unanswerable activity blocked), practice labels, game logic         |
+| Content (admin)                                       |     6 | categories/activities/questions/options CRUD, assessment composition (badges; error + retry when membership cannot be read)                                                               |
+| Plans & reports                                       |     5 | plan add/remove, score + server progress + child's answers on demand, no-teacher 400 message, reports per role, PDF                                                                       |
+| Dashboards, users, notes                              |     9 | stats, `Admin/specialists` picker (inactive disabled) + assignment refresh, super admin create staff / deactivate, teacher notes list + CRUD                                              |
+| Chat                                                  |     1 | conversations, seen, send, polling, older messages                                                                                                                                        |
+| Landing                                               |     1 | hero, CTAs, no fabricated stats                                                                                                                                                           |
+
+**Live suites (2026-10-14):** `test:live:read` **12/13** — the only failure is the Parent 403 on
+`GET initial-assessment/{childId}/result` (backend regression, `BACKEND_REQUESTS.md` §1); covers
+`Auth/me` for every role + anonymous 401, `Admin/specialists` (= the specialist users, Specialist
+403), Admin assessment membership, specialist results and teacher feedback lists.
+`test:live:write` **6/7** — same single failure; covers every question type in the assessment,
+staff result details, `Admin/specialists` assignment, no-teacher 400, empty / partial submit 400,
+plan result 403 / 404, duplicate report 409; cleanup verified. A successful plan submission
+(score, 409, result) runs only with `E2E_PLAN_SUBMIT=1`, because the backend then cannot delete
+the child (`BACKEND_REQUESTS.md` §2); it was verified with Python on 2026-10-14.
+
+**Browser regression (2026-10-14, development mock mode, localhost):** every role signed in with
+the mock fixture accounts — login → `Auth/me` → area, direct-URL reload restore, invalid stored token
+→ login with storage cleared, logout clears storage, role mismatch → `/unauthorized`; parent child
+profile, assessment with all three types, completed plan activity, reports, chat; specialist plan
+(score, progress, answers), profile tabs; teacher notes create / edit / delete and the specialist
+seeing the note; admin assessment categories add / remove, specialist assignment; super admin
+create staff / deactivate; RTL; 390 px width without horizontal scroll; no console errors. Browser
+sign-in with the real accounts is left to the team (no real passwords typed by the assistant).
 
 Helpers: `src/test/renderWithRouter.tsx`. `src/test/setup.ts` stubs
 `HTMLDialogElement.showModal/close` (missing in jsdom).

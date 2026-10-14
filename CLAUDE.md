@@ -20,9 +20,11 @@ real API contracts (live Swagger) — real login/registration, route guards, chi
 assessment, admin content, plans, reports, dashboards, users, teacher notes, chat (REST +
 polling) — and tested with MSW. **Reads and writes are live-verified** for Parent, Specialist,
 Admin and Super Admin (`docs/API_VERIFICATION_MATRIX.md`, `npm run test:live:read` /
-`test:live:write` with disposable `E2E Test …` records); no Teacher account yet. Anonymous Admin
-access is fixed (re-verified 2026-10-10: assessment result GET and plan-activity submission are live
-and integrated); the current, short list of remaining backend work is
+`test:live:write` with disposable `E2E Test …` records); no usable Teacher account yet. Re-verified
+2026-10-14: the session user comes from `GET Auth/me` (login and reload; only the token is stored),
+specialists from `Admin/specialists`, real MultiSelect/Sequence answers in the assessment, plan
+scores/results for the specialist, teacher notes readable by the specialist, Super Admin staff
+create/deactivate. The current, short list of remaining backend work is
 `docs/BACKEND_REQUESTS.md`; production hardening is separate in `docs/SECURITY.md`. Missing backend capabilities are shown as honest "not available" states.
 Status per feature: `docs/BACKEND_INTEGRATION_STATUS.md`. Development mock mode
 (`VITE_USE_MOCKS=true`, dev only) lets you review the integrated UI without accounts.
@@ -121,7 +123,7 @@ types, `type=test`). Normalize at the boundary only: `constants/backendRoles.ts`
 - **React state** = local UI state.
 - **Zustand** = only genuinely global client state (e.g. session token, if needed). Never put
   server responses in Zustand.
-- Query keys: central factories in `src/services/api/queryKeys.ts`. The session (token + user) is
+- Query keys: central factories in `src/services/api/queryKeys.ts`. The session (stored token; user from `GET Auth/me`) is
   the one Zustand store (`src/services/session`). Details: `docs/STATE_MANAGEMENT.md`.
 
 ## 9. Code quality rules
