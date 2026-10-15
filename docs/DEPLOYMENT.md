@@ -8,6 +8,13 @@
 
 <https://hashimsaffarini.github.io/Early-Step/>
 
+**Live since 2026-10-15** (repository made public; Pages source set to GitHub Actions; first
+successful deployment from the manual run on `main`). Smoke test on the public URL: `index.html`,
+JS, CSS and favicons served from `/Early-Step/`; a direct `#/specialist/children` link redirects to
+`#/login`; the landing page renders; the login form posts to
+`https://earlystep22.runasp.net/api/Auth/login` from the Pages origin (made-up credentials → 401
+and the Arabic error); no mock-mode banner or mock content in the bundle.
+
 Routes use a hash: `…/Early-Step/#/login`, `…/Early-Step/#/parent/dashboard`,
 `…/Early-Step/#/specialist/children`.
 
