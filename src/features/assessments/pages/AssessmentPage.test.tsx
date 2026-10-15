@@ -1,132 +1,302 @@
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 
 import { RoleAreaContext } from '@/hooks/useRoleArea';
+import { apiUrl } from '@/mocks/http';
+import { server } from '@/mocks/server';
 import { renderWithRouter } from '@/test/renderWithRouter';
-
-import { ASSESSMENT_SECTIONS } from '../content/sections';
+import { signInAs } from '@/test/session';
 
 import { AssessmentPage } from './AssessmentPage';
 
-function renderAssessment(childId: string, role: 'Parent' | 'Teacher' = 'Parent') {
-  const namespace = role === 'Parent' ? '/parent' : '/teacher';
+const CHILD_ID = 'c0000000-0000-4000-8000-000000000001';
+const LONG_FLOW = 15_000;
+
+function renderAssessment(role: 'Parent' | 'Teacher' = 'Parent', childId = CHILD_ID) {
   return renderWithRouter(
     [
       {
-        path: `${namespace}/assessment/:childId`,
+        path: '/:area/assessment/:childId',
         element: (
           <RoleAreaContext value={role}>
             <AssessmentPage />
           </RoleAreaContext>
         ),
       },
+      { path: '/:area/children/:childId', element: <h1>ملف الطفل</h1> },
     ],
-    `${namespace}/assessment/${childId}`,
+    `/${role.toLowerCase()}/assessment/${childId}`,
   );
 }
 
-/** Answers every question of the section currently on screen, then finishes it. */
-async function playCurrentSection() {
-  for (;;) {
-    const ready = screen.queryByRole('button', { name: 'أنا جاهز' });
-    if (ready) await userEvent.click(ready);
-    const [firstAnswer] = within(screen.getByRole('group', { name: 'الإجابات' })).getAllByRole(
-      'button',
-    );
-    if (!firstAnswer) throw new Error('no answers rendered');
-    await userEvent.click(firstAnswer);
-    const finish = screen.queryByRole('button', { name: /إنهاء القسم/ });
-    if (finish) {
-      await userEvent.click(finish);
-      return;
-    }
-    await userEvent.click(screen.getByRole('button', { name: /التالي/ }));
+const start = async () => {
+  await userEvent.click(await screen.findByRole('button', { name: 'ابدأ التقييم' }));
+};
+
+const tap = async (label: string) => {
+  await userEvent.click(await screen.findByRole('button', { name: new RegExp(`^${label}`) }));
+};
+const next = () => userEvent.click(screen.getByRole('button', { name: /التالي|إنهاء التقييم/ }));
+
+/** Answers the mock assessment: 3 single choices, a multi-select (4 then 2) and a sequence 1-3-5. */
+async function answerAll() {
+  for (const label of ['بطة', 'ق', '3']) {
+    await tap(label);
+    await next();
   }
+  expect(
+    await screen.findByText('اختر كل الإجابات الصحيحة، ثم اضغط «التالي».'),
+  ).toBeInTheDocument();
+  await tap('4');
+  await tap('2');
+  await next();
+  expect(await screen.findByText('اضغط على الخيارات بالترتيب الصحيح.')).toBeInTheDocument();
+  await tap('1');
+  await tap('3');
+  expect(screen.getByRole('button', { name: 'إنهاء التقييم' })).toBeDisabled();
+  await tap('5');
+  await next();
 }
 
-describe('AssessmentPage', () => {
-  it('greets a known child and lists the four sections', () => {
-    renderAssessment('mock-child-1');
-
-    expect(screen.getByRole('heading', { level: 2, name: 'مرحباً يا يوسف!' })).toBeInTheDocument();
-    const sections = screen.getByRole('list', { name: 'أقسام التقييم' });
-    expect(within(sections).getAllByRole('article')).toHaveLength(4);
-    expect(screen.getByText('الأقسام المكتملة: 0 من 4')).toBeInTheDocument();
+describe('AssessmentPage (initial assessment)', () => {
+  beforeEach(() => {
+    // The app wires these in AuthHttpBridge; page-level renders register them directly.
+    signInAs('Parent');
   });
 
-  it('shows a not-found state for an unknown child', () => {
-    renderAssessment('unknown-child');
+  it(
+    'starts, sends each answer and completes with a neutral confirmation',
+    async () => {
+      const answers: unknown[] = [];
+      let completed = false;
+      server.use(
+        http.post(apiUrl('initial-assessment/:id/answer'), async ({ request }) => {
+          answers.push(await request.json());
+          return HttpResponse.json({ message: 'تم حفظ الإجابة.' });
+        }),
+        http.post(apiUrl('initial-assessment/:id/complete'), () => {
+          completed = true;
+          return HttpResponse.json({ message: 'تم إنهاء التقييم.' });
+        }),
+      );
+      renderAssessment();
 
-    expect(screen.getByText('لم يتم العثور على الطفل')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'العودة إلى قائمة الأطفال' })).toHaveAttribute(
-      'href',
-      '/parent/children',
+      expect(await screen.findByRole('heading', { name: 'مرحباً يا يوسف!' })).toBeInTheDocument();
+      await start();
+
+      expect(await screen.findByRole('heading', { name: 'القراءة' })).toBeInTheDocument();
+      await answerAll();
+
+      expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
+      expect(answers).toEqual([
+        { questionId: 'q-read-1', selectedOptionId: 'q-read-1-o1' },
+        { questionId: 'q-read-2', selectedOptionId: 'q-read-2-o1' },
+        { questionId: 'q-math-1', selectedOptionId: 'q-math-1-o2' },
+        { questionId: 'q-math-2', selectedOptionIds: ['q-math-2-o3', 'q-math-2-o1'] },
+        { questionId: 'q-math-3', orderedOptionIds: ['q-math-3-o2', 'q-math-3-o3', 'q-math-3-o1'] },
+      ]);
+      expect(completed).toBe(true);
+      expect(screen.getByText(/تم إرسال 5 أسئلة/)).toBeInTheDocument();
+      expect(screen.queryByText(/%|درجة|نتيجتك/)).not.toBeInTheDocument();
+    },
+    LONG_FLOW,
+  );
+
+  it(
+    'ends with a confirmation, not a score: the specialist reviews the result',
+    async () => {
+      renderAssessment();
+      expect(await screen.findByRole('heading', { name: 'مرحباً يا يوسف!' })).toBeInTheDocument();
+      await start();
+      await answerAll();
+
+      expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      expect(screen.getByText(/يراجع الأخصائي نتيجة التقييم/)).toBeInTheDocument();
+    },
+    LONG_FLOW,
+  );
+
+  it('shows the backend message when no assessment is available', async () => {
+    server.use(
+      http.post(apiUrl('initial-assessment/:childId/start'), () =>
+        HttpResponse.json(
+          { message: 'الطفل غير موجود أو لا يوجد تقييم أولي متاح.' },
+          { status: 404 },
+        ),
+      ),
     );
+    renderAssessment();
+
+    await start();
+
+    expect(
+      await screen.findByText('الطفل غير موجود أو لا يوجد تقييم أولي متاح.'),
+    ).toBeInTheDocument();
   });
 
-  it('highlights the chosen answer without marking it right or wrong', async () => {
-    renderAssessment('mock-child-1');
-    await userEvent.click(screen.getByRole('button', { name: 'ابدأ قسم الحروف والقراءة' }));
-
-    const next = screen.getByRole('button', { name: /التالي/ });
-    expect(next).toBeDisabled();
-    await userEvent.click(screen.getByRole('button', { name: /بطة/ }));
-
-    expect(screen.getByRole('button', { name: /بطة/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('status')).toHaveTextContent('تم اختيار إجابتك');
-    expect(screen.queryByText(/إجابة صحيحة|إجابة غير صحيحة/)).not.toBeInTheDocument();
-    expect(next).toBeEnabled();
-  });
-
-  it('marks a section complete on the intro after playing it to the end', async () => {
-    renderAssessment('mock-child-2');
-    await userEvent.click(screen.getByRole('button', { name: 'ابدأ قسم الأرقام والحساب' }));
-
-    await playCurrentSection();
-    await userEvent.click(screen.getByRole('button', { name: /العودة إلى الأقسام/ }));
-
-    const tile = screen.getByRole('article', { name: 'الأرقام والحساب' });
-    expect(within(tile).getByText('مكتمل')).toBeInTheDocument();
-    expect(screen.getByText('الأقسام المكتملة: 1 من 4')).toBeInTheDocument();
-  });
-
-  it('shows "أرني مرة أخرى" for memory questions', async () => {
-    renderAssessment('mock-child-1');
-    await userEvent.click(screen.getByRole('button', { name: 'ابدأ قسم الذاكرة والتسلسل' }));
-
-    expect(screen.getByRole('list', { name: 'صور للتذكّر' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'أنا جاهز' }));
-    await userEvent.click(screen.getByRole('button', { name: /أرني مرة أخرى/ }));
-
-    expect(screen.getByRole('list', { name: 'صور للتذكّر' })).toBeInTheDocument();
-  });
-
-  it('reaches the neutral results screen after playing all sections', async () => {
-    renderAssessment('mock-child-1');
-    await userEvent.click(screen.getByRole('button', { name: /العب الكل بالترتيب/ }));
-
-    for (const [index] of ASSESSMENT_SECTIONS.entries()) {
-      await playCurrentSection();
-      const label = index === ASSESSMENT_SECTIONS.length - 1 ? /عرض النتيجة/ : /القسم التالي/;
-      await userEvent.click(screen.getByRole('button', { name: label }));
-    }
-
-    expect(screen.getByRole('heading', { name: 'اكتمل التقييم الأولي' })).toBeInTheDocument();
-    expect(screen.getByText('شكراً لك يا يوسف! أنهيت كل الأقسام.')).toBeInTheDocument();
-    expect(screen.getAllByText('تم الإكمال')).toHaveLength(4);
-    expect(document.body.textContent).not.toMatch(/%/);
-    expect(screen.getByRole('link', { name: 'العودة إلى ملف الطفل' })).toHaveAttribute(
-      'href',
-      '/parent/children/mock-child-1',
+  it('shows an honest empty state when the server sends no questions', async () => {
+    server.use(
+      http.post(apiUrl('initial-assessment/:childId/start'), () =>
+        HttpResponse.json({
+          assessmentId: 'as-1',
+          categories: [{ name: 'القراءة', questions: [] }],
+        }),
+      ),
     );
+    renderAssessment();
+
+    await start();
+
+    expect(await screen.findByText('لا تتوفر أسئلة التقييم من الخادم حالياً')).toBeInTheDocument();
   });
 
-  it('exits to the child profile of the current role area', () => {
-    renderAssessment('mock-child-5', 'Teacher');
+  it(
+    'sends the exact set for MultiSelect and the tapped order for Sequence (reset re-orders)',
+    async () => {
+      const bodies: unknown[] = [];
+      server.use(
+        http.post(apiUrl('initial-assessment/:childId/start'), () =>
+          HttpResponse.json({
+            assessmentId: 'as-1',
+            categories: [
+              {
+                name: 'القراءة',
+                questions: [
+                  {
+                    id: 'q1',
+                    questionText: 'اختر الحيوانات',
+                    type: 'MultiSelect',
+                    options: [
+                      { id: 'o1', optionText: 'قطة' },
+                      { id: 'o2', optionText: 'كرسي' },
+                      { id: 'o5', optionText: 'أرنب' },
+                    ],
+                  },
+                  {
+                    id: 'q2',
+                    questionText: 'رتّب الصور',
+                    type: 'Sequence',
+                    options: [
+                      { id: 'o3', optionText: 'أولاً' },
+                      { id: 'o4', optionText: 'ثانياً' },
+                    ],
+                  },
+                ],
+              },
+            ],
+          }),
+        ),
+        http.post(apiUrl('initial-assessment/:id/answer'), async ({ request }) => {
+          const body = (await request.json()) as { questionId: string };
+          bodies.push(body);
+          return HttpResponse.json({ questionId: body.questionId, isCorrect: true });
+        }),
+        http.post(apiUrl('initial-assessment/:id/complete'), () =>
+          HttpResponse.json({ overallScore: 100, categories: [] }),
+        ),
+      );
+      renderAssessment();
 
+      await start();
+
+      await tap('قطة');
+      await tap('كرسي');
+      await tap('كرسي');
+      await tap('أرنب');
+      await next();
+      await tap('أولاً');
+      await userEvent.click(screen.getByRole('button', { name: 'إعادة الترتيب' }));
+      await tap('ثانياً');
+      await tap('أولاً');
+      await next();
+
+      expect(await screen.findByRole('heading', { name: 'تم إرسال التقييم' })).toBeInTheDocument();
+      expect(bodies).toEqual([
+        { questionId: 'q1', selectedOptionIds: ['o1', 'o5'] },
+        { questionId: 'q2', orderedOptionIds: ['o4', 'o3'] },
+      ]);
+    },
+    LONG_FLOW,
+  );
+
+  it(
+    'lets the child skip a question without options and shows the server refusal to complete',
+    async () => {
+      server.use(
+        http.post(apiUrl('initial-assessment/:childId/start'), () =>
+          HttpResponse.json({
+            assessmentId: 'as-1',
+            categories: [
+              {
+                name: 'القراءة',
+                questions: [
+                  { id: 'q1', questionText: 'سؤال بلا خيارات', type: 'SingleChoice', options: [] },
+                ],
+              },
+            ],
+          }),
+        ),
+        http.post(apiUrl('initial-assessment/:id/complete'), () =>
+          HttpResponse.json(
+            { message: 'لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة.' },
+            { status: 400 },
+          ),
+        ),
+      );
+      renderAssessment();
+
+      await start();
+
+      expect(await screen.findByText(/لم يُرسل الخادم خيارات له/)).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'تخطّي السؤال' }));
+
+      expect(
+        await screen.findByText('لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة.'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'إعادة محاولة إنهاء التقييم' }),
+      ).toBeInTheDocument();
+    },
+    LONG_FLOW,
+  );
+
+  it('never reads the saved result as the parent (staff-only, product decision)', async () => {
+    let resultCalls = 0;
+    server.events.on('request:start', ({ request }) => {
+      if (request.url.includes('/result')) resultCalls += 1;
+    });
+    renderAssessment();
+
+    expect(await screen.findByRole('button', { name: 'ابدأ التقييم' })).toBeInTheDocument();
+    expect(resultCalls).toBe(0);
+    server.events.removeAllListeners();
+  });
+
+  it('shows a network error on start', async () => {
+    server.use(http.post(apiUrl('initial-assessment/:childId/start'), () => HttpResponse.error()));
+    renderAssessment();
+
+    await start();
+
+    expect(await screen.findByText(/تعذّر الاتصال بالخادم/)).toBeInTheDocument();
+  });
+
+  it('shows not-found for a child that is not the parent’s', async () => {
+    renderAssessment('Parent', 'c0000000-0000-4000-8000-000000000005');
+
+    expect(await screen.findByText('لم يتم العثور على الطفل')).toBeInTheDocument();
+  });
+
+  it('is started by the parent only (no request for staff)', async () => {
+    signInAs('Teacher');
+    renderAssessment('Teacher');
+
+    expect(await screen.findByText('يبدأ ولي الأمر التقييم الأولي')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'خروج' })).toHaveAttribute(
       'href',
-      '/teacher/children/mock-child-5',
+      `/teacher/children/${CHILD_ID}`,
     );
   });
 });

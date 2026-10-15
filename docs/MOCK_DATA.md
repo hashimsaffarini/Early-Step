@@ -1,4 +1,17 @@
-# Temporary mock data (UI migration phase)
+# Mock data (tests and development mock mode only)
+
+> **Production runtime uses zero mock business data (confirmed 2026-10-15).** Every screen in a
+> production build reads the live API (`https://earlystep22.runasp.net/api/`). Mock data exists
+> only in `src/mocks/**` (MSW fixtures and handlers) and test helpers in `src/test/**`, used by the
+> unit tests and by development mock mode (`VITE_USE_MOCKS=true npm run dev`). A production build
+> ignores `VITE_USE_MOCKS`, ships no MSW worker and contains none of this data or the practice
+> games (verified by grepping `dist/`; `PRODUCTION_DATA_AUDIT.md`). The sections below describe
+> the mock roster for tests and mock mode; they are history, not production content.
+
+> **Update 2026-10-06:** feature-level mock files were removed from production code. Mock data
+> now lives only in `src/mocks/fixtures/*` behind the MSW handlers (tests + development mock
+> mode). Mock children use **age** (API model) and GUID-like ids; mock sign-in accounts are listed
+> in `src/mocks/README.md` (fictional, mock mode only).
 
 The UI is built before the backend is integrated. Every screen uses **local, clearly labelled
 mock data** (`TEMPORARY UI MOCK DATA` / `TEMPORARY UI DEMO CONTENT` file headers). There are no
@@ -51,6 +64,9 @@ Report content is neutral observations (strengths, areas to support, numbered
 recommendations) — never a diagnosis, risk level or probability.
 
 ## Activities
+
+> **2026-10-15 (ADR-023):** the practice games and tests below are reachable **only in development
+> mock mode**; production routes and the sidebar do not include them.
 
 - **Games** — the 11 Replit games, ids in `src/features/activities/data/games.ts`
   (`memory-match`, `word-reading`, `missing-numbers`, `sentence-builder`, `pattern-logic`,

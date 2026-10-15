@@ -21,6 +21,7 @@ import { Card } from '@/components/ui/Card';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { cx } from '@/utils/classNames';
 
+import { PracticeNotice } from '../components/PracticeNotice';
 import { QuestionPrompt } from '../components/QuestionPrompt';
 import { findTest, type TestDefinition } from '../data/tests';
 
@@ -102,6 +103,7 @@ function TestRun({ test }: TestRunProps) {
     return (
       <PlayerShell {...shell}>
         <Confetti />
+        <PracticeNotice />
         <ResultPanel
           category={test.category}
           title={resultTitle(score, total)}

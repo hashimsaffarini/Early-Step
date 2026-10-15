@@ -1,59 +1,30 @@
-import {
-  ArrowLeft,
-  ClipboardCheck,
-  FilePlus2,
-  FileText,
-  Hourglass,
-  Target,
-  Users,
-} from 'lucide-react';
+import { ArrowLeft, ClipboardCheck, FilePlus2, Users } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { getButtonClassName } from '@/components/ui/Button';
 import { getAreaPaths } from '@/constants/routes';
-
+import { useDashboardStats } from '@/features/dashboards/api/dashboardsApi';
 import { ChildrenDirectory } from '@/features/dashboards/components/ChildrenDirectory';
 import { DashboardGreetingBanner } from '@/features/dashboards/components/DashboardGreetingBanner';
 import { dashboardPageStyles } from '@/features/dashboards/components/dashboardPageStyles';
-import { DashboardStatsGrid } from '@/features/dashboards/components/DashboardStatsGrid';
+import { DashboardStatsSection } from '@/features/dashboards/components/DashboardStatsGrid';
 import { glassLinkClassName } from '@/features/dashboards/components/glassLink';
 import { StaffChildCard } from '@/features/dashboards/components/StaffChildCard';
-import { pickChildren, SPECIALIST_CHILD_IDS } from '@/features/dashboards/mock/roster.mock';
-import { countByStatus, countReports } from '@/features/dashboards/roster';
-import type { DashboardStat, RosterChild } from '@/features/dashboards/types';
+import { useChildrenForRole } from '@/hooks/api/childResources';
 
 const paths = getAreaPaths('Specialist');
 
 export interface SpecialistDashboardPageProps {
   userName: string;
-  /** Children followed by the specialist (defaults to the TEMPORARY mock roster). */
-  followedChildren?: readonly RosterChild[];
 }
 
-function buildStats(children: readonly RosterChild[]): DashboardStat[] {
-  return [
-    { label: 'الأطفال المتابَعون', value: children.length, icon: Users, tone: 'primary' },
-    {
-      label: 'خطط تدريبية نشطة',
-      value: countByStatus(children, 'training-plan-active'),
-      icon: Target,
-      tone: 'violet',
-    },
-    { label: 'تقاريري', value: countReports(children), icon: FileText, tone: 'success' },
-    {
-      label: 'بانتظار خطة تدريبية',
-      value: countByStatus(children, 'assessment-completed'),
-      icon: Hourglass,
-      tone: 'warning',
-    },
-  ];
-}
-
-/** Specialist dashboard (Replit SpecialistDashboard): violet hero, stats, "أطفالي". UI only. */
-export function SpecialistDashboardPage({
-  userName,
-  followedChildren = pickChildren(SPECIALIST_CHILD_IDS),
-}: SpecialistDashboardPageProps) {
+/**
+ * Specialist dashboard: stats from `GET specialist/dashboard`, children from
+ * `GET specialist/children`. Only server values are shown.
+ */
+export function SpecialistDashboardPage({ userName }: SpecialistDashboardPageProps) {
+  const stats = useDashboardStats('specialist');
+  const children = useChildrenForRole('Specialist');
   return (
     <div className={dashboardPageStyles.page}>
       <DashboardGreetingBanner
@@ -73,13 +44,22 @@ export function SpecialistDashboardPage({
           </>
         }
       />
-      <DashboardStatsGrid stats={buildStats(followedChildren)} />
+      <DashboardStatsSection
+        stats={stats.data}
+        isPending={stats.isPending}
+        error={stats.error}
+        onRetry={() => void stats.refetch()}
+      />
       <ChildrenDirectory
         headingId="specialist-children-title"
         title="أطفالي"
-        items={followedChildren}
+        items={children.data}
+        isPending={children.isPending}
+        error={children.error}
+        onRetry={() => void children.refetch()}
         searchLabel="ابحث باسم الطفل..."
         emptyTitle="لا يوجد أطفال مُسنَدون لك بعد"
+        emptyDescription="يُسنِد المدير الأطفال إلى الأخصائي."
         action={
           <Link
             to={paths.children}
@@ -97,7 +77,7 @@ export function SpecialistDashboardPage({
               <Link
                 to={paths.reportCreate}
                 className={getButtonClassName({ variant: 'outline', fullWidth: true })}
-                aria-label={`تقرير جديد عن ${child.name}`}
+                aria-label={`تقرير جديد عن ${child.fullName}`}
               >
                 <FilePlus2 aria-hidden="true" />
                 تقرير جديد

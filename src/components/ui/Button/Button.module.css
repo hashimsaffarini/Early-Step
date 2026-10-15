@@ -35,6 +35,18 @@
   inline-size: 100%;
 }
 
+/* Icons follow the text size so every button keeps its control height (48 / 40 / 56px). */
+.button svg {
+  flex-shrink: 0;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.sm svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
 /* Sizes */
 .sm {
   min-block-size: var(--control-height-sm);

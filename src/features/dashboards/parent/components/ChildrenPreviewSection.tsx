@@ -1,23 +1,47 @@
-import { ArrowLeft, CalendarDays, ClipboardList, Users } from 'lucide-react';
+import { ArrowLeft, Cake, Smile, Users } from 'lucide-react';
 import { Link } from 'react-router';
 
-import { ChildCard } from '@/components/shared/ChildCard';
+import { ChildCard, type ChildCardDetail } from '@/components/shared/ChildCard';
 import { SectionHeader } from '@/components/shared/SectionHeader';
-import { Badge } from '@/components/ui/Badge';
-import { getButtonClassName } from '@/components/ui/Button';
+import { Button, getButtonClassName } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/Feedback';
-import { CHILD_STATUS_DISPLAY } from '@/constants/childDisplay';
 import { buildParentChildProfilePath, ROUTE_PATHS } from '@/constants/routes';
+import { useChildPlanActivities } from '@/hooks/api/childResources';
+import type { ChildSummary } from '@/services/api/childrenLists';
 import { formatAge } from '@/utils/age';
-
-import type { ParentChildSummary } from '../types';
 
 import styles from './ChildrenPreviewSection.module.css';
 
 const HEADING_ID = 'parent-children-title';
 
+/** Plan progress from the child's plan activities (shown only when the plan has activities). */
+function PlanProgress({ childId }: { childId: string }) {
+  const { data, isError, refetch } = useChildPlanActivities(childId);
+  if (isError) {
+    return (
+      <p className={styles.planError} role="alert">
+        تعذّر تحميل تقدّم الخطة.{' '}
+        <Button variant="ghost" size="sm" onClick={() => void refetch()}>
+          إعادة المحاولة
+        </Button>
+      </p>
+    );
+  }
+  if (!data || data.length === 0) return null;
+  const completed = data.filter((activity) => activity.isCompleted).length;
+  return (
+    <ProgressBar
+      label="أنشطة الخطة المنجزة"
+      value={completed}
+      max={data.length}
+      valueText={`${completed.toString()} من ${data.length.toString()} أنشطة`}
+      showLabel
+    />
+  );
+}
+
 export interface ChildrenPreviewSectionProps {
-  children: readonly ParentChildSummary[];
+  children: readonly ChildSummary[];
 }
 
 export function ChildrenPreviewSection({ children }: ChildrenPreviewSectionProps) {
@@ -39,41 +63,27 @@ export function ChildrenPreviewSection({ children }: ChildrenPreviewSectionProps
       />
       <ul className={styles.grid}>
         {children.map((child) => {
-          const status = CHILD_STATUS_DISPLAY[child.status];
+          const details: ChildCardDetail[] = [];
+          if (child.age !== null) {
+            details.push({ icon: Cake, label: `العمر: ${formatAge(child.age)}` });
+          }
+          if (child.gender) details.push({ icon: Smile, label: `الجنس: ${child.gender}` });
           return (
             <li key={child.id}>
               <ChildCard
-                name={child.name}
-                tone={status.avatarTone}
-                status={
-                  <Badge tone={status.tone}>
-                    <status.icon aria-hidden="true" size={14} />
-                    {status.label}
-                  </Badge>
-                }
-                details={[
-                  { icon: CalendarDays, label: `العمر: ${formatAge(child.ageYears)}` },
-                  { icon: ClipboardList, label: child.latestAssessmentLabel },
-                ]}
+                name={child.fullName}
+                details={details}
                 footer={
                   <Link
                     to={buildParentChildProfilePath(child.id)}
                     className={getButtonClassName({ variant: 'soft', fullWidth: true })}
-                    aria-label={`عرض ملف ${child.name}`}
+                    aria-label={`عرض ملف ${child.fullName}`}
                   >
                     عرض الملف
                   </Link>
                 }
               >
-                {child.planProgress ? (
-                  <ProgressBar
-                    label="أنشطة الخطة المنجزة"
-                    value={child.planProgress.completed}
-                    max={child.planProgress.total}
-                    valueText={`${child.planProgress.completed} من ${child.planProgress.total} أنشطة`}
-                    showLabel
-                  />
-                ) : null}
+                <PlanProgress childId={child.id} />
               </ChildCard>
             </li>
           );

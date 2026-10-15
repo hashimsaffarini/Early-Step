@@ -1,56 +1,85 @@
-import { UserX } from 'lucide-react';
-import { useReducer } from 'react';
+import { ClipboardX, RotateCcw, UserX } from 'lucide-react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { PlayerShell } from '@/components/players';
+import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { getButtonClassName } from '@/components/ui/Button';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { LoadingState } from '@/components/shared/LoadingState';
+import { Button, getButtonClassName } from '@/components/ui/Button';
+import { useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 
+import { useCompleteAssessment, useStartAssessment } from '../api/assessmentMutations';
 import { AssessmentIntro } from '../components/AssessmentIntro';
+import { AssessmentQuestionRunner } from '../components/AssessmentQuestionRunner';
 import { AssessmentResults } from '../components/AssessmentResults';
-import { AssessmentSectionRunner } from '../components/AssessmentSectionRunner';
-import { SectionComplete } from '../components/SectionComplete';
-import { SectionProgress } from '../components/SectionProgress';
-import { ASSESSMENT_SECTIONS } from '../content/sections';
-import { findAssessmentChild } from '../mock/assessmentChildren.mock';
-import {
-  assessmentFlowReducer,
-  countCompletedSections,
-  INITIAL_ASSESSMENT_FLOW,
-  isSectionCompleted,
-  type AssessmentFlowState,
-} from '../state/assessmentFlow';
-import type { AssessmentSectionKey } from '../types';
 
 const TITLE = 'التقييم الأولي';
 const EMOJI = '🎯';
 
-const CONTINUE_LABELS = {
-  section: 'القسم التالي',
-  results: 'عرض النتيجة',
-  intro: 'العودة إلى الأقسام',
-} as const;
-
-function continueLabel(state: AssessmentFlowState): string {
-  const next = assessmentFlowReducer(state, { type: 'continue' }).view.type;
-  return next === 'section' || next === 'results' ? CONTINUE_LABELS[next] : CONTINUE_LABELS.intro;
-}
-
-function findSection(key: AssessmentSectionKey) {
-  return ASSESSMENT_SECTIONS.find((section) => section.key === key);
-}
-
 /**
  * Initial assessment (Replit `/assessment/:id`) — full-screen, light child style.
- * UI only: local state, TEMPORARY mock child, nothing is sent or saved.
+ * Parent only: start → answer each question → complete (Swagger `initial-assessment/*`). The flow
+ * ends with the submission; the saved result is for staff (product decision 2026-10-14).
  */
 export function AssessmentPage() {
   const { childId = '' } = useParams();
-  const { paths } = useRoleArea();
-  const [state, dispatch] = useReducer(assessmentFlowReducer, INITIAL_ASSESSMENT_FLOW);
-  const child = findAssessmentChild(childId);
+  const { role, paths } = useRoleArea();
+  const profilePath = paths.childProfile(childId);
+  const shell = { exitTo: profilePath, category: 'attention' as const, emoji: EMOJI };
 
+  if (role !== 'Parent') {
+    return (
+      <PlayerShell {...shell} title={TITLE}>
+        <EmptyState
+          icon={<ClipboardX />}
+          title="يبدأ ولي الأمر التقييم الأولي"
+          description="يُجرى التقييم الأولي من حساب ولي أمر الطفل."
+          action={
+            <Link to={profilePath} className={getButtonClassName()}>
+              العودة إلى ملف الطفل
+            </Link>
+          }
+        />
+      </PlayerShell>
+    );
+  }
+
+  return <ParentAssessment childId={childId} />;
+}
+
+function ParentAssessment({ childId }: { childId: string }) {
+  const { paths } = useRoleArea();
+  const children = useChildrenForRole('Parent');
+  const start = useStartAssessment();
+  const complete = useCompleteAssessment();
+  const [answered, setAnswered] = useState<number | null>(null);
+
+  const profilePath = paths.childProfile(childId);
+  const shell = { exitTo: profilePath, category: 'attention' as const, emoji: EMOJI };
+
+  if (children.isPending) {
+    return (
+      <PlayerShell {...shell} title={TITLE}>
+        <LoadingState />
+      </PlayerShell>
+    );
+  }
+  if (children.isError) {
+    return (
+      <PlayerShell {...shell} title={TITLE}>
+        <ErrorState
+          title="تعذّر تحميل بيانات الطفل"
+          description={children.error.message}
+          action={<Button onClick={() => void children.refetch()}>إعادة المحاولة</Button>}
+        />
+      </PlayerShell>
+    );
+  }
+
+  const child = children.data.find((item) => item.id === childId);
   if (!child) {
     return (
       <PlayerShell exitTo={paths.children} title={TITLE} category="attention" emoji={EMOJI}>
@@ -68,78 +97,81 @@ export function AssessmentPage() {
     );
   }
 
-  const { view } = state;
-  const profilePath = paths.childProfile(child.id);
+  const title = `${TITLE} · ${child.fullName}`;
+  const assessment = start.data;
 
-  const renderView = () => {
-    switch (view.type) {
-      case 'intro':
-        return (
-          <AssessmentIntro
-            childName={child.name}
-            sections={ASSESSMENT_SECTIONS}
-            isCompleted={(key) => isSectionCompleted(state, key)}
-            onStartSection={(section) => {
-              dispatch({ type: 'startSection', section });
-            }}
-            onPlayAll={() => {
-              dispatch({ type: 'playAll' });
-            }}
-          />
-        );
-      case 'section': {
-        const section = findSection(view.section);
-        return section ? (
-          <AssessmentSectionRunner
-            key={section.key}
-            section={section}
-            onFinish={(answered) => {
-              dispatch({ type: 'finishSection', section: section.key, answered });
-            }}
-            onExit={() => {
-              dispatch({ type: 'backToIntro' });
-            }}
-          />
-        ) : null;
-      }
-      case 'sectionDone':
-        return (
-          <SectionComplete
-            sectionTitle={findSection(view.section)?.title ?? ''}
-            answered={state.completed[view.section] ?? 0}
-            continueLabel={continueLabel(state)}
-            onContinue={() => {
-              dispatch({ type: 'continue' });
-            }}
-          />
-        );
-      case 'results':
-        return (
-          <AssessmentResults
-            childName={child.name}
-            sections={ASSESSMENT_SECTIONS}
-            answered={state.completed}
-            profilePath={profilePath}
-          />
-        );
+  const finish = (count: number) => {
+    setAnswered(count);
+    if (assessment) complete.mutate(assessment.assessmentId);
+  };
+
+  const renderBody = () => {
+    if (!assessment) {
+      return (
+        <AssessmentIntro
+          childName={child.fullName}
+          isStarting={start.isPending}
+          error={start.error}
+          onStart={() => {
+            start.mutate(childId);
+          }}
+        />
+      );
     }
+    if (assessment.questions.length === 0) {
+      return (
+        <EmptyState
+          icon={<ClipboardX />}
+          title="لا تتوفر أسئلة التقييم من الخادم حالياً"
+          description="لم يُرسل الخادم أي سؤال لهذا التقييم. حاول لاحقاً أو تواصل مع إدارة المنصة."
+          action={
+            <Link to={profilePath} className={getButtonClassName()}>
+              العودة إلى ملف الطفل
+            </Link>
+          }
+        />
+      );
+    }
+    if (answered === null) {
+      return (
+        <AssessmentQuestionRunner
+          assessmentId={assessment.assessmentId}
+          questions={assessment.questions}
+          onFinished={finish}
+        />
+      );
+    }
+    if (complete.isSuccess) {
+      return (
+        <AssessmentResults
+          childName={child.fullName}
+          answered={answered}
+          profilePath={profilePath}
+        />
+      );
+    }
+    if (complete.isError) {
+      return (
+        <div>
+          <ApiErrorAlert error={complete.error} />
+          <Button
+            size="lg"
+            iconStart={<RotateCcw aria-hidden="true" />}
+            onClick={() => {
+              complete.mutate(assessment.assessmentId);
+            }}
+          >
+            إعادة محاولة إنهاء التقييم
+          </Button>
+        </div>
+      );
+    }
+    return <LoadingState label="جارٍ إرسال التقييم…" />;
   };
 
   return (
-    <PlayerShell
-      exitTo={profilePath}
-      title={`${TITLE} · ${child.name}`}
-      category="attention"
-      emoji={EMOJI}
-      width={view.type === 'intro' ? 'wide' : 'player'}
-      end={
-        <SectionProgress
-          completed={countCompletedSections(state)}
-          total={ASSESSMENT_SECTIONS.length}
-        />
-      }
-    >
-      {renderView()}
+    <PlayerShell {...shell} title={title} width={assessment ? 'player' : 'wide'}>
+      {renderBody()}
     </PlayerShell>
   );
 }

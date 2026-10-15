@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Lock, Mail, Sparkles, User, Users } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Link } from 'react-router';
 
-import { Button } from '@/components/ui/Button';
+import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
+import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
 import { FormField, Input, PasswordInput } from '@/components/ui/Field';
 import { ROLE_LABELS } from '@/constants/roleLabels';
@@ -12,7 +13,7 @@ import { ROUTE_PATHS } from '@/constants/routes';
 
 import { AuthCard } from '../components/AuthCard';
 import { PasswordStrengthMeter } from '../components/PasswordStrengthMeter';
-import { UI_ONLY_NOTICE } from '../constants';
+import { useRegisterMutation } from '../api/authMutations';
 import { registerSchema, type RegisterFormValues } from '../schemas/register';
 
 import styles from './AuthForm.module.css';
@@ -31,7 +32,9 @@ const COPY = {
   submit: 'إنشاء حساب',
   hasAccount: 'لديك حساب بالفعل؟',
   login: 'تسجيل الدخول',
-  validated: 'تم التحقق من صحة البيانات، ولم يتم إنشاء أي حساب.',
+  created:
+    'تم إنشاء الحساب. سجّل الدخول للمتابعة — وإذا وصلتك رسالة تأكيد على بريدك فأكّد حسابك أولاً.',
+  goToLogin: 'الانتقال إلى تسجيل الدخول',
 } as const;
 
 /**
@@ -39,7 +42,7 @@ const COPY = {
  * only the parent account is publicly available, so it is shown as a fixed account type.
  */
 export function RegisterPage() {
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const registerMutation = useRegisterMutation();
   const accountTypeId = useId();
   const strengthId = useId();
   const {
@@ -54,9 +57,8 @@ export function RegisterPage() {
   });
   const password = useWatch({ control, name: 'password' });
 
-  // UI-only stage: no account is created and nothing is sent.
-  const onSubmit = handleSubmit(() => {
-    setIsSubmitted(true);
+  const onSubmit = handleSubmit((values) => {
+    registerMutation.mutate(values);
   });
 
   return (
@@ -74,11 +76,18 @@ export function RegisterPage() {
       }
     >
       <form className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
-        {isSubmitted ? (
-          <Alert tone="info">
-            {COPY.validated} {UI_ONLY_NOTICE}
+        {registerMutation.isSuccess ? (
+          <Alert tone="success">
+            {COPY.created}{' '}
+            <Link
+              to={ROUTE_PATHS.login}
+              className={getButtonClassName({ variant: 'ghost', size: 'sm' })}
+            >
+              {COPY.goToLogin}
+            </Link>
           </Alert>
         ) : null}
+        <ApiErrorAlert error={registerMutation.error} />
 
         <div className={styles.fieldGroup} role="group" aria-labelledby={accountTypeId}>
           <p id={accountTypeId} className={styles.accountTypeName}>
@@ -154,6 +163,8 @@ export function RegisterPage() {
           fullWidth
           className={styles.submit}
           iconStart={<Sparkles aria-hidden="true" />}
+          isLoading={registerMutation.isPending}
+          disabled={registerMutation.isSuccess}
         >
           {COPY.submit}
         </Button>

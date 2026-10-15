@@ -1,29 +1,39 @@
 import {
   ArrowRight,
   CalendarDays,
-  CircleCheck,
   Download,
   FileSearch,
   FileText,
   ListChecks,
+  Pencil,
   Sprout,
-  Star,
+  Trash2,
   UserRound,
   type LucideIcon,
 } from 'lucide-react';
-import { Link, useParams } from 'react-router';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
 
-import { ComingSoonButton } from '@/components/shared/ComingSoonButton';
+import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { SectionHeader } from '@/components/shared/SectionHeader';
-import { getButtonClassName } from '@/components/ui/Button';
+import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/Modal';
+import { canCreateReports } from '@/constants/routes';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
-import { REPORT_TYPE_LABELS } from '../constants';
-import { findVisibleReport } from '../mock/reports.mock';
-import type { ChildReport } from '../types';
+import {
+  useDeleteReportMutation,
+  useDownloadReportMutation,
+  useRoleReports,
+  type ReportView,
+} from '../api/reportsQueries';
+import { ReportsBlocked } from '../components/ReportsBlocked';
+import { toLines } from '../lines';
 
 import styles from './ReportDetailPage.module.css';
 
@@ -35,23 +45,32 @@ interface Fact {
   icon: LucideIcon;
 }
 
-function getFacts(report: ChildReport): Fact[] {
-  return [
-    { label: 'الطفل', value: report.childName, icon: UserRound },
-    { label: 'نوع التقرير', value: REPORT_TYPE_LABELS[report.type], icon: FileText },
-    { label: 'التاريخ', value: formatDisplayDate(report.date), icon: CalendarDays },
-    { label: 'كتبه', value: report.authorName, icon: UserRound },
-  ];
+function getFacts(report: ReportView): Fact[] {
+  const facts: Fact[] = [];
+  if (report.childName) facts.push({ label: 'الطفل', value: report.childName, icon: UserRound });
+  if (report.createdAt) {
+    facts.push({
+      label: 'التاريخ',
+      value: formatDisplayDate(report.createdAt),
+      icon: CalendarDays,
+    });
+  }
+  if (report.authorName) facts.push({ label: 'كتبه', value: report.authorName, icon: UserRound });
+  return facts;
 }
 
 /**
- * Replit report detail — the risk hero card (percentage, stars, risk scale) is replaced by a
- * neutral summary; sections keep the coloured cards and numbered recommendations.
+ * Report detail. There is no GET-by-id endpoint, so the report is resolved from the role's
+ * report list (verified live). Only real API fields are shown; the PDF comes from the server.
  */
 export function ReportDetailPage() {
   const { reportId = '' } = useParams();
   const { role, paths } = useRoleArea();
-  const report = findVisibleReport(role, reportId);
+  const navigate = useNavigate();
+  const { isSupported, reports, isPending, error, refetch } = useRoleReports(role);
+  const downloadMutation = useDownloadReportMutation();
+  const deleteMutation = useDeleteReportMutation();
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const backLink = (
     <Link to={paths.reports} className={styles.backLink}>
@@ -60,6 +79,33 @@ export function ReportDetailPage() {
     </Link>
   );
 
+  if (!isSupported) {
+    return (
+      <div className={styles.page}>
+        {backLink}
+        <ReportsBlocked />
+      </div>
+    );
+  }
+  if (isPending) return <LoadingState label="جارٍ تحميل التقرير…" />;
+  if (error) {
+    return (
+      <div className={styles.page}>
+        {backLink}
+        <ErrorState
+          title="تعذّر تحميل التقرير"
+          description={error.message}
+          action={
+            <Button variant="outline" onClick={refetch}>
+              إعادة المحاولة
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  const report = reports.find((candidate) => candidate.id === reportId);
   if (!report) {
     return (
       <div className={styles.page}>
@@ -78,52 +124,87 @@ export function ReportDetailPage() {
     );
   }
 
+  const canEdit = canCreateReports(role);
+  const title = report.title || 'تقرير';
+  const facts = getFacts(report);
+  const weaknesses = toLines(report.weaknesses);
+  const recommendations = toLines(report.recommendations);
+  const subtitle = [report.childName, report.createdAt ? formatDisplayDate(report.createdAt) : '']
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <article className={styles.page} aria-labelledby="report-title">
       {backLink}
       <header className={styles.header}>
         <div>
           <h1 id="report-title" className={styles.title}>
-            {report.title}
+            {title}
           </h1>
-          <p className={styles.subtitle}>
-            {report.childName} · {formatDisplayDate(report.date)}
-          </p>
+          {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
         </div>
-        <ComingSoonButton variant="outline" size="md" iconStart={<Download aria-hidden="true" />}>
-          تحميل PDF
-        </ComingSoonButton>
+        <div className={styles.actions}>
+          <Button
+            variant="outline"
+            iconStart={<Download aria-hidden="true" />}
+            isLoading={downloadMutation.isPending}
+            onClick={() => {
+              downloadMutation.mutate(report.id);
+            }}
+          >
+            تحميل PDF
+          </Button>
+          {canEdit ? (
+            <>
+              <Link
+                to={paths.reportEdit(report.id)}
+                className={getButtonClassName({ variant: 'soft' })}
+              >
+                <Pencil aria-hidden="true" />
+                تعديل
+              </Link>
+              <Button
+                variant="danger"
+                iconStart={<Trash2 aria-hidden="true" />}
+                onClick={() => {
+                  setIsConfirmOpen(true);
+                }}
+              >
+                حذف
+              </Button>
+            </>
+          ) : null}
+        </div>
       </header>
 
-      <Card as="section" className={styles.summary} aria-labelledby="report-summary">
-        <SectionHeader id="report-summary" title="ملخص التقرير" icon={FileText} iconTone="violet" />
-        <dl className={styles.facts}>
-          {getFacts(report).map((fact) => (
-            <div key={fact.label} className={styles.fact}>
-              <span className={styles.factIcon} aria-hidden="true">
-                <fact.icon />
-              </span>
-              <div>
-                <dt>{fact.label}</dt>
-                <dd>{fact.value}</dd>
-              </div>
-            </div>
-          ))}
-        </dl>
-        <p className={styles.summaryText}>{report.summary}</p>
-      </Card>
+      <ApiErrorAlert
+        error={downloadMutation.error}
+        message={downloadMutation.error ? 'تعذّر تحميل ملف التقرير. حاول مرة أخرى.' : undefined}
+      />
 
-      <Card as="section" className={styles.section} aria-labelledby="report-strengths">
-        <SectionHeader id="report-strengths" title="نقاط القوة" icon={Star} iconTone="success" />
-        <ul className={styles.bullets}>
-          {report.strengths.map((item) => (
-            <li key={item} className={styles.bullet}>
-              <CircleCheck className={styles.successIcon} aria-hidden="true" />
-              {item}
-            </li>
-          ))}
-        </ul>
-      </Card>
+      {facts.length > 0 ? (
+        <Card as="section" className={styles.summary} aria-labelledby="report-summary">
+          <SectionHeader
+            id="report-summary"
+            title="ملخص التقرير"
+            icon={FileText}
+            iconTone="violet"
+          />
+          <dl className={styles.facts}>
+            {facts.map((fact) => (
+              <div key={fact.label} className={styles.fact}>
+                <span className={styles.factIcon} aria-hidden="true">
+                  <fact.icon />
+                </span>
+                <div>
+                  <dt>{fact.label}</dt>
+                  <dd>{fact.value}</dd>
+                </div>
+              </div>
+            ))}
+          </dl>
+        </Card>
+      ) : null}
 
       <Card as="section" className={styles.section} aria-labelledby="report-areas">
         <SectionHeader
@@ -132,14 +213,18 @@ export function ReportDetailPage() {
           icon={Sprout}
           iconTone="accent"
         />
-        <ul className={styles.bullets}>
-          {report.areasToSupport.map((item) => (
-            <li key={item} className={styles.bullet}>
-              <Sprout className={styles.warningIcon} aria-hidden="true" />
-              {item}
-            </li>
-          ))}
-        </ul>
+        {weaknesses.length > 0 ? (
+          <ul className={styles.bullets}>
+            {weaknesses.map((item) => (
+              <li key={item} className={styles.bullet}>
+                <Sprout className={styles.warningIcon} aria-hidden="true" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.summaryText}>لم تُكتب ملاحظات في هذا القسم.</p>
+        )}
       </Card>
 
       <Card as="section" className={styles.section} aria-labelledby="report-recommendations">
@@ -149,13 +234,17 @@ export function ReportDetailPage() {
           icon={ListChecks}
           iconTone="violet"
         />
-        <ol className={styles.recommendations}>
-          {report.recommendations.map((item) => (
-            <li key={item} className={styles.recommendation}>
-              {item}
-            </li>
-          ))}
-        </ol>
+        {recommendations.length > 0 ? (
+          <ol className={styles.recommendations}>
+            {recommendations.map((item) => (
+              <li key={item} className={styles.recommendation}>
+                {item}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className={styles.summaryText}>لم تُكتب توصيات في هذا التقرير.</p>
+        )}
       </Card>
 
       <div className={styles.footer}>
@@ -163,6 +252,28 @@ export function ReportDetailPage() {
           {BACK_LABEL}
         </Link>
       </div>
+
+      {canEdit ? (
+        <ConfirmDialog
+          isOpen={isConfirmOpen}
+          title="حذف التقرير"
+          description={`سيتم حذف «${title}» نهائياً. لا يمكن التراجع عن هذا الإجراء.`}
+          confirmLabel="حذف"
+          isConfirming={deleteMutation.isPending}
+          onCancel={() => {
+            setIsConfirmOpen(false);
+          }}
+          onConfirm={() => {
+            deleteMutation.mutate(report.id, {
+              onSuccess: () => {
+                setIsConfirmOpen(false);
+                void navigate(paths.reports, { replace: true });
+              },
+            });
+          }}
+        />
+      ) : null}
+      {deleteMutation.error ? <ApiErrorAlert error={deleteMutation.error} /> : null}
     </article>
   );
 }

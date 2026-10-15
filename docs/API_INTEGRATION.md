@@ -4,32 +4,34 @@
 > [`API_ENDPOINTS.md`](API_ENDPOINTS.md). **Never invent endpoints, fields, or response
 > formats.** The Replit prototype has its own unrelated backend and is **not** a contract source.
 
-## Discovery findings (2026-09-28, documentation only — not yet verified live)
+## Live backend (verified 2026-10-06)
 
-| Topic                           | Finding                                                                                                      | Consequence for the frontend                                                                                                                 |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Base URL                        | Not documented (`servers: []`); chat hub example is `wss://localhost:7256/chatHub`                           | `VITE_API_BASE_URL` stays empty until provided; a separate hub URL may be needed (TBD)                                                       |
-| `/api` prefix                   | Only on register, login and 4 chat routes                                                                    | Keep full paths per endpoint in request functions; verify live before assuming a typo                                                        |
-| Auth scheme                     | `bearer` (HTTP) on protected routes; format (JWT/opaque) undocumented                                        | Interceptor already supports bearer injection                                                                                                |
-| Login                           | `POST /api/Auth/login`, `multipart/form-data` (`email`, `password`, `rememberMe`); **response undocumented** | Token field, user/role payload, expiry: **TBD — blocking for Stage 2**                                                                       |
-| Register                        | `POST /api/Auth/register`, multipart, `role` is an Arabic string (e.g. `ولي أمر`)                            | Role values must be confirmed                                                                                                                |
-| Current user / logout / refresh | **Not documented**                                                                                           | Session restore strategy TBD (decode JWT? store user from login response?)                                                                   |
-| Password                        | change (bearer), forgot (email), reset (email + code)                                                        | JSON bodies                                                                                                                                  |
-| Content types                   | Mixed multipart (auth, child add/edit, activity, question, option, report edit) and JSON                     | Request functions must send `FormData` where documented; Axios sets the multipart boundary automatically — don't set `Content-Type` manually |
-| File uploads                    | Activity `Icon`, `QuestionImage`, `Options[i].OptionImage`                                                   | Indexed multipart keys (`Options[0].OptionText`) — ASP.NET model binding                                                                     |
-| Media URLs                      | Relative (`/uploads/...`)                                                                                    | Build absolute URLs from the API origin in one helper                                                                                        |
-| Response envelopes              | Inconsistent: bare string, `{ message }`, `string[]`, entity                                                 | Normalize per endpoint in the feature API layer                                                                                              |
-| Errors                          | No status codes documented; Arabic messages; some failures shown with 200                                    | `extractBackendDetails()` must handle string / `{message}` / `string[]` / ProblemDetails — **verify live**                                   |
-| Pagination                      | Only chat (`take`, `beforeId`, `afterId`)                                                                    | Infinite queries for chat only                                                                                                               |
-| Enum values                     | Arabic strings (role, gender, activity type) mixed with English (question types, `type=test`)                | Keep backend values as-is; map for display; single mapping module per enum                                                                   |
-| Real-time                       | SignalR-style hub `/chatHub`; methods/events undocumented                                                    | `@microsoft/signalr` may be needed (ADR at Stage "Chat")                                                                                     |
-| PDF                             | `GET /Reports/{id}/download` returns PDF bytes                                                               | `responseType: 'blob'`                                                                                                                       |
+| Topic                 | Verified fact                                                                                                                                                            | Frontend handling                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Base URL              | `https://earlystep22.runasp.net/api/` (root `/` answers "API is running")                                                                                                | `VITE_API_BASE_URL` (must end with `/api/`); request paths are **relative** (`Parent/GetMyChildren`) so `/api/api` can't happen |
+| Contract              | Public Swagger at `/swagger/v1/swagger.json` — 84 operations (snapshot refreshed 2026-10-15), **all under `/api/`**, consistent casing                                   | Snapshot in `docs/api/swagger.json`; Swagger is the contract source (Apidog is outdated)                                        |
+| Auth                  | `Bearer` scheme; 401 = ProblemDetails                                                                                                                                    | Interceptor adds the token; 401 → sign out + clear cache                                                                        |
+| Errors                | ProblemDetails (`title`, `status`, `errors{Field:[…]}`), `{ message }`, string, string[]                                                                                 | `extractBackendDetails()` in `services/http/apiError.ts`                                                                        |
+| CORS                  | Preflight from `http://localhost:5173` allowed (`*`)                                                                                                                     | Dev server talks to the API directly                                                                                            |
+| Login response        | **Verified:** `{ id, fullName, accessToken, role }`, JWT 120 h, no refresh/cookie                                                                                        | `parseLoginResponse` (verified shape; JWT claims as fallback)                                                                   |
+| Enums                 | Roles `ولي أمر`, `معلم/ة`, `أخصائي/ة` (observed); gender `ولد`/`بنت` (Swagger); question types `SingleChoice`, `MultiSelect`, `Sequence` (`Matching` removed 2026-10-08) | `constants/backendRoles.ts`, `services/api/childrenLists.ts`, `services/api/activityType.ts`                                    |
+| Child model           | `FullName`, **`Age` (int)**, `Gender` — no birth date                                                                                                                    | Add/edit child asks for age                                                                                                     |
+| Responses             | Swagger documents response schemas only for chat; the others were **verified live** for every readable endpoint (`api/LIVE_CONTRACTS.md`)                                | Zod schemas follow the verified shapes; `npm run test:live` re-checks them                                                      |
+| "No data" responses   | Reports and specialist plans answer **404 + Arabic message** when empty                                                                                                  | Mapped to empty states (`fetchChildReports`, `fetchSpecialistPlan`); other 404s stay errors                                     |
+| Required query params | `type` on `TrainingPlan/children/{id}/activities` and `Admin/categoriesActivity`                                                                                         | The child plan fetches tests and games in parallel                                                                              |
+
+## Mocked API (tests + development mock mode)
+
+`src/mocks/` (MSW) implements the Swagger contracts with fictional data. Vitest runs every test
+against it (unhandled requests fail). `VITE_USE_MOCKS=true` (local `.env`, dev only) serves the
+whole app from it with a "وضع المحاكاة" banner; the worker is stripped from production builds.
 
 ## Environment
 
-| Variable            | Required | Description                      |
-| ------------------- | -------- | -------------------------------- |
-| `VITE_API_BASE_URL` | yes*     | Absolute base URL of the backend |
+| Variable            | Required | Description                                                                  |
+| ------------------- | -------- | ---------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL` | yes*     | Backend base URL ending with `/api/` (`https://earlystep22.runasp.net/api/`) |
+| `VITE_USE_MOCKS`    | no       | `true` = development mock mode (ignored in production builds)                |
 
 \* Validated lazily by `getEnv()` (`src/config/env.ts`) the first time a request is made. A
 missing/invalid value throws a descriptive error. All `VITE_*` values are **public** (bundled
@@ -39,8 +41,9 @@ into the client) — never put secrets in them.
 
 ```text
 Component
-  └─ feature hook       features/<x>/api/use<Thing>.ts   (useQuery / useMutation)
-       └─ request fn    features/<x>/api/<x>Api.ts       (typed, uses httpClient)
+  └─ feature hook       features/<x>/api/*Queries.ts     (useQuery / useMutation, keys from services/api/queryKeys.ts)
+       └─ request fn    features/<x>/api/<x>Api.ts       (Zod-validated DTO → mapped domain model)
+            (shared cross-feature reads: services/api/* + hooks/api/childResources.ts)
             └─ httpClient   services/http/httpClient.ts
                  └─ interceptors  base URL · auth header · error normalization · 401 hook
 ```
@@ -56,13 +59,13 @@ Components only call feature hooks. They never import `httpClient` or Axios.
 
 ## Auth token handling
 
-- The auth feature (future) calls `registerHttpAuthHooks({ getAccessToken, onUnauthorized })`
-  once at startup. This keeps `services/` independent of `features/`.
-- Token storage strategy is **TBD** — depends on the backend (httpOnly cookie vs bearer token,
-  refresh tokens, expiry). Decide after reading the API docs and record an ADR.
-- Refresh tokens (if supported): implement in the response interceptor with a single in-flight
-  refresh promise, queued retries, and logout on refresh failure. Not implemented until the
-  API confirms the flow.
+- `AuthHttpBridge` (`app/providers`) registers `registerHttpAuthHooks({ getAccessToken, onUnauthorized })`
+  at startup, keeping `services/http` independent of features.
+- Session = `services/session` (Zustand): token + expiry stored (sessionStorage, or localStorage
+  with "تذكّرني"); the user lives in memory only and comes from `GET Auth/me` (login and reload).
+  Details and limits: `SECURITY.md`.
+- No refresh token or logout endpoint exists: on expiry/401 the user signs in again; logout is
+  local (drop token, clear cache).
 
 ## Error normalization
 
@@ -119,8 +122,47 @@ export const childrenKeys = {
 - Branded or aliased ID types (e.g. `type ChildId = string`) once ID formats are known.
 - Dates: keep as ISO strings at the boundary; format for display with `Intl` in `ar` locale.
 
+## Contract notes (re-verified 2026-10-14)
+
+- **Session:** `login()` posts `Auth/login` for the token, then `GET Auth/me` with that token
+  (explicit header — the request interceptor never overrides one) for `{ id, fullName, email,
+roles }` (`features/auth/api/currentUser.ts`, role normalized, unknown → refused). Storage holds
+  only `{ accessToken, expiresAt }`; after a reload the token is `pending` and the guards render
+  `SessionRestore` (`GET Auth/me`, query key `auth.me`) until the user is known; 401 → sign out +
+  `queryClient.clear()`; other errors → retry.
+- **Answers:** both players use `components/players/choiceAnswer.ts` — SingleChoice
+  `selectedOptionId`, MultiSelect `selectedOptionIds`, Sequence `orderedOptionIds`. The assessment
+  sends one per question (`submitAnswer({ assessmentId, answer })`); the plan sends all at once
+  (`submitPlanActivity`, every question required; 400 / 409 shown as sent).
+- **Assessment result:** `complete` only completes (its body is not read). The result
+  (`AssessmentResult`, `services/api/assessmentResult.ts`: `assessmentId`, per category
+  `totalQuestions` / `correctAnswers`, `questions` with type, verdict, child's and correct answers)
+  is read from `GET initial-assessment/{childId}/result` by staff only — never from the Parent UI
+  (product decision 2026-10-14).
+- **Results are kept:** the parent cannot delete a child whose plan has a completed activity, and
+  the specialist has no remove action for played activities (product rule).
+- **Plans:** `PlanActivity.score`; `SpecialistPlan.progress`; `fetchPlanActivityResult`
+  (`training-plans`, query key `trainingPlans.activityResult`, loaded when "عرض إجابات الطفل" opens;
+  Specialist only). The first activity without a teacher shows the server's 400 message.
+- **Specialists:** `fetchSpecialists()` (`GET Admin/specialists`, key `users.specialists`).
+- **Teacher feedback:** `fetchChildFeedbacks(childId)` (`services/api/teacherFeedback.ts`, key
+  `notes.byChild`, hook `useChildFeedbacks`) — teacher notes page and the specialist's
+  "ملاحظات المعلم" tab; note writes invalidate the child's list. Items verified live 2026-10-15:
+  `{ id, childId, childName, teacherId, teacherName, content, createdAt }` (the teacher's name is
+  shown to the specialist).
+- **Super Admin:** `createStaffUser` (Teacher / Specialist wire roles), `deactivateUser`,
+  `reactivateUser` (`PUT SuperAdmin/users/{id}` with the user's own values + `isActive: true`);
+  users-by-role from `SuperAdmin/dashboard` `usersByRole`.
+- **Strict live contracts (2026-10-15):** parsers accept only the live shapes — no Apidog aliases,
+  no 200-with-message failures, no `birthDate`, five role values, `questionId` required in plan
+  activities; a missing activity is a real 404. Server images go through `ServerImage` /
+  `resolveMediaUrl` with a neutral fallback only when the field is null or the image fails.
+- **Reports:** one report per child — `fetchChildReport(childId)`; the backend answers 409 to a
+  second one.
+- **Registration:** no `Role` is sent (public registration = Parent).
+- **Chat:** REST + polling (SignalR out of scope).
+
 ## Unknowns (TBD)
 
-Base URL/environments · CORS · login response & token format/lifetime · refresh/logout/me ·
-all role enum values · error body format & status codes · hub protocol & auth · initial
-assessment result endpoint · training-plan answer submission · game endpoints · API versioning.
+Teacher-feedback item fields (no data yet) · API versioning. SignalR is out of scope. Current backend
+list: `BACKEND_REQUESTS.md`.

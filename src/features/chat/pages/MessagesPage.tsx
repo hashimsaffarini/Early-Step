@@ -4,29 +4,101 @@ import { useEffect, useRef, useState } from 'react';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
-import { useRoleArea } from '@/hooks/useRoleArea';
+import { useSession } from '@/services/session';
 import { cx } from '@/utils/classNames';
 
+import {
+  useChatUsers,
+  useConversations,
+  useMarkSeen,
+  useSendMessage,
+  useThreadMessages,
+} from '../api/chatQueries';
 import { ChatThread } from '../components/ChatThread';
 import { ConversationList } from '../components/ConversationList';
 import { NewConversationDialog } from '../components/NewConversationDialog';
-import { getMockContacts, getMockConversations } from '../mock/conversations.mock';
-import type { ChatContact, Conversation } from '../types';
+import type { ActiveThread, ChatContact, ConversationSummary } from '../types';
 import { getConversationButtonId, THREAD_TITLE_ID } from '../utils/chatIds';
+import { isOwnMessage } from '../utils/messages';
 
 import styles from './MessagesPage.module.css';
 
+function toThread(conversation: ConversationSummary): ActiveThread {
+  return {
+    kind: 'conversation',
+    conversationId: conversation.id,
+    contactId: conversation.contactId,
+    contactName: conversation.contactName,
+  };
+}
+
+interface OpenThreadProps {
+  thread: ActiveThread;
+  contactRole: ChatContact['role'];
+  onBack: () => void;
+  onCreated: (thread: ActiveThread) => void;
+}
+
+/** The open thread: messages (with polling), seen state and sending. */
+function OpenThread({ thread, contactRole, onBack, onCreated }: OpenThreadProps) {
+  const session = useSession();
+  const markSeen = useMarkSeen();
+  const { mutate: markSeenMutate } = markSeen;
+  const thread$ = useThreadMessages(thread, (conversationId) => {
+    markSeenMutate(conversationId);
+  });
+  const sendMutation = useSendMessage(thread);
+  const conversationId = thread.kind === 'conversation' ? thread.conversationId : null;
+
+  useEffect(() => {
+    if (conversationId) markSeenMutate(conversationId);
+  }, [conversationId, markSeenMutate]);
+
+  return (
+    <ChatThread
+      className={cx(styles.pane, styles.threadPane)}
+      contactName={thread.contactName}
+      contactRole={contactRole}
+      messages={thread$.messages}
+      isOwn={(message) => isOwnMessage(message, session?.user.id ?? '')}
+      isLoading={thread$.isLoading}
+      loadError={thread$.error}
+      onRetry={thread$.retry}
+      hasOlder={thread$.hasOlder}
+      isLoadingOlder={thread$.isLoadingOlder}
+      olderFailed={thread$.olderFailed}
+      onLoadOlder={thread$.loadOlder}
+      sendError={sendMutation.error}
+      onSend={async (text) => {
+        try {
+          const sent = await sendMutation.mutateAsync(text);
+          if (thread.kind === 'draft' && sent.conversationId) {
+            onCreated({
+              kind: 'conversation',
+              conversationId: sent.conversationId,
+              contactId: thread.contactId,
+              contactName: thread.contactName,
+            });
+          }
+          return true;
+        } catch {
+          return false;
+        }
+      }}
+      onBack={onBack}
+    />
+  );
+}
+
 /**
- * Replit messages screen: conversation list + thread. UI only — conversations are local mock
- * state; sending appends locally (no sockets, nothing persisted). Small screens stack the panes.
+ * Messages: conversation list + thread over the chat REST API. New messages arrive by polling
+ * (the SignalR hub is not usable — BLOCKED BY BACKEND). Small screens show list OR thread.
  */
 export function MessagesPage() {
-  const { role } = useRoleArea();
-  const [conversations, setConversations] = useState<readonly Conversation[]>(() =>
-    getMockConversations(role),
-  );
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const conversations = useConversations();
+  const [active, setActive] = useState<ActiveThread | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const users = useChatUsers(isPickerOpen || active !== null);
   /** Where focus should go after the next render (thread title or a list item). */
   const pendingFocus = useRef<string | null>(null);
 
@@ -36,56 +108,28 @@ export function MessagesPage() {
     pendingFocus.current = null;
   });
 
-  const active = conversations.find((conversation) => conversation.id === activeId) ?? null;
+  const rows = conversations.data ?? [];
+  const activeConversationId = active?.kind === 'conversation' ? active.conversationId : null;
+  const contactRole = users.data?.find((user) => user.id === active?.contactId)?.role ?? null;
 
-  const select = (conversationId: string) => {
-    setConversations((current) =>
-      current.map((conversation) =>
-        conversation.id === conversationId ? { ...conversation, unreadCount: 0 } : conversation,
-      ),
-    );
-    setActiveId(conversationId);
+  const open = (thread: ActiveThread) => {
+    setActive(thread);
     pendingFocus.current = THREAD_TITLE_ID;
   };
 
   const back = () => {
-    if (activeId) pendingFocus.current = getConversationButtonId(activeId);
-    setActiveId(null);
-  };
-
-  const send = (text: string) => {
-    if (!activeId) return;
-    const message = {
-      id: `local-${crypto.randomUUID()}`,
-      text,
-      sentAt: new Date().toISOString(),
-      isOwn: true,
-    };
-    setConversations((current) =>
-      current.map((conversation) =>
-        conversation.id === activeId
-          ? { ...conversation, messages: [...conversation.messages, message] }
-          : conversation,
-      ),
-    );
+    if (activeConversationId) pendingFocus.current = getConversationButtonId(activeConversationId);
+    setActive(null);
   };
 
   const startWith = (contact: ChatContact) => {
-    const existing = conversations.find((conversation) => conversation.contact.id === contact.id);
     setIsPickerOpen(false);
-    if (existing) {
-      select(existing.id);
-      return;
-    }
-    const created: Conversation = {
-      id: `conversation-${contact.id}`,
-      contact,
-      messages: [],
-      unreadCount: 0,
-    };
-    setConversations((current) => [created, ...current]);
-    setActiveId(created.id);
-    pendingFocus.current = THREAD_TITLE_ID;
+    const existing = rows.find((row) => row.contactId === contact.id);
+    open(
+      existing
+        ? toThread(existing)
+        : { kind: 'draft', contactId: contact.id, contactName: contact.name },
+    );
   };
 
   return (
@@ -95,20 +139,28 @@ export function MessagesPage() {
       <div className={styles.layout} data-view={active ? 'thread' : 'list'}>
         <ConversationList
           className={cx(styles.pane, styles.listPane)}
-          conversations={conversations}
-          activeId={activeId}
-          onSelect={select}
+          conversations={rows}
+          isLoading={conversations.isPending}
+          error={conversations.error}
+          onRetry={() => void conversations.refetch()}
+          activeId={activeConversationId}
+          onSelect={(conversationId) => {
+            const row = rows.find((candidate) => candidate.id === conversationId);
+            if (row) open(toThread(row));
+          }}
           onNewConversation={() => {
             setIsPickerOpen(true);
           }}
         />
         {active ? (
-          <ChatThread
-            key={active.id}
-            className={cx(styles.pane, styles.threadPane)}
-            conversation={active}
-            onSend={send}
+          <OpenThread
+            key={
+              active.kind === 'conversation' ? active.conversationId : `draft-${active.contactId}`
+            }
+            thread={active}
+            contactRole={contactRole}
             onBack={back}
+            onCreated={setActive}
           />
         ) : (
           <Card className={cx(styles.pane, styles.threadPane, styles.placeholder)}>
@@ -119,7 +171,10 @@ export function MessagesPage() {
 
       <NewConversationDialog
         isOpen={isPickerOpen}
-        contacts={getMockContacts(role)}
+        contacts={users.data ?? []}
+        isLoading={users.isPending}
+        error={users.error}
+        onRetry={() => void users.refetch()}
         onClose={() => {
           setIsPickerOpen(false);
         }}

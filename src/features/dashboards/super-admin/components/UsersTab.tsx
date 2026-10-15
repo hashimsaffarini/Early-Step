@@ -1,55 +1,147 @@
-import { Trash2, UserX } from 'lucide-react';
+import { UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { useState } from 'react';
 
-import { ComingSoonButton } from '@/components/shared/ComingSoonButton';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { SearchField } from '@/components/shared/SearchField';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import { IconButton } from '@/components/ui/IconButton';
+import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Feedback';
 import { ConfirmDialog } from '@/components/ui/Modal';
-import { matchesName } from '@/features/dashboards/roster';
-import type { RosterUser } from '@/features/dashboards/types';
+import {
+  ROLE_WIRE_VALUES,
+  useDeactivateUser,
+  useReactivateUser,
+  useSuperAdminUsers,
+  type PanelUser,
+} from '@/features/dashboards/api/superAdminApi';
+import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useSession } from '@/services/session';
 import type { UserRole } from '@/types/roles';
 
-import { ROLE_DISPLAY, ROLE_ORDER } from '../roleDisplay';
+import { ROLE_DISPLAY } from '../roleDisplay';
+import { CreateStaffDialog } from './CreateStaffDialog';
 
 import styles from './superAdmin.module.css';
 
 type RoleFilter = UserRole | 'all';
 
-export interface UsersTabProps {
-  users: readonly RosterUser[];
-  /** Id of the signed-in super admin (cannot delete themselves). */
-  currentUserId: string | undefined;
-  onDelete: (userId: string) => void;
-}
+/** Roles the backend can filter by (wire values observed live). */
+const FILTERABLE_ROLES = Object.keys(ROLE_WIRE_VALUES) as UserRole[];
 
-/** Replit "إدارة المستخدمين": search, role filter, user rows with actions. Local state only. */
-export function UsersTab({ users, currentUserId, onDelete }: UsersTabProps) {
+/**
+ * Users from `GET SuperAdmin/users?Search=&Role=` (server-side search and filter). The Super
+ * Admin creates teacher / specialist accounts, deactivates accounts and re-activates them
+ * (`SuperAdmin/users`). The active state is the server's `isActive`; name/email editing is not
+ * offered in this panel.
+ */
+export function UsersTab() {
+  const session = useSession();
+  const deactivate = useDeactivateUser();
+  const reactivate = useReactivateUser();
+  const [isCreating, setIsCreating] = useState(false);
+  const [toDeactivate, setToDeactivate] = useState<PanelUser | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
-  const [pendingDelete, setPendingDelete] = useState<RosterUser | null>(null);
-  const [statusMessage, setStatusMessage] = useState('');
+  const search = useDebouncedValue(query.trim());
+  const roleValue = roleFilter === 'all' ? '' : (ROLE_WIRE_VALUES[roleFilter] ?? '');
+  const users = useSuperAdminUsers(roleValue, search);
 
-  const visible = users.filter(
-    (user) => (roleFilter === 'all' || user.role === roleFilter) && matchesName(user.name, query),
-  );
-  const filters: { value: RoleFilter; label: string; count: number }[] = [
-    { value: 'all', label: 'الكل', count: users.length },
-    ...ROLE_ORDER.map((role) => ({
-      value: role,
-      label: ROLE_DISPLAY[role].label,
-      count: users.filter((user) => user.role === role).length,
-    })),
+  const filters: { value: RoleFilter; label: string }[] = [
+    { value: 'all', label: 'الكل' },
+    ...FILTERABLE_ROLES.map((role) => ({ value: role, label: ROLE_DISPLAY[role].label })),
   ];
 
-  const confirmDelete = () => {
-    if (!pendingDelete) return;
-    onDelete(pendingDelete.id);
-    setStatusMessage(`تم حذف ${pendingDelete.name} من القائمة المحلية فقط.`);
-    setPendingDelete(null);
-  };
+  let content;
+  if (users.isPending) {
+    content = <LoadingState label="جارٍ تحميل المستخدمين…" />;
+  } else if (users.error) {
+    content = (
+      <ErrorState
+        title="تعذّر تحميل المستخدمين"
+        description={users.error.message}
+        action={
+          <Button variant="outline" onClick={() => void users.refetch()}>
+            إعادة المحاولة
+          </Button>
+        }
+      />
+    );
+  } else if (users.data.length === 0) {
+    content = (
+      <EmptyState
+        icon={<UserX />}
+        title="لا يوجد مستخدمون مطابقون"
+        description="جرّب اسماً آخر أو دوراً آخر."
+      />
+    );
+  } else {
+    content = (
+      <ul className={styles.list} aria-label="المستخدمون">
+        {users.data.map((user) => {
+          const role = user.role ? ROLE_DISPLAY[user.role] : null;
+          const canManage = user.role !== 'SuperAdmin' && user.id !== session?.user.id;
+          return (
+            <li key={user.id} className={styles.row}>
+              <Avatar name={user.name} />
+              <div className={styles.identity}>
+                <p className={styles.name}>{user.name}</p>
+                {user.email ? (
+                  <bdi dir="ltr" className={styles.email}>
+                    {user.email}
+                  </bdi>
+                ) : null}
+              </div>
+              <div className={styles.meta}>
+                <Badge tone={role?.badgeTone ?? 'neutral'}>
+                  {role ? <role.icon aria-hidden="true" size={14} /> : null}
+                  {role?.label ?? user.roleValue}
+                </Badge>
+                {!user.isActive ? <Badge tone="danger">موقوف</Badge> : null}
+                {canManage && !user.isActive ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconStart={<UserCheck aria-hidden="true" />}
+                    aria-label={`تفعيل حساب ${user.name}`}
+                    disabled={reactivate.isPending}
+                    onClick={() => {
+                      deactivate.reset();
+                      reactivate.mutate(user, {
+                        onSuccess: () => {
+                          setNotice(`تم تفعيل حساب ${user.name}.`);
+                        },
+                      });
+                    }}
+                  >
+                    تفعيل
+                  </Button>
+                ) : null}
+                {canManage && user.isActive ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconStart={<UserMinus aria-hidden="true" />}
+                    aria-label={`إيقاف حساب ${user.name}`}
+                    onClick={() => {
+                      deactivate.reset();
+                      setToDeactivate(user);
+                    }}
+                  >
+                    إيقاف
+                  </Button>
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
 
   return (
     <div className={styles.tab}>
@@ -74,70 +166,55 @@ export function UsersTab({ users, currentUserId, onDelete }: UsersTabProps) {
               }}
             >
               {filter.label}
-              <span className={styles.chipCount}>{filter.count}</span>
             </button>
           ))}
         </div>
       </div>
-
-      <p className={styles.statusMessage} role="status">
-        {statusMessage}
-      </p>
-
-      {visible.length === 0 ? (
-        <EmptyState
-          icon={<UserX />}
-          title="لا يوجد مستخدمون مطابقون"
-          description="جرّب اسماً آخر أو دوراً آخر."
-        />
-      ) : (
-        <ul className={styles.list} aria-label="المستخدمون">
-          {visible.map((user) => {
-            const role = ROLE_DISPLAY[user.role];
-            const isSelf = user.id === currentUserId;
-            return (
-              <li key={user.id} className={styles.row}>
-                <Avatar name={user.name} />
-                <div className={styles.identity}>
-                  <p className={styles.name}>
-                    {user.name} {isSelf ? <span className={styles.self}>(أنت)</span> : null}
-                  </p>
-                  <bdi dir="ltr" className={styles.email}>
-                    {user.email}
-                  </bdi>
-                </div>
-                <div className={styles.meta}>
-                  <Badge tone={role.badgeTone}>
-                    <role.icon aria-hidden="true" size={14} />
-                    {role.label}
-                  </Badge>
-                  <div className={styles.rowActions}>
-                    <ComingSoonButton variant="outline">تغيير الدور</ComingSoonButton>
-                    <IconButton
-                      label={`حذف ${user.name}`}
-                      icon={Trash2}
-                      variant="danger"
-                      disabled={isSelf}
-                      onClick={() => {
-                        setPendingDelete(user);
-                      }}
-                    />
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
+      <div className={styles.actions}>
+        <Button
+          iconStart={<UserPlus aria-hidden="true" />}
+          onClick={() => {
+            setNotice(null);
+            setIsCreating(true);
+          }}
+        >
+          إضافة موظف
+        </Button>
+      </div>
+      {notice ? <Alert tone="success">{notice}</Alert> : null}
+      <ApiErrorAlert error={deactivate.error} />
+      <ApiErrorAlert error={reactivate.error} />
+      {content}
+      <CreateStaffDialog
+        isOpen={isCreating}
+        onClose={() => {
+          setIsCreating(false);
+        }}
+        onCreated={(name) => {
+          setIsCreating(false);
+          setNotice(`تم إنشاء حساب ${name}.`);
+        }}
+      />
       <ConfirmDialog
-        isOpen={pendingDelete !== null}
-        title="حذف المستخدم"
-        description={`هذا الإجراء لا يمكن التراجع عنه. سيتم حذف ${pendingDelete?.name ?? ''} وجميع بياناته. (نسخة تجريبية: الحذف محلي فقط ولا يُرسل شيء.)`}
-        confirmLabel="حذف"
-        onConfirm={confirmDelete}
+        isOpen={toDeactivate !== null}
+        title="إيقاف الحساب"
+        description={`لن يتمكن ${toDeactivate?.name ?? ''} من تسجيل الدخول بعد الإيقاف. يبقى الحساب ظاهراً في القائمة.`}
+        confirmLabel="إيقاف"
+        isConfirming={deactivate.isPending}
+        onConfirm={() => {
+          if (!toDeactivate) return;
+          const { id, name } = toDeactivate;
+          deactivate.mutate(id, {
+            onSuccess: () => {
+              setNotice(`تم إيقاف حساب ${name}.`);
+            },
+            onSettled: () => {
+              setToDeactivate(null);
+            },
+          });
+        }}
         onCancel={() => {
-          setPendingDelete(null);
+          setToDeactivate(null);
         }}
       />
     </div>

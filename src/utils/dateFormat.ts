@@ -18,10 +18,3 @@ export function formatTodayLong(date: Date): string {
     month: 'long',
   }).format(date);
 }
-
-/** Local calendar date as `YYYY-MM-DD` (for `<input type="date">` bounds). */
-export function toIsoDateString(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-}

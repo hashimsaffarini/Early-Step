@@ -10,14 +10,17 @@
     "dev": "vite",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.live.json",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "validate": "npm run typecheck && npm run lint && npm run test && vite build"
+    "validate": "npm run typecheck && npm run lint && npm run test && vite build",
+    "test:live": "vitest run --config vitest.live.config.ts",
+    "test:live:read": "vitest run --config vitest.live.config.ts src/test/live/read.live.test.ts",
+    "test:live:write": "vitest run --config vitest.live.config.ts src/test/live/write.live.test.ts"
   },
   "dependencies": {
     "@fontsource-variable/cairo": "^5.3.0",
@@ -48,10 +51,16 @@
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.12.0",
     "jsdom": "^26.1.0",
+    "msw": "^2.15.0",
     "prettier": "^3.9.9",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.70.1",
     "vite": "^6.4.3",
     "vitest": "^4.1.11"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

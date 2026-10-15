@@ -1,45 +1,29 @@
-import type { ActivityCategory } from '@/constants/activityCategories';
+import type { ChoiceQuestionType } from '@/components/players';
 
-/** The four sections of the initial assessment (Replit's four mini-games). */
-export const ASSESSMENT_SECTION_KEYS = ['reading', 'math', 'memory', 'attention'] as const;
-
-export type AssessmentSectionKey = (typeof ASSESSMENT_SECTION_KEYS)[number];
+/**
+ * Initial assessment as returned by `POST initial-assessment/{childId}/start` (verified live:
+ * `{ assessmentId, categories: [{ id, name, order, questions[] }] }`).
+ */
+export type AssessmentQuestionType = ChoiceQuestionType;
 
 export interface AssessmentOption {
-  label: string;
-  emoji?: string;
-}
-
-export interface AssessmentStimulus {
-  value: string;
-  /** Math expressions stay left-to-right inside the RTL page. */
-  kind?: 'text' | 'expression';
-}
-
-export interface MemoryItem {
-  emoji: string;
-  label: string;
+  id: string;
+  text: string;
+  imageUrl: string | null;
 }
 
 export interface AssessmentQuestion {
   id: string;
-  prompt: string;
-  stimulus: AssessmentStimulus;
+  text: string;
+  imageUrl: string | null;
+  /** Unknown types are kept as null and treated as not answerable. */
+  type: AssessmentQuestionType | null;
   options: readonly AssessmentOption[];
-  /** Memory questions: pictures shown first, before the question. */
-  memorize?: readonly MemoryItem[];
+  /** Category/section title when the response provides one. */
+  sectionTitle: string | null;
 }
 
-export interface AssessmentSection {
-  key: AssessmentSectionKey;
-  title: string;
-  subtitle: string;
-  emoji: string;
-  category: ActivityCategory;
+export interface StartedAssessment {
+  assessmentId: string;
   questions: readonly AssessmentQuestion[];
-}
-
-export interface AssessmentChild {
-  id: string;
-  name: string;
 }

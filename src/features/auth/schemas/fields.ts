@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { AUTH_MESSAGES } from './messages';
-import { evaluatePassword } from './password';
+import { evaluatePassword } from '@/utils/passwordPolicy';
 
 export const emailField = z
   .string()

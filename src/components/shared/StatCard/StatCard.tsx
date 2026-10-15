@@ -17,7 +17,7 @@ export interface StatCardProps {
 /** Dashboard metric. Only real values — never placeholder or fabricated numbers. */
 export function StatCard({ label, value, icon: Icon, tone = 'primary' }: StatCardProps) {
   return (
-    <Card padding="compact" className={styles.stat}>
+    <Card padding="none" className={styles.stat}>
       <span className={cx(styles.icon, styles[tone])} aria-hidden="true">
         <Icon />
       </span>

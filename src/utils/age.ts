@@ -9,14 +9,3 @@ export function formatAge(years: number): string {
   if (years <= AGE_PLURAL_MAX) return `${years} سنوات`;
   return `${years} سنة`;
 }
-
-/** Whole years between an ISO birth date (`YYYY-MM-DD`) and `today`. */
-export function ageInYears(birthDate: string, today: Date = new Date()): number {
-  const birth = new Date(`${birthDate}T00:00:00`);
-  let years = today.getFullYear() - birth.getFullYear();
-  const hasHadBirthdayThisYear =
-    today.getMonth() > birth.getMonth() ||
-    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
-  if (!hasHadBirthdayThisYear) years -= 1;
-  return Math.max(years, 0);
-}

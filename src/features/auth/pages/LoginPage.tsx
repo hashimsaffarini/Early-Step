@@ -1,16 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Lock, Mail, Sparkles } from 'lucide-react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 
+import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Feedback';
 import { Checkbox, FormField, Input, PasswordInput } from '@/components/ui/Field';
-import { ROUTE_PATHS } from '@/constants/routes';
+import { getRoleHomePath, ROLE_NAMESPACES, ROUTE_PATHS } from '@/constants/routes';
+import { HTTP_STATUS } from '@/services/http/httpStatus';
+import type { UserRole } from '@/types/roles';
+
+import { useLoginMutation } from '../api/authMutations';
 
 import { AuthCard } from '../components/AuthCard';
-import { UI_ONLY_NOTICE } from '../constants';
 import { loginSchema, type LoginFormValues } from '../schemas/login';
 
 import styles from './AuthForm.module.css';
@@ -25,11 +27,19 @@ const COPY = {
   submit: 'دخول',
   noAccount: 'ليس لديك حساب؟',
   register: 'سجل الآن',
-  validated: 'تم التحقق من صحة البيانات.',
+  invalidCredentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
 } as const;
 
+/** Return to the page the user wanted, but only inside their own role area. */
+function resolveDestination(from: unknown, role: UserRole): string {
+  const target = typeof from === 'string' ? from : null;
+  return target?.startsWith(ROLE_NAMESPACES[role]) ? target : getRoleHomePath(role);
+}
+
 export function LoginPage() {
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const loginMutation = useLoginMutation();
   const {
     register,
     handleSubmit,
@@ -39,10 +49,18 @@ export function LoginPage() {
     defaultValues: { email: '', password: '', rememberMe: false },
   });
 
-  // UI-only stage: validation succeeds locally, no request is sent (no backend auth yet).
-  const onSubmit = handleSubmit(() => {
-    setIsSubmitted(true);
+  const onSubmit = handleSubmit((values) => {
+    loginMutation.mutate(values, {
+      onSuccess: (session) => {
+        const from: unknown = (location.state as { from?: unknown } | null)?.from;
+        void navigate(resolveDestination(from, session.user.role), { replace: true });
+      },
+    });
   });
+
+  const error = loginMutation.error;
+  const errorMessage =
+    error?.status === HTTP_STATUS.UNAUTHORIZED ? COPY.invalidCredentials : undefined;
 
   return (
     <AuthCard
@@ -58,11 +76,7 @@ export function LoginPage() {
       }
     >
       <form className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
-        {isSubmitted ? (
-          <Alert tone="info">
-            {COPY.validated} {UI_ONLY_NOTICE}
-          </Alert>
-        ) : null}
+        <ApiErrorAlert error={error} message={errorMessage} />
         <FormField label={COPY.email} error={errors.email?.message}>
           {(field) => (
             <Input
@@ -102,6 +116,7 @@ export function LoginPage() {
           fullWidth
           className={styles.submit}
           iconStart={<Sparkles aria-hidden="true" />}
+          isLoading={loginMutation.isPending}
         >
           {COPY.submit}
         </Button>

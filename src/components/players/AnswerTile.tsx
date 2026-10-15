@@ -20,6 +20,8 @@ export interface AnswerTileProps extends Omit<
   label: string;
   /** Decorative picture above the label. */
   emoji?: string | undefined;
+  /** Option picture from the server (already resolved with `resolveMediaUrl`). */
+  imageUrl?: string | null | undefined;
   /** Arabic letter badge (أ ب ج د) — test player style. */
   badge?: string | undefined;
   state?: AnswerTileState;
@@ -33,6 +35,7 @@ export interface AnswerTileProps extends Omit<
 export function AnswerTile({
   label,
   emoji,
+  imageUrl,
   badge,
   state = 'idle',
   layout = 'stack',
@@ -62,7 +65,10 @@ export function AnswerTile({
           {emoji}
         </span>
       ) : null}
-      <span className={styles.label}>{label}</span>
+      {imageUrl ? (
+        <img className={styles.image} src={imageUrl} alt={label ? '' : 'صورة الإجابة'} />
+      ) : null}
+      {label ? <span className={styles.label}>{label}</span> : null}
       {state === 'correct' || state === 'wrong' ? (
         <span className={styles.stateIcon} aria-hidden="true">
           {state === 'correct' ? <Check /> : <X />}

@@ -1,18 +1,20 @@
-import { Plus, SearchX, Users } from 'lucide-react';
+import { Plus, SearchX, ServerOff, Users } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router';
 
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { SearchField } from '@/components/shared/SearchField';
-import { Button } from '@/components/ui/Button';
+import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
+import { ADMIN_PATHS } from '@/constants/routes';
+import { useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 
-import { AddChildDialog } from '../components/AddChildDialog';
+import { ChildFormDialog } from '../components/ChildFormDialog';
 import { ChildListCard } from '../components/ChildListCard';
-import { getMockChildrenForRole } from '../mock/children.mock';
-import type { AddChildFormValues } from '../schemas/addChild';
-import type { ChildRecord } from '../types';
 
 import styles from './ChildrenListPage.module.css';
 import { CHILDREN_LIST_COPY } from './childrenCopy';
@@ -25,59 +27,118 @@ const COPY = {
   noResultsTitle: 'لا توجد نتائج',
   noResultsText: 'لم نجد طفلاً بهذا الاسم.',
   added: (name: string) => `تمت إضافة ${name} إلى قائمة أطفالك.`,
-  localOnly: 'نسخة للواجهة فقط: لن تُحفظ الإضافة بعد تحديث الصفحة.',
+  loading: 'جارٍ تحميل الأطفال…',
+  errorTitle: 'تعذّر تحميل قائمة الأطفال',
+  retry: 'إعادة المحاولة',
+  adminBlockedTitle: 'لا تتوفر قائمة أطفال للمدير من الخادم',
+  adminBlockedText:
+    'لا يوفّر الخادم حالياً قائمة بجميع الأطفال للمدير. يمكنك عرض أطفال كل ولي أمر من صفحة المستخدمين.',
+  goToUsers: 'الانتقال إلى المستخدمين',
 } as const;
 
-export interface ChildrenListPageProps {
-  /** Initial list (defaults to the temporary mock list visible to the current role). */
-  initialChildren?: readonly ChildRecord[];
+/** Admin: the API has no children-list endpoint (BLOCKED BY BACKEND) — say so honestly. */
+function AdminChildrenBlocked() {
+  const copy = CHILDREN_LIST_COPY.Admin;
+  return (
+    <div className={styles.page}>
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
+      <EmptyState
+        icon={<ServerOff />}
+        title={COPY.adminBlockedTitle}
+        description={COPY.adminBlockedText}
+        action={
+          <Link to={ADMIN_PATHS.users} className={getButtonClassName()}>
+            {COPY.goToUsers}
+          </Link>
+        }
+      />
+    </div>
+  );
 }
 
 /**
- * Children list for every role (Replit children screen). The parent can add a child
- * (the API only lets parents create children); staff see the children they follow,
- * with the parent's name. UI only: the list lives in local state; nothing is persisted.
+ * Children list for every role. Parent: `GET Parent/GetMyChildren` + add child; Teacher /
+ * Specialist: their assigned children (with the parent's name). Admin: blocked (no endpoint).
  */
-export function ChildrenListPage({ initialChildren }: ChildrenListPageProps) {
+export function ChildrenListPage() {
   const { role } = useRoleArea();
+  const query = useChildrenForRole(role);
   const copy = CHILDREN_LIST_COPY[role];
   const canAddChild = role === 'Parent';
-  const [children, setChildren] = useState<readonly ChildRecord[]>(
-    () => initialChildren ?? getMockChildrenForRole(role),
-  );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [search, setSearch] = useState('');
   const [lastAddedName, setLastAddedName] = useState<string | null>(null);
 
+  if (role === 'Admin') return <AdminChildrenBlocked />;
+
+  const children = query.data ?? [];
   const openDialog = () => {
     setIsDialogOpen(true);
   };
-
-  // TEMPORARY local behaviour until the children API is integrated.
-  const handleAdd = (values: AddChildFormValues) => {
-    const child: ChildRecord = {
-      id: `local-${crypto.randomUUID()}`,
-      name: values.name,
-      birthDate: values.birthDate,
-      gender: values.gender,
-      status: 'assessment-pending',
-    };
-    setChildren((current) => [...current, child]);
-    setLastAddedName(child.name);
-    setQuery('');
-    setIsDialogOpen(false);
-  };
-
-  const normalizedQuery = query.trim();
-  const visibleChildren = normalizedQuery
-    ? children.filter((child) => child.name.includes(normalizedQuery))
-    : children;
-
   const addButton = (
     <Button iconStart={<Plus aria-hidden="true" />} onClick={openDialog}>
       {COPY.add}
     </Button>
   );
+
+  const normalized = search.trim();
+  const visible = normalized
+    ? children.filter((child) => child.fullName.includes(normalized))
+    : children;
+
+  let content;
+  if (query.isPending) {
+    content = <LoadingState label={COPY.loading} />;
+  } else if (query.isError) {
+    content = (
+      <ErrorState
+        title={COPY.errorTitle}
+        description={query.error.message}
+        action={
+          <Button variant="outline" onClick={() => void query.refetch()}>
+            {COPY.retry}
+          </Button>
+        }
+      />
+    );
+  } else if (children.length === 0) {
+    content = (
+      <EmptyState
+        icon={<Users />}
+        title={copy.emptyTitle}
+        description={copy.emptyText}
+        action={canAddChild ? addButton : undefined}
+      />
+    );
+  } else {
+    content = (
+      <>
+        <SearchField
+          label={COPY.search}
+          placeholder={COPY.searchPlaceholder}
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value);
+          }}
+        />
+        {visible.length === 0 ? (
+          <EmptyState
+            icon={<SearchX />}
+            title={COPY.noResultsTitle}
+            description={COPY.noResultsText}
+          />
+        ) : (
+          <ul className={styles.grid} aria-label={COPY.listLabel}>
+            {visible.map((child) => (
+              <li key={child.id}>
+                <ChildListCard child={child} showParent={!canAddChild} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -86,55 +147,19 @@ export function ChildrenListPage({ initialChildren }: ChildrenListPageProps) {
         subtitle={copy.subtitle}
         actions={canAddChild && children.length > 0 ? addButton : undefined}
       />
-
-      {lastAddedName ? (
-        <Alert tone="success">
-          {COPY.added(lastAddedName)} {COPY.localOnly}
-        </Alert>
-      ) : null}
-
-      {children.length === 0 ? (
-        <EmptyState
-          icon={<Users />}
-          title={copy.emptyTitle}
-          description={copy.emptyText}
-          action={canAddChild ? addButton : undefined}
-        />
-      ) : (
-        <>
-          <SearchField
-            label={COPY.search}
-            placeholder={COPY.searchPlaceholder}
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-            }}
-          />
-          {visibleChildren.length === 0 ? (
-            <EmptyState
-              icon={<SearchX />}
-              title={COPY.noResultsTitle}
-              description={COPY.noResultsText}
-            />
-          ) : (
-            <ul className={styles.grid} aria-label={COPY.listLabel}>
-              {visibleChildren.map((child) => (
-                <li key={child.id}>
-                  <ChildListCard child={child} showParent={!canAddChild} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
-
+      {lastAddedName ? <Alert tone="success">{COPY.added(lastAddedName)}</Alert> : null}
+      {content}
       {canAddChild ? (
-        <AddChildDialog
+        <ChildFormDialog
           isOpen={isDialogOpen}
           onClose={() => {
             setIsDialogOpen(false);
           }}
-          onAdd={handleAdd}
+          onSaved={(name) => {
+            setLastAddedName(name);
+            setSearch('');
+            setIsDialogOpen(false);
+          }}
         />
       ) : null}
     </div>

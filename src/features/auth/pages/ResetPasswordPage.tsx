@@ -1,17 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CircleCheck, KeyRound, Lock } from 'lucide-react';
-import { useId, useState } from 'react';
+import { CircleCheck, KeyRound, Lock, Mail } from 'lucide-react';
+import { useId } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Link, useLocation } from 'react-router';
 
+import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { Button, getButtonClassName } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Feedback';
 import { FormField, Input, PasswordInput } from '@/components/ui/Field';
 import { ROUTE_PATHS } from '@/constants/routes';
 
+import { useResetPasswordMutation } from '../api/authMutations';
 import { AuthSplitShell } from '../components/AuthSplitShell';
 import { PasswordStrengthMeter } from '../components/PasswordStrengthMeter';
-import { UI_ONLY_NOTICE } from '../constants';
 import { resetPasswordSchema, type ResetPasswordFormValues } from '../schemas/passwordRecovery';
 
 import styles from './AuthForm.module.css';
@@ -34,13 +34,14 @@ const COPY = {
   title: 'كلمة مرور جديدة',
   subtitleWithEmail: 'أدخل الرمز المرسل إلى',
   subtitle: 'أدخل رمز التحقق وكلمة المرور الجديدة',
+  email: 'البريد الإلكتروني',
   code: 'رمز التحقق',
   password: 'كلمة المرور الجديدة',
   confirmPassword: 'تأكيد كلمة المرور',
   submit: 'تعيين كلمة المرور',
   backToLogin: 'العودة لتسجيل الدخول',
-  successTitle: 'تم التحقق من كلمة المرور الجديدة',
-  successText: 'يمكنك الآن العودة إلى صفحة تسجيل الدخول.',
+  successTitle: 'تم تغيير كلمة المرور',
+  successText: 'يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.',
   login: 'تسجيل الدخول',
 } as const;
 
@@ -58,7 +59,7 @@ function readEmail(state: unknown): string | null {
 
 export function ResetPasswordPage() {
   const email = readEmail(useLocation().state);
-  const [isDone, setIsDone] = useState(false);
+  const resetMutation = useResetPasswordMutation();
   const strengthId = useId();
   const {
     register,
@@ -68,13 +69,17 @@ export function ResetPasswordPage() {
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     mode: 'onTouched',
-    defaultValues: { code: '', password: '', confirmPassword: '' },
+    defaultValues: { email: email ?? '', code: '', password: '', confirmPassword: '' },
   });
   const password = useWatch({ control, name: 'password' });
 
-  // UI-only stage: nothing is saved or sent.
-  const onSubmit = handleSubmit(() => {
-    setIsDone(true);
+  const onSubmit = handleSubmit((values) => {
+    resetMutation.mutate({
+      email: values.email,
+      code: values.code,
+      newPassword: values.password,
+      confirmPassword: values.confirmPassword,
+    });
   });
 
   const panel = {
@@ -85,7 +90,7 @@ export function ResetPasswordPage() {
     backLink: { to: ROUTE_PATHS.forgotPassword, label: COPY.requestNewCode },
   };
 
-  if (isDone) {
+  if (resetMutation.isSuccess) {
     return (
       <AuthSplitShell {...panel}>
         <div className={styles.success} role="status">
@@ -94,7 +99,6 @@ export function ResetPasswordPage() {
           </span>
           <h1 className={styles.successTitle}>{COPY.successTitle}</h1>
           <p className={styles.successText}>{COPY.successText}</p>
-          <Alert tone="info">{UI_ONLY_NOTICE}</Alert>
           <Link
             to={ROUTE_PATHS.login}
             className={getButtonClassName({ size: 'lg', fullWidth: true })}
@@ -119,6 +123,20 @@ export function ResetPasswordPage() {
         )}
       </p>
       <form className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
+        <ApiErrorAlert error={resetMutation.error} />
+        <FormField label={COPY.email} error={errors.email?.message}>
+          {(field) => (
+            <Input
+              {...field}
+              {...register('email')}
+              type="email"
+              autoComplete="email"
+              placeholder="name@example.com"
+              leadingIcon={<Mail />}
+              inputSize="lg"
+            />
+          )}
+        </FormField>
         <FormField label={COPY.code} error={errors.code?.message}>
           {(field) => (
             <Input
@@ -158,7 +176,7 @@ export function ResetPasswordPage() {
             />
           )}
         </FormField>
-        <Button type="submit" size="lg" fullWidth>
+        <Button type="submit" size="lg" fullWidth isLoading={resetMutation.isPending}>
           {COPY.submit}
         </Button>
       </form>

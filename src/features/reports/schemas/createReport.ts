@@ -1,40 +1,40 @@
 import { z } from 'zod';
 
-import { REPORT_TYPES } from '../constants';
-
-export const CREATE_REPORT_MESSAGES = {
+export const REPORT_FORM_MESSAGES = {
   childRequired: 'الرجاء اختيار الطفل',
-  typeRequired: 'الرجاء اختيار نوع التقرير',
-  strengthsRequired: 'الرجاء كتابة نقاط القوة',
-  areasRequired: 'الرجاء كتابة الجوانب التي تحتاج إلى دعم',
+  titleRequired: 'الرجاء كتابة عنوان التقرير',
+  titleTooShort: 'عنوان التقرير قصير جداً',
+  weaknessesRequired: 'الرجاء كتابة الجوانب التي تحتاج إلى دعم',
   recommendationsRequired: 'الرجاء كتابة التوصيات',
 } as const;
 
-/** Splits a textarea into trimmed, non-empty lines (one observation per line). */
-export function toLines(value: string): string[] {
-  return value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-}
+const MIN_TITLE_LENGTH = 2;
+const MAX_TITLE_LENGTH = 200;
+const MAX_TEXT_LENGTH = 4000;
 
-const linesField = (message: string) =>
-  z.string().transform(toLines).pipe(z.array(z.string()).min(1, message));
-
-/**
- * Replit "إدخال يدوي" report form. The AI mode and the probability slider are intentionally
- * not migrated (no AI branding, no risk probability).
- */
-export const createReportSchema = z.object({
-  childId: z.string().min(1, CREATE_REPORT_MESSAGES.childRequired),
-  type: z
+/** Fields of the real API (`title`, `weaknesses`, `recommendations`) — no strengths, no type. */
+export const reportFieldsSchema = z.object({
+  title: z
     .string()
-    .min(1, CREATE_REPORT_MESSAGES.typeRequired)
-    .pipe(z.enum(REPORT_TYPES, { error: CREATE_REPORT_MESSAGES.typeRequired })),
-  strengths: linesField(CREATE_REPORT_MESSAGES.strengthsRequired),
-  areasToSupport: linesField(CREATE_REPORT_MESSAGES.areasRequired),
-  recommendations: linesField(CREATE_REPORT_MESSAGES.recommendationsRequired),
+    .trim()
+    .min(1, REPORT_FORM_MESSAGES.titleRequired)
+    .min(MIN_TITLE_LENGTH, REPORT_FORM_MESSAGES.titleTooShort)
+    .max(MAX_TITLE_LENGTH),
+  weaknesses: z
+    .string()
+    .trim()
+    .min(1, REPORT_FORM_MESSAGES.weaknessesRequired)
+    .max(MAX_TEXT_LENGTH),
+  recommendations: z
+    .string()
+    .trim()
+    .min(1, REPORT_FORM_MESSAGES.recommendationsRequired)
+    .max(MAX_TEXT_LENGTH),
 });
 
-export type CreateReportFormInput = z.input<typeof createReportSchema>;
-export type CreateReportFormValues = z.output<typeof createReportSchema>;
+export const createReportSchema = reportFieldsSchema.extend({
+  childId: z.string().min(1, REPORT_FORM_MESSAGES.childRequired),
+});
+
+export type ReportFieldsValues = z.infer<typeof reportFieldsSchema>;
+export type CreateReportFormValues = z.infer<typeof createReportSchema>;

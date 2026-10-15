@@ -442,3 +442,117 @@ before backend integration. In Replit most screens are shared by four roles at f
 Every Replit screen has a route in each role that can use it, with no dead links. When auth
 arrives, guards wrap each area route and `useRoleArea` keeps working; the mock sessions and
 mock files are deleted as screens are connected to the API.
+
+## ADR-020 — Backend integration approach
+
+### Status
+
+Accepted (2026-10-06)
+
+### Context
+
+The live backend (`https://earlystep22.runasp.net/api/`) publishes a Swagger document whose paths
+are all under `/api/` with consistent casing, but it documents response schemas only for chat. No
+demo account could sign in, and the Admin controller was found unauthenticated (see
+`SECURITY.md`); live testing is paused at the user's request.
+
+### Decision
+
+- **Contract source:** the Swagger snapshot (`docs/api/swagger.json`). Apidog examples fill gaps;
+  every inferred response shape is parsed leniently with Zod and marked NOT LIVE-VERIFIED.
+- **Paths:** relative to `VITE_API_BASE_URL` (which must end with `/api/`) — no duplicated prefix.
+- **Session:** shared Zustand store (`services/session`), sessionStorage by default, localStorage
+  with "remember me"; login response parsed leniently (token + role from body or JWT claims,
+  unknown role → refused). No refresh/logout/me endpoints → local logout, clear cache on 401.
+- **Roles:** one normalization module; observed Arabic values mapped; unknown → no access.
+- **Query keys:** one central factory module; cross-feature reads (children lists, child reports,
+  child plan activities) live in shared `services/api` + `hooks/api`.
+- **Mocked HTTP:** MSW (`msw@2`, dev dependency) for all tests (unhandled requests fail) and an
+  opt-in development mock mode (`VITE_USE_MOCKS=true`, dev only, banner shown, worker removed from
+  production builds) so the integrated UI can be reviewed without backend accounts.
+- **Honesty:** missing backend capabilities are BLOCKED BY BACKEND in the UI and docs — no fake
+  persistence, results, pickers or history.
+
+### Consequences
+
+Every integration is testable deterministically; going live requires only working accounts to
+verify the lenient schemas (`BACKEND_INTEGRATION_STATUS.md` lists each one).
+
+## ADR-021 — Session user from `GET Auth/me`
+
+### Status
+
+Accepted (2026-10-14)
+
+### Context
+
+The backend added `GET Auth/me` (`{ id, fullName, email, roles }`). The session used to store the
+login response's user (name, email, role) in web storage and trust it after reloads.
+
+### Decision
+
+Login posts `Auth/login` for the token, then calls `Auth/me` (with the new token as an explicit
+header) for the user. Only `{ accessToken, expiresAt }` is stored. After a reload the store holds a
+`pending` token; the route guards render `SessionRestore`, which calls `Auth/me` and restores the
+session (401 → signed out, cache cleared; other errors → retry). The request interceptor never
+overrides an explicit `Authorization` header.
+
+### Consequences
+
+One source of truth for who is signed in and for the routing role (the server's current role); no
+personal data in web storage; one extra request on login and on each reload; protected pages wait
+for `Auth/me` before rendering.
+
+## ADR-022 — Staff-only assessment results and kept result history
+
+### Status
+
+Accepted (2026-10-14, business-rule clarifications from the backend developer)
+
+### Context
+
+Live, the Parent gets 403 on `GET initial-assessment/{childId}/result`, and deleting a child or
+removing a plan activity with saved results fails. The backend developer clarified that both are
+intended.
+
+### Decision
+
+The Result endpoint is staff-only: the Parent UI never calls it, and the parent's assessment ends
+with a confirmation (no score; `complete` only completes). Records with results are kept: the
+parent's delete action is disabled for a child whose plan has a completed activity, and played
+plan activities have no remove action. No frontend workaround is added for backend errors.
+
+### Consequences
+
+Parents see their child's progress through the specialist (reports, plan), not raw assessment
+scores. The empty 500 on such deletes remains a small backend improvement (descriptive 400/409).
+
+## ADR-023 — Zero dummy data in production runtime
+
+### Status
+
+Accepted (2026-10-15, production-readiness audit — `PRODUCTION_DATA_AUDIT.md`)
+
+### Context
+
+Mock data was already isolated behind MSW (tests and development mock mode), but the sidebar
+still offered static "Tests" and "Games" catalogs (frontend demo content whose results are never
+saved), and a few screens turned missing or failed data into numbers (0, three stars, "not
+assigned", client-side counts).
+
+### Decision
+
+- Production shows only backend data or values derived from it. A value the server did not send
+  is hidden, never replaced by a default; a failed load shows an error with retry.
+- The static practice catalogs exist only in development mock mode (`showPracticeCatalogs`,
+  same condition as `isMockMode()`), so production builds contain none of their content. The game
+  components stay as engines.
+- Server aggregates are preferred over client counting (Super Admin `usersByRole`).
+- Fields known to be unreliable live (`isInInitialAssessment`, specialist `progressPercentage`)
+  are not displayed.
+
+### Consequences
+
+Parents, teachers and staff no longer see a second activity list next to the training plan.
+The child plays games only through plan activities until the backend defines game content that
+the engines can render.

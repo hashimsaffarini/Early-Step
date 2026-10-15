@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router';
 
+import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { Button, getButtonClassName } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Feedback';
 import { FormField, Input } from '@/components/ui/Field';
 import { ROUTE_PATHS } from '@/constants/routes';
 
+import { useForgotPasswordMutation } from '../api/authMutations';
 import { AuthSplitShell } from '../components/AuthSplitShell';
-import { UI_ONLY_NOTICE } from '../constants';
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from '../schemas/passwordRecovery';
 import type { ResetPasswordLocationState } from './ResetPasswordPage';
 
@@ -58,9 +58,16 @@ export function ForgotPasswordPage() {
     defaultValues: { email: '' },
   });
 
-  // UI-only stage: no email is sent; we only show the neutral confirmation state.
+  const forgotMutation = useForgotPasswordMutation();
+
+  // `POST Auth/ForgotPassword` (the only route since 2026-10-14) answers the same neutral 200 for
+  // known and unknown emails, so the confirmation does not reveal which emails have accounts.
   const onSubmit = handleSubmit((values) => {
-    setSubmittedEmail(values.email);
+    forgotMutation.mutate(values.email, {
+      onSuccess: () => {
+        setSubmittedEmail(values.email);
+      },
+    });
   });
 
   if (submittedEmail !== null) {
@@ -73,7 +80,6 @@ export function ForgotPasswordPage() {
           </span>
           <h1 className={styles.successTitle}>{COPY.successTitle}</h1>
           <p className={styles.successText}>{COPY.successText}</p>
-          <Alert tone="info">{UI_ONLY_NOTICE}</Alert>
           <div className={styles.actions}>
             <Link
               to={ROUTE_PATHS.resetPassword}
@@ -87,6 +93,7 @@ export function ForgotPasswordPage() {
               fullWidth
               onClick={() => {
                 reset();
+                forgotMutation.reset();
                 setSubmittedEmail(null);
               }}
             >
@@ -103,6 +110,7 @@ export function ForgotPasswordPage() {
       <h1 className={styles.pageTitle}>{COPY.title}</h1>
       <p className={styles.pageSubtitle}>{COPY.subtitle}</p>
       <form className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
+        <ApiErrorAlert error={forgotMutation.error} />
         <FormField label={COPY.email} error={errors.email?.message}>
           {(field) => (
             <Input
@@ -116,7 +124,13 @@ export function ForgotPasswordPage() {
             />
           )}
         </FormField>
-        <Button type="submit" size="lg" fullWidth iconStart={<Sparkles aria-hidden="true" />}>
+        <Button
+          type="submit"
+          size="lg"
+          fullWidth
+          iconStart={<Sparkles aria-hidden="true" />}
+          isLoading={forgotMutation.isPending}
+        >
           {COPY.submit}
         </Button>
       </form>

@@ -1,41 +1,235 @@
 import { ArrowRight, BookOpen, Plus, UserX } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 
+import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { PageBanner } from '@/components/shared/PageBanner';
+import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Button, getButtonClassName } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Feedback';
+import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/Modal';
+import { useChildPlanActivities, useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
-import { toIsoDateString } from '@/utils/dateFormat';
+import type { PlanActivity } from '@/services/api/childPlan';
+import type { AppError } from '@/services/http/apiError';
 
-import { PlanCard } from '../components/PlanCard';
-import { PlanFormDialog } from '../components/PlanFormDialog';
-import { PLAN_EDITOR_ROLES } from '../labels';
-import { findPlanChild, MOCK_EDUCATION_PLANS } from '../mock/educationPlans.mock';
-import { toLines, type EducationPlanFormValues } from '../schemas/educationPlan';
-import type { EducationPlan } from '../types';
+import { useRemoveActivityMutation, useSpecialistPlan } from '../api/trainingPlansQueries';
+import { AssignActivityDialog } from '../components/AssignActivityDialog';
+import { AssignTeacherCard } from '../components/AssignTeacherCard';
+import { PlanActivityList } from '../components/PlanActivityList';
+import { PlanProgress } from '../components/PlanProgress';
+import cardStyles from '../components/plans.module.css';
 
 import styles from './ChildPlansPage.module.css';
 
-const LOCAL_ONLY = 'نسخة للواجهة فقط: لن تُحفظ الخطة بعد تحديث الصفحة.';
+interface PlanChild {
+  id: string;
+  name: string;
+}
+
+function LoadError({
+  error,
+  onRetry,
+  title = 'تعذّر تحميل الخطة التدريبية',
+}: {
+  error: AppError;
+  onRetry: () => void;
+  title?: string;
+}) {
+  return (
+    <ErrorState
+      title={title}
+      description={error.message}
+      action={
+        <Button variant="outline" onClick={onRetry}>
+          إعادة المحاولة
+        </Button>
+      }
+    />
+  );
+}
+
+function PlanSection({
+  activities,
+  action,
+  emptyText,
+  onRemove,
+  progress,
+  resultChildId,
+}: {
+  activities: readonly PlanActivity[];
+  action?: ReactNode;
+  emptyText: string;
+  onRemove?: (activity: PlanActivity) => void;
+  progress?: number | null;
+  resultChildId?: string;
+}) {
+  return (
+    <Card as="section" className={cardStyles.card} aria-labelledby="plan-activities-title">
+      <div className={cardStyles.toolbar}>
+        <SectionHeader
+          id="plan-activities-title"
+          title="أنشطة الخطة التدريبية"
+          icon={BookOpen}
+          iconTone="violet"
+        />
+        {action}
+      </div>
+      {activities.length === 0 ? (
+        <EmptyState
+          isBoxed={false}
+          icon={<BookOpen />}
+          title="لا توجد أنشطة في الخطة بعد"
+          description={emptyText}
+        />
+      ) : (
+        <>
+          <PlanProgress activities={activities} progress={progress} />
+          <PlanActivityList
+            activities={activities}
+            onRemove={onRemove}
+            resultChildId={resultChildId}
+          />
+        </>
+      )}
+    </Card>
+  );
+}
+
+/** Parent / Teacher: read-only plan from `TrainingPlan/children/{id}/activities`. */
+function ReadOnlyPlan({ child }: { child: PlanChild }) {
+  const plan = useChildPlanActivities(child.id);
+  if (plan.isPending) return <LoadingState label="جارٍ تحميل الخطة…" />;
+  if (plan.error) {
+    return (
+      <LoadError
+        error={plan.error}
+        onRetry={() => {
+          void plan.refetch();
+        }}
+      />
+    );
+  }
+  return (
+    <PlanSection
+      activities={plan.data}
+      emptyText="يُضيف الأخصائي الأنشطة إلى الخطة بعد مراجعة التقييم المبدئي."
+    />
+  );
+}
+
+/** Specialist: manage the plan (add from available activities, remove with confirmation). */
+function SpecialistPlanEditor({ child }: { child: PlanChild }) {
+  const plan = useSpecialistPlan(child.id, true);
+  const removeMutation = useRemoveActivityMutation(child.id);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [toRemove, setToRemove] = useState<PlanActivity | null>(null);
+
+  if (plan.isPending) return <LoadingState label="جارٍ تحميل الخطة…" />;
+  if (plan.error) {
+    return (
+      <LoadError
+        error={plan.error}
+        onRetry={() => {
+          void plan.refetch();
+        }}
+      />
+    );
+  }
+
+  const addButton = (
+    <Button
+      iconStart={<Plus aria-hidden="true" />}
+      onClick={() => {
+        setIsPickerOpen(true);
+      }}
+    >
+      إضافة نشاط
+    </Button>
+  );
+
+  return (
+    <>
+      <AssignTeacherCard
+        childId={child.id}
+        childName={child.name}
+        currentTeacherName={plan.data.teacherName}
+      />
+      <ApiErrorAlert error={removeMutation.error} />
+      <PlanSection
+        activities={plan.data.activities}
+        action={addButton}
+        emptyText={
+          plan.data.hasPlan
+            ? 'أضف أنشطة مناسبة للطفل من قائمة الأنشطة المتاحة.'
+            : 'لا توجد خطة تدريبية لهذا الطفل بعد. أسنِد له معلماً، ثم أضف أول نشاط لبدء الخطة.'
+        }
+        onRemove={setToRemove}
+        progress={plan.data.progress}
+        resultChildId={child.id}
+      />
+      <AssignActivityDialog
+        isOpen={isPickerOpen}
+        childId={child.id}
+        childName={child.name}
+        onClose={() => {
+          setIsPickerOpen(false);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={toRemove !== null}
+        title="إزالة النشاط من الخطة"
+        description={`سيتم إزالة «${toRemove?.title ?? ''}» من خطة ${child.name}.`}
+        confirmLabel="إزالة"
+        isConfirming={removeMutation.isPending}
+        onCancel={() => {
+          setToRemove(null);
+        }}
+        onConfirm={() => {
+          if (!toRemove) return;
+          removeMutation.mutate(toRemove.activityId, {
+            onSettled: () => {
+              setToRemove(null);
+            },
+          });
+        }}
+      />
+    </>
+  );
+}
 
 /**
- * Education plans for one child (Replit IEP page). Every role can view; Specialist and Admin
- * can add a plan locally (UI only — nothing is saved).
+ * Training plan for one child. The real model is a list of assigned activities (Replit's
+ * free-text IEP — goals, strategies, notes — has no API and is not migrated).
  */
 export function ChildPlansPage() {
   const { childId = '' } = useParams();
   const { role, paths } = useRoleArea();
-  const child = findPlanChild(role, childId);
-  const canCreate = (PLAN_EDITOR_ROLES as readonly string[]).includes(role);
-  const [plans, setPlans] = useState<readonly EducationPlan[]>(
-    () => MOCK_EDUCATION_PLANS[childId] ?? [],
-  );
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [lastCreated, setLastCreated] = useState<string | null>(null);
+  const childrenQuery = useChildrenForRole(role);
 
-  if (!child) {
+  const notFound = (
+    <div className={styles.page}>
+      <Link to={paths.children} className={styles.backLink}>
+        <ArrowRight aria-hidden="true" />
+        العودة إلى الأطفال
+      </Link>
+      <EmptyState
+        icon={<UserX />}
+        title="لم يتم العثور على الطفل"
+        description="قد يكون الرابط غير صحيح أو أن الملف غير متاح."
+        action={
+          <Link to={paths.children} className={getButtonClassName()}>
+            العودة إلى الأطفال
+          </Link>
+        }
+      />
+    </div>
+  );
+
+  if (role === 'Admin') {
     return (
       <div className={styles.page}>
         <Link to={paths.children} className={styles.backLink}>
@@ -43,48 +237,31 @@ export function ChildPlansPage() {
           العودة إلى الأطفال
         </Link>
         <EmptyState
-          icon={<UserX />}
-          title="لم يتم العثور على الطفل"
-          description="قد يكون الرابط غير صحيح أو أن الملف غير متاح."
-          action={
-            <Link to={paths.children} className={getButtonClassName()}>
-              العودة إلى الأطفال
-            </Link>
-          }
+          icon={<BookOpen />}
+          title="الخطط التدريبية غير متاحة لحساب المدير بعد"
+          description="لا يوفّر الخادم حالياً طريقة لعرض الخطط التدريبية للمدير."
+        />
+      </div>
+    );
+  }
+  if (childrenQuery.isPending) return <LoadingState />;
+  if (childrenQuery.error) {
+    return (
+      <div className={styles.page}>
+        <LoadError
+          error={childrenQuery.error}
+          title="تعذّر تحميل قائمة الأطفال"
+          onRetry={() => {
+            void childrenQuery.refetch();
+          }}
         />
       </div>
     );
   }
 
-  const openForm = () => {
-    setIsFormOpen(true);
-  };
-
-  // TEMPORARY local behaviour until training plans are integrated.
-  const handleCreate = (values: EducationPlanFormValues) => {
-    const plan: EducationPlan = {
-      id: `local-${crypto.randomUUID()}`,
-      title: values.title,
-      status: values.status,
-      startedAt: toIsoDateString(new Date()),
-      goals: toLines(values.goals),
-      strategies: toLines(values.strategies),
-      activitiesCompleted: 0,
-      activitiesTotal: 0,
-      isLocal: true,
-      ...(values.reviewDate ? { reviewDate: values.reviewDate } : {}),
-      ...(values.notes ? { notes: values.notes } : {}),
-    };
-    setPlans((current) => [plan, ...current]);
-    setLastCreated(plan.title);
-    setIsFormOpen(false);
-  };
-
-  const createButton = (
-    <Button variant="outline" iconStart={<Plus aria-hidden="true" />} onClick={openForm}>
-      خطة جديدة
-    </Button>
-  );
+  const found = childrenQuery.data.find((candidate) => candidate.id === childId);
+  if (!found) return notFound;
+  const child: PlanChild = { id: found.id, name: found.fullName };
 
   return (
     <div className={styles.page}>
@@ -95,9 +272,8 @@ export function ChildPlansPage() {
 
       <PageBanner
         tone="violet"
-        title="الخطط التعليمية"
+        title="الخطة التدريبية"
         subtitle={`للطفل: ${child.name}`}
-        actions={canCreate ? createButton : undefined}
         aside={
           <span className={styles.bannerIcon} aria-hidden="true">
             <BookOpen />
@@ -105,49 +281,11 @@ export function ChildPlansPage() {
         }
       />
 
-      {lastCreated ? (
-        <Alert tone="success">
-          {`تمت إضافة الخطة «${lastCreated}».`} {LOCAL_ONLY}
-        </Alert>
-      ) : null}
-
-      {plans.length === 0 ? (
-        <EmptyState
-          icon={<BookOpen />}
-          title="لا توجد خطط تعليمية بعد"
-          description={
-            canCreate
-              ? 'أنشئ خطة تعليمية فردية لهذا الطفل.'
-              : 'لم يتم إنشاء أي خطة تعليمية لهذا الطفل حتى الآن.'
-          }
-          action={
-            canCreate ? (
-              <Button iconStart={<Plus aria-hidden="true" />} onClick={openForm}>
-                خطة جديدة
-              </Button>
-            ) : undefined
-          }
-        />
+      {role === 'Specialist' ? (
+        <SpecialistPlanEditor child={child} />
       ) : (
-        <ul className={styles.grid} aria-label="قائمة الخطط التعليمية">
-          {plans.map((plan) => (
-            <li key={plan.id}>
-              <PlanCard plan={plan} />
-            </li>
-          ))}
-        </ul>
+        <ReadOnlyPlan child={child} />
       )}
-
-      {canCreate ? (
-        <PlanFormDialog
-          isOpen={isFormOpen}
-          childName={child.name}
-          onClose={() => {
-            setIsFormOpen(false);
-          }}
-          onCreate={handleCreate}
-        />
-      ) : null}
     </div>
   );
 }

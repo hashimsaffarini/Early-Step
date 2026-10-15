@@ -43,18 +43,31 @@ describe('ResetPasswordPage', () => {
     expect(screen.getByText('كلمتا المرور غير متطابقتين')).toBeInTheDocument();
   });
 
-  it('shows a local success state that leads to login', async () => {
-    renderReset();
-
-    await userEvent.type(screen.getByLabelText('رمز التحقق'), '123456');
+  async function fillValid(code: string) {
+    await userEvent.type(screen.getByLabelText('البريد الإلكتروني'), 'parent@demo.test');
+    await userEvent.type(screen.getByLabelText('رمز التحقق'), code);
     await userEvent.type(screen.getByLabelText('كلمة المرور الجديدة'), STRONG_PASSWORD);
     await userEvent.type(screen.getByLabelText('تأكيد كلمة المرور'), STRONG_PASSWORD);
     await submit();
+  }
+
+  it('resets the password and leads to login', async () => {
+    renderReset();
+
+    await fillValid('1234');
 
     expect(
-      screen.getByRole('heading', { name: 'تم التحقق من كلمة المرور الجديدة' }),
+      await screen.findByRole('heading', { name: 'تم تغيير كلمة المرور' }),
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('link', { name: 'تسجيل الدخول' }));
     expect(screen.getByRole('heading', { name: 'صفحة الدخول' })).toBeInTheDocument();
+  });
+
+  it('shows the backend error for an invalid code', async () => {
+    renderReset();
+
+    await fillValid('9999');
+
+    expect(await screen.findByText('Invalid or expired code.')).toBeInTheDocument();
   });
 });

@@ -1,7 +1,13 @@
 .intro {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--space-6);
+  padding: var(--space-8) var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .greeting {
@@ -32,68 +38,7 @@
   line-height: var(--line-height-snug);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-@media (max-width: 30rem) {
-  .grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  block-size: 100%;
-  text-align: center;
-}
-
-.completedTile {
-  border-color: var(--color-success-strong);
-}
-
-.tileTitle {
-  margin: 0;
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-extrabold);
-  color: var(--color-text-primary);
-}
-
-.tileText {
-  flex: 1;
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-snug);
-}
-
-.done {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--color-success-strong);
-  font-weight: var(--font-weight-bold);
-}
-
-.done svg {
-  inline-size: 1.125rem;
-  block-size: 1.125rem;
-}
-
-.playButton {
-  min-block-size: var(--tap-target-child);
-}
-
 .playAll {
+  max-inline-size: 24rem;
   min-block-size: var(--tap-target-child);
-  font-size: var(--font-size-lg);
 }

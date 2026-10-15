@@ -28,8 +28,9 @@ export function setupInterceptors(client: AxiosInstance): void {
   client.interceptors.request.use((config) => {
     config.baseURL ??= getEnv().apiBaseUrl;
 
+    // An explicit header wins (login sends the new token to `Auth/me` before it is stored).
     const token = authHooks?.getAccessToken();
-    if (token) {
+    if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 

@@ -1,256 +1,374 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 
 import { routes } from '@/app/router/routes';
-import { buildParentChildProfilePath, getAreaPaths, ROUTE_PATHS } from '@/constants/routes';
+import { getAreaPaths, type AreaRole } from '@/constants/routes';
+import { findMockChild } from '@/mocks/fixtures/children';
+import { apiUrl } from '@/mocks/http';
+import { server } from '@/mocks/server';
 import { renderWithRouter } from '@/test/renderWithRouter';
+import { signInAs } from '@/test/session';
 
-async function renderProfile(childId: string) {
-  const result = renderWithRouter(routes, buildParentChildProfilePath(childId));
-  await screen.findAllByRole('link', { name: 'العودة إلى أطفالي' });
-  return result;
+const YOUSEF = 'c0000000-0000-4000-8000-000000000001';
+const REEM = 'c0000000-0000-4000-8000-000000000003';
+const SALMA = 'c0000000-0000-4000-8000-000000000005'; // another parent's child
+
+function renderProfile(role: AreaRole, childId: string) {
+  signInAs(role);
+  return renderWithRouter(routes, getAreaPaths(role).childProfile(childId));
 }
 
-const getTab = (name: RegExp) => screen.getByRole('tab', { name });
+const heading = (name: string) => screen.findByRole('heading', { level: 1, name });
+const tab = (name: RegExp) => screen.getByRole('tab', { name });
 
-describe('ChildProfilePage — routing', () => {
-  it('renders the profile of a known child ID', async () => {
-    await renderProfile('mock-child-1');
+/** The options listed after a result label ("إجابة الطفل:"), in order. */
+function optionsAfter(container: HTMLElement, label: string): string[] {
+  const line = within(container).getByText(`${label}:`).parentElement;
+  if (!line) throw new Error(`no line for ${label}`);
+  return within(line)
+    .getAllByRole('listitem')
+    .map((item) => item.textContent);
+}
 
-    expect(screen.getByRole('heading', { level: 1, name: 'يوسف' })).toBeInTheDocument();
-    expect(screen.queryByText('لم يتم العثور على الطفل')).not.toBeInTheDocument();
-  });
+describe('ChildProfilePage — resolving the child', () => {
+  it('loads the parent child from GET Parent/{id} with API fields only', async () => {
+    renderProfile('Parent', YOUSEF);
 
-  it('renders a not-found state for an unknown child ID', async () => {
-    await renderProfile('unknown-child');
-
-    expect(screen.getByText('لم يتم العثور على الطفل')).toBeInTheDocument();
-    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
-    for (const link of screen.getAllByRole('link', { name: 'العودة إلى أطفالي' })) {
-      expect(link).toHaveAttribute('href', ROUTE_PATHS.parentChildren);
-    }
-  });
-
-  it('opens the profile from the children list card', async () => {
-    const { router } = renderWithRouter(routes, ROUTE_PATHS.parentChildren);
-
-    await userEvent.click(await screen.findByRole('link', { name: 'عرض ملف نور' }));
-
-    expect(await screen.findByRole('heading', { level: 1, name: 'نور' })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe(buildParentChildProfilePath('mock-child-2'));
-  });
-});
-
-describe('ChildProfilePage — header', () => {
-  it('shows name, age, birth date, gender and a neutral status', async () => {
-    await renderProfile('mock-child-1');
+    expect(await heading('يوسف')).toBeInTheDocument();
     const details = screen.getByRole('list', { name: 'بيانات الطفل' });
-
-    expect(within(details).getByText('لديه خطة تدريبية')).toBeInTheDocument();
-    expect(within(details).getByText(/العمر:/)).toBeInTheDocument();
-    expect(within(details).getByText(/تاريخ الميلاد:.*2019/)).toBeInTheDocument();
+    expect(within(details).getByText(/العمر: 7 سنوات/)).toBeInTheDocument();
     expect(within(details).getByText('ولد')).toBeInTheDocument();
+    expect(screen.queryByText(/تاريخ الميلاد/)).not.toBeInTheDocument();
   });
 
-  it('shows no diagnosis, risk or percentages', async () => {
-    await renderProfile('mock-child-1');
+  it.each([
+    ['an unknown id (404)', 'c0000000-0000-4000-8000-000000000999'],
+    ["another parent's child (403)", SALMA],
+  ])('shows not-found for %s', async (_label, childId) => {
+    renderProfile('Parent', childId);
 
-    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/تشخيص|خطورة|العمر النمائي/)).not.toBeInTheDocument();
+    expect(await screen.findByText('لم يتم العثور على الطفل')).toBeInTheDocument();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });
 
-  it('keeps future actions disabled', async () => {
-    await renderProfile('mock-child-1');
+  it('shows an error state (not "not found") when the server fails', async () => {
+    server.use(http.get(apiUrl('Parent/:childId'), () => new HttpResponse(null, { status: 500 })));
+    renderProfile('Parent', YOUSEF);
 
-    expect(screen.getByRole('button', { name: /تعديل البيانات/ })).toBeDisabled();
-  });
-});
-
-describe('ChildProfilePage — tabs', () => {
-  it('renders the four tabs with overview selected', async () => {
-    await renderProfile('mock-child-1');
-
-    expect(within(screen.getByRole('tablist')).getAllByRole('tab')).toHaveLength(4);
-    expect(getTab(/نظرة عامة/)).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByText('تعذّر تحميل ملف الطفل')).toBeInTheDocument();
   });
 
-  it('switches content when a tab is clicked', async () => {
-    await renderProfile('mock-child-1');
+  it('finds a teacher child in the teacher list, and not-found outside it', async () => {
+    const { unmount } = renderProfile('Teacher', YOUSEF);
+    expect(await heading('يوسف')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ملاحظات المعلم/ })).toHaveAttribute(
+      'href',
+      getAreaPaths('Teacher').childNotes(YOUSEF),
+    );
+    unmount();
 
-    await userEvent.click(getTab(/الأنشطة/));
-    expect(getTab(/الأنشطة/)).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('region', { name: 'الألعاب المُعيَّنة' })).toBeInTheDocument();
-    expect(screen.getByText('مطابقة البطاقات')).toBeInTheDocument();
-
-    await userEvent.click(getTab(/التقارير/));
-    expect(screen.getByText('تقرير متابعة')).toBeInTheDocument();
-    expect(screen.queryByText('مطابقة البطاقات')).not.toBeInTheDocument();
+    renderProfile('Teacher', REEM);
+    expect(await screen.findByText('لم يتم العثور على الطفل')).toBeInTheDocument();
   });
 
-  it('moves between tabs with the arrow keys (RTL order)', async () => {
-    await renderProfile('mock-child-1');
+  it('explains that the admin has no child-profile endpoint', async () => {
+    renderProfile('Admin', YOUSEF);
 
-    getTab(/نظرة عامة/).focus();
-    await userEvent.keyboard('{ArrowLeft}');
-
-    expect(getTab(/التقييمات/)).toHaveAttribute('aria-selected', 'true');
-    expect(getTab(/التقييمات/)).toHaveFocus();
-    expect(screen.getByRole('region', { name: 'سجل التقييمات' })).toBeInTheDocument();
-
-    await userEvent.keyboard('{ArrowRight}');
-    expect(getTab(/نظرة عامة/)).toHaveAttribute('aria-selected', 'true');
-  });
-
-  it('jumps to the activities tab from the plan summary', async () => {
-    await renderProfile('mock-child-1');
-
-    await userEvent.click(screen.getByRole('button', { name: /عرض الأنشطة/ }));
-
-    expect(getTab(/الأنشطة/)).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByText('ملف الطفل غير متاح للمدير من الخادم')).toBeInTheDocument();
   });
 });
 
-describe('ChildProfilePage — overview', () => {
-  it('summarises the assessment, training plan and reports', async () => {
-    await renderProfile('mock-child-1');
+describe('ChildProfilePage — tabs from the API', () => {
+  it('shows plan summary counts and plan progress on the overview', async () => {
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
 
-    const assessment = screen.getByRole('region', { name: 'التقييم المبدئي' });
-    expect(within(assessment).getByText('تم إكمال التقييم المبدئي')).toBeInTheDocument();
-
+    const summary = await screen.findByRole('region', { name: 'ملخص الأنشطة' });
+    expect(await within(summary).findByText('أنشطة الخطة')).toBeInTheDocument();
     const plan = screen.getByRole('region', { name: 'الخطة التدريبية' });
-    expect(within(plan).getByText('خطة المهارات الأساسية')).toBeInTheDocument();
-    expect(within(plan).getByRole('progressbar')).toHaveAttribute('aria-valuetext', '3 من 8 أنشطة');
-
-    const reports = screen.getByRole('region', { name: 'أحدث التقارير' });
-    expect(within(reports).getByText('تقرير متابعة')).toBeInTheDocument();
-
-    expect(screen.getByRole('region', { name: 'آخر النشاطات' })).toBeInTheDocument();
+    expect(await within(plan).findByRole('progressbar')).toHaveAttribute(
+      'aria-valuetext',
+      '1 من 2 أنشطة',
+    );
   });
 
-  it('shows the pending assessment state for a child who has not started', async () => {
-    await renderProfile('mock-child-3');
+  it('lists plan activities with play links for the parent', async () => {
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
 
-    const assessment = screen.getByRole('region', { name: 'التقييم المبدئي' });
-    expect(within(assessment).getByText('لم يبدأ التقييم المبدئي بعد')).toBeInTheDocument();
+    await userEvent.click(tab(/الأنشطة/));
+
+    const link = await screen.findByRole('link', { name: 'ابدأ: اختبار الأعداد' });
+    expect(link).toHaveAttribute(
+      'href',
+      getAreaPaths('Parent').planActivityPlay(YOUSEF, 'a0000000-0000-4000-8000-000000000002'),
+    );
+    // The live child-facing list has no answer counts (verified) — none are shown.
+    expect(screen.queryByText(/إجابات صحيحة/)).not.toBeInTheDocument();
+  });
+
+  it('gives the specialist a plan-management link instead of play links', async () => {
+    renderProfile('Specialist', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/الأنشطة/));
+
+    const manage = await screen.findAllByRole('link', { name: 'إدارة الخطة التدريبية' });
+    for (const link of manage) {
+      expect(link).toHaveAttribute('href', getAreaPaths('Specialist').childPlans(YOUSEF));
+    }
+    expect(screen.queryByRole('link', { name: /^ابدأ:/ })).not.toBeInTheDocument();
+  });
+
+  it('shows the child report (one per child) with a link to the report detail', async () => {
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/^التقرير/));
+
+    expect(await screen.findByRole('link', { name: 'عرض التقرير: تقرير متابعة' })).toHaveAttribute(
+      'href',
+      getAreaPaths('Parent').reportDetail('r0000000-0000-4000-8000-000000000001'),
+    );
+  });
+
+  it('shows empty plan and report states for a child without data', async () => {
+    renderProfile('Parent', REEM);
+    await heading('ريم');
+
+    await userEvent.click(tab(/الأنشطة/));
+    expect(await screen.findByText('لا توجد أنشطة في الخطة التدريبية بعد')).toBeInTheDocument();
+    await userEvent.click(tab(/^التقرير/));
+    expect(await screen.findByText('لا يوجد تقرير بعد')).toBeInTheDocument();
+  });
+
+  it('offers the parent to start the assessment and never reads the saved result', async () => {
+    let resultCalls = 0;
+    server.events.on('request:start', ({ request }) => {
+      if (request.url.includes('/result')) resultCalls += 1;
+    });
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/التقييمات/));
+
+    expect(await screen.findByText(/ويراجع الأخصائي النتيجة/)).toBeInTheDocument();
+    expect(resultCalls).toBe(0);
+    server.events.removeAllListeners();
+    expect(screen.getAllByRole('link', { name: 'بدء التقييم المبدئي لـ يوسف' })[0]).toHaveAttribute(
+      'href',
+      getAreaPaths('Parent').assessment(YOUSEF),
+    );
+  });
+
+  it('shows the saved assessment result from GET initial-assessment/{childId}/result', async () => {
+    server.use(
+      http.get(apiUrl('initial-assessment/:childId/result'), () =>
+        HttpResponse.json({
+          childId: YOUSEF,
+          overallScore: 80,
+          categories: [{ categoryName: 'القراءة', percentage: 60 }],
+        }),
+      ),
+    );
+    renderProfile('Specialist', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/التقييمات/));
+
+    const region = await screen.findByRole('region', { name: 'نتيجة التقييم المبدئي' });
     expect(
-      within(assessment).getByRole('link', { name: 'بدء التقييم المبدئي لـ ريم' }),
-    ).toHaveAttribute('href', getAreaPaths('Parent').assessment('mock-child-3'));
+      within(region).getByRole('progressbar', { name: 'النتيجة العامة للتقييم المبدئي' }),
+    ).toHaveAttribute('aria-valuenow', '80');
+    expect(within(region).getByRole('progressbar', { name: 'القراءة' })).toHaveAttribute(
+      'aria-valuenow',
+      '60',
+    );
+    expect(within(region).getByText(/وليست تشخيصاً/)).toBeInTheDocument();
+  });
+
+  it('shows the per-question details the server sends to staff (live shape 2026-10-14)', async () => {
+    const option = (optionId: string, optionText: string) => ({
+      optionId,
+      optionText,
+      optionImageUrl: null,
+    });
+    server.use(
+      http.get(apiUrl('initial-assessment/:childId/result'), () =>
+        HttpResponse.json({
+          childId: YOUSEF,
+          childName: 'يوسف',
+          parentId: 'u-parent',
+          parentName: 'محمد أحمد',
+          overallScore: 66.67,
+          assessmentId: 'as-1',
+          categories: [
+            {
+              categoryId: 'cat-1',
+              categoryName: 'الرياضيات',
+              percentage: 67,
+              totalQuestions: 3,
+              correctAnswers: 2,
+              questions: [
+                {
+                  questionId: 'q1',
+                  questionText: 'اختر الأعداد الزوجية',
+                  questionType: 'MultiSelect',
+                  isCorrect: true,
+                  childAnswers: [option('o2', '4'), option('o1', '2')],
+                  correctAnswers: [option('o1', '2'), option('o2', '4')],
+                },
+                {
+                  questionId: 'q2',
+                  questionText: 'رتّب الأعداد',
+                  questionType: 'Sequence',
+                  isCorrect: false,
+                  childAnswers: [option('o4', '3'), option('o3', '1')],
+                  correctAnswers: [option('o3', '1'), option('o4', '3')],
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+    renderProfile('Specialist', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/التقييمات/));
+
+    const region = await screen.findByRole('region', { name: 'نتيجة التقييم المبدئي' });
+    expect(within(region).getByText('2 من 3 إجابات صحيحة')).toBeInTheDocument();
+    await userEvent.click(within(region).getByText('تفاصيل الأسئلة (2)'));
+    const questions = within(region).getByRole('list', { name: 'أسئلة الرياضيات' });
+    expect(within(questions).getByText('إجابة صحيحة')).toBeInTheDocument();
+    expect(within(questions).getByText('إجابة غير صحيحة')).toBeInTheDocument();
+    const sequence = within(questions).getByText('رتّب الأعداد').closest('li');
+    if (!sequence) throw new Error('sequence question not found');
+    expect(optionsAfter(sequence, 'إجابة الطفل')).toEqual(['3', '1']);
+    expect(optionsAfter(sequence, 'الإجابة الصحيحة')).toEqual(['1', '3']);
+  });
+
+  it("gives the specialist a read-only tab with the teacher's notes", async () => {
+    server.use(
+      http.get(apiUrl('Teacher/children/:childId/feedbacks'), () =>
+        HttpResponse.json([{ id: 'n-1', content: 'يتحسّن في الحروف', createdAt: '2026-10-02' }]),
+      ),
+    );
+    renderProfile('Specialist', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/ملاحظات المعلم/));
+
+    const list = await screen.findByRole('list', { name: 'ملاحظات المعلم' });
+    expect(within(list).getByText('يتحسّن في الحروف')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'تعديل الملاحظة' })).not.toBeInTheDocument();
+  });
+
+  it('shows the teacher-notes tab to the specialist only', async () => {
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    expect(screen.queryByRole('tab', { name: /ملاحظات المعلم/ })).not.toBeInTheDocument();
+  });
+
+  it('does not offer to start an assessment to staff', async () => {
+    renderProfile('Teacher', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/التقييمات/));
+
+    expect(screen.queryByRole('link', { name: /بدء التقييم/ })).not.toBeInTheDocument();
+  });
+
+  it('never calls the staff-only result endpoint as Teacher', async () => {
+    let resultCalls = 0;
+    server.events.on('request:start', ({ request }) => {
+      if (request.url.includes('initial-assessment')) resultCalls += 1;
+    });
+    renderProfile('Teacher', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/التقييمات/));
+
+    expect(await screen.findByText('يراجع الأخصائي نتيجة التقييم المبدئي')).toBeInTheDocument();
+    expect(resultCalls).toBe(0);
+    server.events.removeAllListeners();
   });
 });
 
-describe('ChildProfilePage — empty states', () => {
-  it('shows the no-plan state for a child without a training plan', async () => {
-    await renderProfile('mock-child-2');
-
-    const plan = screen.getByRole('region', { name: 'الخطة التدريبية' });
-    expect(within(plan).getByText('لا توجد خطة تدريبية بعد')).toBeInTheDocument();
-
-    await userEvent.click(getTab(/الأنشطة/));
-    expect(screen.getByText('لا توجد خطة تدريبية بعد')).toBeInTheDocument();
-  });
-
-  it('shows the no-reports state for a child without reports', async () => {
-    await renderProfile('mock-child-4');
-
-    const reports = screen.getByRole('region', { name: 'أحدث التقارير' });
-    expect(within(reports).getByText('لا توجد تقارير بعد')).toBeInTheDocument();
-
-    await userEvent.click(getTab(/التقارير/));
-    expect(screen.getByText('لا توجد تقارير بعد')).toBeInTheDocument();
-  });
-});
-
-describe('ChildProfilePage — links to other screens', () => {
-  it('links the header to the education plans page', async () => {
-    await renderProfile('mock-child-1');
-
-    expect(screen.getByRole('link', { name: 'الخطط التعليمية' })).toHaveAttribute(
-      'href',
-      '/parent/children/mock-child-1/plans',
+describe('ChildProfilePage — parent edit and delete', () => {
+  it('edits the child through PATCH and shows the new data', async () => {
+    let received: FormData | undefined;
+    server.use(
+      http.patch(apiUrl('Parent/:childId'), async ({ request }) => {
+        received = await request.clone().formData();
+        return undefined;
+      }),
     );
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(screen.getByRole('button', { name: 'تعديل البيانات' }));
+    const dialog = screen.getByRole('dialog', { name: 'تعديل بيانات الطفل' });
+    const age = within(dialog).getByLabelText(/العمر/);
+    expect(age).toHaveValue(7);
+    await userEvent.clear(age);
+    await userEvent.type(age, '8');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ' }));
+
+    expect(await screen.findByText('تم حفظ بيانات الطفل.')).toBeInTheDocument();
+    expect(received?.get('Age')).toBe('8');
+    expect(received?.get('Gender')).toBe('ولد');
+    await waitFor(() => {
+      expect(screen.getByText(/العمر: 8 سنوات/)).toBeInTheDocument();
+    });
   });
 
-  it('links activities to the role-scoped players', async () => {
-    await renderProfile('mock-child-1');
+  it('does not offer to delete a child with saved activity results (product rule)', async () => {
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
 
-    await userEvent.click(getTab(/الأنشطة/));
-
-    expect(screen.getByRole('link', { name: 'العب: مطابقة البطاقات' })).toHaveAttribute(
-      'href',
-      '/parent/games/memory-match/play',
-    );
-    expect(screen.getByRole('link', { name: 'ابدأ: اختبار الحروف' })).toHaveAttribute(
-      'href',
-      '/parent/tests/letters-test/play',
-    );
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'حذف الملف' })).toBeDisabled();
+    });
+    expect(screen.getByText(/لا يمكن حذف ملف طفل لديه نتائج أنشطة محفوظة/)).toBeInTheDocument();
   });
 
-  it('links reports to the report detail', async () => {
-    await renderProfile('mock-child-1');
+  it('keeps the child when deletion is cancelled', async () => {
+    renderProfile('Parent', REEM);
+    await heading('ريم');
 
-    const summary = screen.getByRole('region', { name: 'أحدث التقارير' });
-    expect(within(summary).getByRole('link', { name: 'تقرير متابعة' })).toHaveAttribute(
-      'href',
-      getAreaPaths('Parent').reportDetail('report-1'),
-    );
+    await userEvent.click(screen.getByRole('button', { name: 'حذف الملف' }));
+    const confirm = screen.getByRole('dialog', { name: 'حذف ملف الطفل' });
+    await userEvent.click(within(confirm).getByRole('button', { name: 'إلغاء' }));
 
-    await userEvent.click(getTab(/التقارير/));
-    expect(screen.getByRole('link', { name: 'عرض التقرير: تقرير متابعة' })).toHaveAttribute(
-      'href',
-      '/parent/reports/report-1',
-    );
+    expect(findMockChild(REEM)).toBeDefined();
+    expect(screen.getByRole('heading', { level: 1, name: 'ريم' })).toBeInTheDocument();
   });
 
-  it('does not offer activity assignment to the parent', async () => {
-    await renderProfile('mock-child-1');
+  it('deletes a child without results after confirmation and returns to the list', async () => {
+    const { router } = renderProfile('Parent', REEM);
+    await heading('ريم');
 
-    expect(screen.queryByRole('button', { name: /تعيين نشاط جديد/ })).not.toBeInTheDocument();
-  });
-});
+    await userEvent.click(screen.getByRole('button', { name: 'حذف الملف' }));
+    const confirm = screen.getByRole('dialog', { name: 'حذف ملف الطفل' });
+    await userEvent.click(within(confirm).getByRole('button', { name: 'حذف' }));
 
-describe('ChildProfilePage — staff roles', () => {
-  async function renderStaffProfile(path: string) {
-    const result = renderWithRouter(routes, path);
-    await screen.findAllByRole('link', { name: 'العودة إلى الأطفال' });
-    return result;
-  }
-
-  it('shows not-found for a child outside the role roster', async () => {
-    await renderStaffProfile(getAreaPaths('Teacher').childProfile('mock-child-4'));
-
-    expect(screen.getByText('لم يتم العثور على الطفل')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(getAreaPaths('Parent').children);
+    });
+    expect(findMockChild(REEM)).toBeUndefined();
+    expect(await screen.findByRole('heading', { name: 'يوسف' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'ريم' })).not.toBeInTheDocument();
   });
 
-  it('lets a teacher assign a game locally', async () => {
-    await renderStaffProfile(getAreaPaths('Teacher').childProfile('mock-child-6'));
+  it('gives staff no edit or delete actions', async () => {
+    renderProfile('Specialist', YOUSEF);
+    await heading('يوسف');
 
-    await userEvent.click(screen.getByRole('button', { name: /تعيين نشاط جديد/ }));
-    const dialog = screen.getByRole('dialog', { name: 'تعيين نشاط للطفل' });
-    await userEvent.click(within(dialog).getByRole('button', { name: 'تعيين الكلمات المتقاطعة' }));
-
-    expect(within(dialog).getByText('مُعيَّن')).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'تم' }));
-    expect(
-      screen.getByText('تمت إضافة «الكلمات المتقاطعة» إلى أنشطة الطفل (محلياً فقط).'),
-    ).toBeInTheDocument();
-
-    await userEvent.click(getTab(/الأنشطة/));
-    expect(screen.getByRole('link', { name: 'العب: الكلمات المتقاطعة' })).toHaveAttribute(
-      'href',
-      '/teacher/games/word-reading/play',
-    );
-  });
-
-  it('marks activities the child already has as assigned', async () => {
-    await renderStaffProfile(getAreaPaths('Specialist').childProfile('mock-child-1'));
-
-    await userEvent.click(screen.getByRole('button', { name: /تعيين نشاط جديد/ }));
-    const dialog = screen.getByRole('dialog', { name: 'تعيين نشاط للطفل' });
-
-    expect(
-      within(dialog).queryByRole('button', { name: 'تعيين مطابقة البطاقات' }),
-    ).not.toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('tab', { name: /الاختبارات/ }));
-    expect(within(dialog).getByRole('button', { name: 'تعيين اختبار الكتابة' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'تعديل البيانات' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'حذف الملف' })).not.toBeInTheDocument();
   });
 });

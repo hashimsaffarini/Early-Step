@@ -10,16 +10,12 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  /* Fits the column it sits in: 3 cards full width, 2 in the main column of a split page. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
 }
 
-@media (min-width: 40rem) {
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 80rem) {
-  .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.planError {
+  margin: 0;
+  color: var(--color-danger-strong);
+  font-size: var(--font-size-sm);
 }

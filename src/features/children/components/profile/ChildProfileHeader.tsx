@@ -1,68 +1,106 @@
-import { BookOpen, Cake, CalendarDays, Smile } from 'lucide-react';
+import { BookOpen, Cake, NotebookPen, Pencil, Smile, Trash2 } from 'lucide-react';
 import { Link } from 'react-router';
 
-import { ComingSoonButton } from '@/components/shared/ComingSoonButton';
 import { Avatar } from '@/components/ui/Avatar';
-import { getButtonClassName } from '@/components/ui/Button';
-import { CHILD_GENDER_LABELS, CHILD_STATUS_DISPLAY } from '@/constants/childDisplay';
+import { Button, getButtonClassName } from '@/components/ui/Button';
+import type { AreaRole } from '@/constants/routes';
 import { useRoleArea } from '@/hooks/useRoleArea';
-import { ageInYears, formatAge } from '@/utils/age';
-import { cx } from '@/utils/classNames';
-import { formatDisplayDate } from '@/utils/dateFormat';
+import type { ChildSummary } from '@/services/api/childrenLists';
+import { formatAge } from '@/utils/age';
 
-import type { ChildProfileDetails, ChildRecord } from '@/features/children/types';
+import { childAgeYears } from '../childDisplay';
 
 import styles from './ChildProfileHeader.module.css';
 import { StartAssessmentLink } from './StartAssessmentLink';
 
 export interface ChildProfileHeaderProps {
-  child: ChildRecord;
-  details: ChildProfileDetails;
+  child: ChildSummary;
+  role: AreaRole;
+  /** Parent only. */
+  onEdit?: (() => void) | undefined;
+  /** Parent only. */
+  onDelete?: (() => void) | undefined;
+  /** Children with saved results stay (product rule): the delete action is shown disabled. */
+  isDeleteBlocked?: boolean;
 }
 
-/** Replit profile header: gradient card, large avatar, name, info pills, actions. */
-export function ChildProfileHeader({ child, details }: ChildProfileHeaderProps) {
+const PLANS_LABEL: Record<AreaRole, string> = {
+  Parent: 'الخطة التدريبية',
+  Teacher: 'الخطة التدريبية',
+  Specialist: 'إدارة الخطة التدريبية',
+  Admin: 'الخطة التدريبية',
+};
+
+/** Replit profile header: gradient card, large avatar, name, info pills (API fields), actions. */
+/** Shown when deletion is blocked; results must stay for the history of the child. */
+export const DELETE_BLOCKED =
+  'لا يمكن حذف ملف طفل لديه نتائج أنشطة محفوظة، حفاظاً على سجل متابعته.';
+
+export function ChildProfileHeader({
+  child,
+  role,
+  onEdit,
+  onDelete,
+  isDeleteBlocked = false,
+}: ChildProfileHeaderProps) {
   const { paths } = useRoleArea();
-  const status = CHILD_STATUS_DISPLAY[child.status];
-  const hasPendingAssessment = details.assessments.some(
-    (assessment) => assessment.state === 'not-started',
-  );
+  const age = childAgeYears(child);
 
   return (
     <header className={styles.header}>
-      <Avatar name={child.name} size="xl" shape="circle" className={styles.avatar} />
+      <Avatar name={child.fullName} size="xl" shape="circle" className={styles.avatar} />
       <div className={styles.body}>
-        <h1 className={styles.title}>{child.name}</h1>
+        <h1 className={styles.title}>{child.fullName}</h1>
         <ul className={styles.pills} aria-label="بيانات الطفل">
-          <li className={cx(styles.pill, styles.status)}>
-            <status.icon aria-hidden="true" />
-            {status.label}
-          </li>
-          <li className={styles.pill}>
-            <Cake aria-hidden="true" />
-            العمر: {formatAge(ageInYears(child.birthDate))}
-          </li>
-          <li className={styles.pill}>
-            <CalendarDays aria-hidden="true" />
-            تاريخ الميلاد: {formatDisplayDate(child.birthDate)}
-          </li>
-          <li className={styles.pill}>
-            <Smile aria-hidden="true" />
-            {CHILD_GENDER_LABELS[child.gender]}
-          </li>
+          {age !== null ? (
+            <li className={styles.pill}>
+              <Cake aria-hidden="true" />
+              العمر: {formatAge(age)}
+            </li>
+          ) : null}
+          {child.gender ? (
+            <li className={styles.pill}>
+              <Smile aria-hidden="true" />
+              {child.gender}
+            </li>
+          ) : null}
         </ul>
         <div className={styles.actions}>
-          {hasPendingAssessment ? (
-            <StartAssessmentLink childId={child.id} childName={child.name} variant="outline" />
+          {role === 'Parent' ? (
+            <StartAssessmentLink childId={child.id} childName={child.fullName} variant="outline" />
           ) : null}
           <Link
             to={paths.childPlans(child.id)}
             className={getButtonClassName({ variant: 'outline' })}
           >
             <BookOpen aria-hidden="true" />
-            الخطط التعليمية
+            {PLANS_LABEL[role]}
           </Link>
-          <ComingSoonButton variant="outline">تعديل البيانات</ComingSoonButton>
+          {role === 'Teacher' ? (
+            <Link
+              to={paths.childNotes(child.id)}
+              className={getButtonClassName({ variant: 'outline' })}
+            >
+              <NotebookPen aria-hidden="true" />
+              ملاحظات المعلم
+            </Link>
+          ) : null}
+          {onEdit ? (
+            <Button variant="outline" iconStart={<Pencil aria-hidden="true" />} onClick={onEdit}>
+              تعديل البيانات
+            </Button>
+          ) : null}
+          {onDelete ? (
+            <Button
+              variant="outline"
+              iconStart={<Trash2 aria-hidden="true" />}
+              disabled={isDeleteBlocked}
+              title={isDeleteBlocked ? DELETE_BLOCKED : undefined}
+              onClick={onDelete}
+            >
+              حذف الملف
+            </Button>
+          ) : null}
         </div>
       </div>
     </header>

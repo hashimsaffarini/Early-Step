@@ -91,3 +91,97 @@ permissions and business rules are not evidence of real backend behaviour.
 - User management mutations (if required)
 - Chat hub protocol (methods/events, auth)
 - Parent dashboard data
+
+## Backend integration findings (2026-10-06)
+
+Confirmed while integrating against the live Swagger (details and status per capability in
+`BACKEND_INTEGRATION_STATUS.md`; security issues in `SECURITY.md`):
+
+- **Resolved:** base URL, `/api` prefix (all paths), error formats, child model (age, not birth
+  date), gender values, three role values.
+- **Still missing on the backend:** login response contract and `me`/refresh/logout; assessment
+  results; non-single-choice answer payloads; training-plan result submission; activities list
+  for non-admin roles; admin children list and staff child detail; teacher list for specialists;
+  teacher-note listing; user management; admin/super-admin reports; report by id; adding one
+  option to a question; listing initial-assessment questions; activity feeds; real-time hub;
+  notifications.
+- **Product decisions taken (documented, reversible):** report authors = Specialists; only parents
+  start the initial assessment; tests/games catalogues for non-admin roles are local practice;
+  Replit's free-text plans and report "strengths" removed (no API fields).
+
+### Live verification round (2026-10-06)
+
+- **Resolved:** login contract and role values; teacher listing for specialists
+  (`GET specialist/teachers`, assignment UI added); assessment categories now return ids.
+- **Still missing:** assessment results endpoint (backend says it exists — not in Swagger/Apidog,
+  pending clarification); teacher notes list (`Teacher/feedbacks` in Apidog but 404 live); Teacher
+  demo account; authorization to run write flows on disposable records.
+- **Inconsistencies reported:** `initial-assessment/categories` vs `isInInitialAssessment` flags;
+  `parentName` containing emails; `Chats/users` exposing all users.
+
+### Re-verification after the backend update (2026-10-08)
+
+Current list: `BACKEND_REQUESTS.md`. Earlier "missing" items above are superseded by it.
+
+- **Resolved:** anonymous access on the last two endpoints; delete-all-options; forgot-password
+  enumeration; `Teacher/feedbacks` deployed (Teacher-only, shape unverified — no Teacher account);
+  first plan activity creates the plan once a teacher is assigned.
+- **Decided by the backend team:** one initial-assessment report per child (frontend now models a
+  single report); assessment results are returned by `complete` (no GET); `Matching` removed;
+  refresh token and notifications out of scope; broad CORS kept for development.
+- **Still open:** two option-less assessment questions block every completion; `Chats/users` 500
+  for Parent/Specialist; result not readable after the session; MultiSelect/Sequence answered with
+  one option (Sequence never scored correct); no plan-activity result submission; no deployed
+  SignalR hub; registration role rule to confirm; Teacher demo account.
+- **Product conflict to note:** the written flow has the specialist monitoring progress and
+  reading teacher feedback, but `Teacher/feedbacks` is Teacher-only and plan results cannot be
+  submitted — raised as questions, not assumed.
+
+### Re-verification after the second backend update (2026-10-10)
+
+- **Resolved:** assessment result readable later (`GET initial-assessment/{childId}/result`);
+  plan-activity answers saved (`…/submit`, all three types, correct scoring); option-less
+  assessment questions removed (completion works again); `Chats/users` fixed and filtered;
+  `Role` removed from public registration.
+- **Still open:** Admin 403 on `initial-assessment/categories` (new regression); MultiSelect /
+  Sequence in the initial assessment (one option; Sequence never correct); plan-result endpoint
+  403 for every available role; empty 500s (second submit, first activity without teacher);
+  duplicate reports accepted; SignalR not deployed; Teacher account.
+- **Product note:** the written flow has the specialist reading teacher feedback, but
+  `Teacher/feedbacks` stays Teacher-only — kept as a question, not assumed.
+
+### Re-verification after the third backend update (2026-10-14)
+
+- **Resolved:** `GET Auth/me` (session hydration on login and reload); `GET Admin/specialists`;
+  Admin reads `initial-assessment/categories` again; MultiSelect / Sequence in the initial
+  assessment (arrays accepted, scored by exact set / exact order); `assessmentId` + per-question
+  details in the result; plan result endpoint (Specialist), `score`, plan `progress`; clear 400 /
+  409 on plan submit; first activity without teacher → 400 message; duplicate report → 409;
+  Specialist reads teacher feedback (`Teacher/children/{childId}/feedbacks`); SuperAdmin staff
+  create / deactivate; one forgot-password route.
+- **New / still open:** Parent 403 on the saved assessment result (regression); a child with a
+  submitted plan activity cannot be deleted (and the activity cannot be removed); staff created via
+  `SuperAdmin/users` cannot log in; no `isActive` in the user list; unassigned specialists can read
+  any assessment result; `progressPercentage` still 0; no `completedAt`; SignalR not deployed;
+  no usable Teacher account.
+- **Product note resolved:** the written flow (specialist monitors the teacher's feedback) now
+  matches the backend — the specialist reads it in the child profile.
+
+### Business-rule clarifications (2026-10-14)
+
+Decided by the backend developer / product, so not gaps any more: the parent does not reopen the
+saved assessment result (staff-only; the app does not call it as Parent and ends the parent flow
+with a confirmation); records with results are kept (deleting such a child and removing a played
+activity are blocked in the app); `complete` only completes (the Result endpoint is the source of
+truth); no completion date; SignalR out of scope (REST + polling); teacher feedback works (lists
+were empty for lack of data). Remaining blocker: staff created by the Super Admin cannot log in.
+
+### Production data audit (2026-10-15)
+
+Production shows only backend data (`PRODUCTION_DATA_AUDIT.md`, ADR-023): the static practice
+tests / games run only in development mock mode; stale compatibility code for old shapes was
+removed (assessment start aliases, 200-with-message failures, plan question id fallbacks, child
+`birthDate`, Apidog-only fields); every list has loading / error + retry / Arabic empty states;
+server images are shown wherever the API sends them. Backend fixes found live: `isActive` in the
+Super Admin user list, result access limited to the assigned specialist. Remaining blocker: staff
+created by the Super Admin cannot log in, so the Teacher area is integrated but not verified live.

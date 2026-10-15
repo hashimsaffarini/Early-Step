@@ -1,151 +1,114 @@
-import { Activity, ArrowRight, ClipboardCheck, FileText, ListChecks, UserX } from 'lucide-react';
-import { useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router';
+import {
+  Activity,
+  ArrowRight,
+  ClipboardCheck,
+  FileText,
+  ListChecks,
+  ServerOff,
+  UserX,
+  NotebookPen,
+} from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
 
+import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { getButtonClassName } from '@/components/ui/Button';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { LoadingState } from '@/components/shared/LoadingState';
+import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
+import { ConfirmDialog } from '@/components/ui/Modal';
 import { Tabs, type TabItem } from '@/components/ui/Tabs';
 import type { AreaRole } from '@/constants/routes';
+import { useChildPlanActivities } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
+import type { ChildSummary } from '@/services/api/childrenLists';
 
-import { AssignActivityDialog } from '../components/AssignActivityDialog';
+import { useDeleteChild } from '../api/childrenQueries';
+import { ChildFormDialog } from '../components/ChildFormDialog';
 import { ActivitiesTab } from '../components/profile/ActivitiesTab';
 import { AssessmentsTab } from '../components/profile/AssessmentsTab';
-import { ChildProfileHeader } from '../components/profile/ChildProfileHeader';
+import { ChildProfileHeader, DELETE_BLOCKED } from '../components/profile/ChildProfileHeader';
 import { OverviewTab } from '../components/profile/OverviewTab';
 import { ReportsTab } from '../components/profile/ReportsTab';
-import type { AssignableActivity } from '../mock/assignableActivities.mock';
-import { getMockChildrenForRole } from '../mock/children.mock';
-import { EMPTY_CHILD_PROFILE, MOCK_CHILD_PROFILES } from '../mock/childProfiles.mock';
-import type { ChildProfileDetails, ChildRecord, PlanActivity } from '../types';
+import { TeacherFeedbackTab } from '../components/profile/TeacherFeedbackTab';
+import { useChildProfile } from '../hooks/useChildProfile';
 
 import { BACK_TO_CHILDREN } from './childrenCopy';
 import styles from './ChildProfilePage.module.css';
 
-type ProfileTab = 'overview' | 'assessments' | 'activities' | 'reports';
+type ProfileTab = 'overview' | 'assessments' | 'activities' | 'reports' | 'feedback';
 
-/** Router state passed by the children list so locally added (unsaved) children can open. */
-export interface ChildProfileLocationState {
-  child: ChildRecord;
-}
+const TAB_ITEMS: readonly TabItem<ProfileTab>[] = [
+  { value: 'overview', label: 'نظرة عامة', icon: <Activity aria-hidden="true" size={16} /> },
+  {
+    value: 'assessments',
+    label: 'التقييمات',
+    icon: <ClipboardCheck aria-hidden="true" size={16} />,
+  },
+  { value: 'activities', label: 'الأنشطة', icon: <ListChecks aria-hidden="true" size={16} /> },
+  { value: 'reports', label: 'التقرير', icon: <FileText aria-hidden="true" size={16} /> },
+];
 
-function readLocalChild(state: unknown, childId: string): ChildRecord | undefined {
-  if (typeof state !== 'object' || state === null || !('child' in state)) return undefined;
-  const child = (state as Partial<ChildProfileLocationState>).child;
-  return child?.id === childId && child.id.startsWith('local-') ? child : undefined;
-}
+/** The specialist also reads the teacher's notes (the teacher writes them on their notes page). */
+const SPECIALIST_TAB_ITEMS: readonly TabItem<ProfileTab>[] = [
+  ...TAB_ITEMS,
+  {
+    value: 'feedback',
+    label: 'ملاحظات المعلم',
+    icon: <NotebookPen aria-hidden="true" size={16} />,
+  },
+];
 
-/**
- * Resolves the child from the TEMPORARY mock roster visible to this role
- * (or the parent's local, unsaved child). A child outside the role's roster is not found.
- */
-function useProfile(role: AreaRole): { child: ChildRecord; details: ChildProfileDetails } | null {
-  const { childId = '' } = useParams();
-  const state: unknown = useLocation().state;
-  const mockChild = getMockChildrenForRole(role).find((child) => child.id === childId);
-  if (mockChild)
-    return { child: mockChild, details: MOCK_CHILD_PROFILES[childId] ?? EMPTY_CHILD_PROFILE };
-  const localChild = role === 'Parent' ? readLocalChild(state, childId) : undefined;
-  return localChild ? { child: localChild, details: EMPTY_CHILD_PROFILE } : null;
-}
-
-/**
- * Child profile for every role (Replit profile screen). UI only — local mock data.
- * Staff can assign games/tests locally; the parent views only.
- */
-export function ChildProfilePage() {
-  const { role, paths } = useRoleArea();
-  const profile = useProfile(role);
+function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }) {
+  const { paths } = useRoleArea();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<ProfileTab>('overview');
-  const [localActivities, setLocalActivities] = useState<readonly PlanActivity[]>([]);
-  const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [lastAssigned, setLastAssigned] = useState<string | null>(null);
-
-  const backLabel = BACK_TO_CHILDREN[role];
-  const backLink = (
-    <Link to={paths.children} className={styles.backLink}>
-      <ArrowRight aria-hidden="true" />
-      {backLabel}
-    </Link>
-  );
-
-  if (!profile) {
-    return (
-      <div className={styles.page}>
-        {backLink}
-        <EmptyState
-          icon={<UserX />}
-          title="لم يتم العثور على الطفل"
-          description="قد يكون الرابط غير صحيح أو أن الملف غير متاح."
-          action={
-            <Link to={paths.children} className={getButtonClassName()}>
-              {backLabel}
-            </Link>
-          }
-        />
-      </div>
-    );
-  }
-
-  const { child, details } = profile;
-  const activities = [...(details.plan?.activities ?? []), ...localActivities];
-  const canAssign = role !== 'Parent';
-  const openAssign = canAssign
-    ? () => {
-        setIsAssignOpen(true);
-      }
-    : undefined;
-
-  // TEMPORARY local behaviour until training-plan assignment is integrated.
-  const handleAssign = (activity: AssignableActivity) => {
-    setLocalActivities((current) => [
-      ...current,
-      {
-        id: `local-${activity.id}`,
-        activityId: activity.id,
-        title: activity.title,
-        type: activity.type,
-        category: activity.category,
-        emoji: activity.emoji,
-        isCompleted: false,
-      },
-    ]);
-    setLastAssigned(activity.title);
-  };
-
-  const tabItems: readonly TabItem<ProfileTab>[] = [
-    { value: 'overview', label: 'نظرة عامة', icon: <Activity aria-hidden="true" size={16} /> },
-    {
-      value: 'assessments',
-      label: 'التقييمات',
-      count: details.assessments.length,
-      icon: <ClipboardCheck aria-hidden="true" size={16} />,
-    },
-    {
-      value: 'activities',
-      label: 'الأنشطة',
-      count: activities.length,
-      icon: <ListChecks aria-hidden="true" size={16} />,
-    },
-    {
-      value: 'reports',
-      label: 'التقارير',
-      count: details.reports.length,
-      icon: <FileText aria-hidden="true" size={16} />,
-    },
-  ];
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
+  const deleteMutation = useDeleteChild();
+  const isParent = role === 'Parent';
+  // Live: the result is for the assigned Specialist and Admin (Parent 403; Teacher not documented).
+  const canReadResult = role === 'Specialist' || role === 'Admin';
+  // Product rule (2026-10-14): a child with saved activity results is not deleted.
+  const plan = useChildPlanActivities(isParent ? child.id : undefined);
+  const hasResults = plan.data?.some((activity) => activity.isCompleted) ?? false;
+  // Until the plan is loaded we cannot tell, so delete stays off (never assume "no results").
+  const isDeleteBlocked = !plan.isSuccess || hasResults;
 
   return (
-    <div className={styles.page}>
-      {backLink}
-      <ChildProfileHeader child={child} details={details} />
-      {lastAssigned ? (
-        <Alert tone="success">{`تمت إضافة «${lastAssigned}» إلى أنشطة الطفل (محلياً فقط).`}</Alert>
+    <>
+      <ChildProfileHeader
+        child={child}
+        role={role}
+        onEdit={
+          isParent
+            ? () => {
+                setIsEditOpen(true);
+              }
+            : undefined
+        }
+        onDelete={
+          isParent
+            ? () => {
+                setIsDeleteOpen(true);
+              }
+            : undefined
+        }
+        isDeleteBlocked={isDeleteBlocked}
+      />
+      {isParent && hasResults ? <p className={styles.deleteNote}>{DELETE_BLOCKED}</p> : null}
+      {isParent && plan.isError ? (
+        <p className={styles.deleteNote}>
+          تعذّر التحقق من نتائج خطة الطفل، لذلك الحذف غير متاح الآن.
+        </p>
       ) : null}
+      {savedMessage ? <Alert tone="success">{savedMessage}</Alert> : null}
+      <ApiErrorAlert error={deleteMutation.error} />
       <Tabs
         label="أقسام ملف الطفل"
-        items={tabItems}
+        items={role === 'Specialist' ? SPECIALIST_TAB_ITEMS : TAB_ITEMS}
         value={tab}
         onChange={setTab}
         className={styles.tabs}
@@ -153,44 +116,135 @@ export function ChildProfilePage() {
         {tab === 'overview' ? (
           <OverviewTab
             childId={child.id}
-            childName={child.name}
-            details={details}
+            childName={child.fullName}
+            canStartAssessment={isParent}
+            canReadAssessmentResult={canReadResult}
             onShowActivities={() => {
               setTab('activities');
             }}
             onShowReports={() => {
               setTab('reports');
             }}
-            onAssign={openAssign}
           />
         ) : null}
         {tab === 'assessments' ? (
           <AssessmentsTab
-            assessments={details.assessments}
             childId={child.id}
-            childName={child.name}
+            childName={child.fullName}
+            canStart={isParent}
+            canReadResult={canReadResult}
           />
         ) : null}
-        {tab === 'activities' ? (
-          <ActivitiesTab
-            activities={activities}
-            hasPlan={details.plan !== undefined}
-            onAssign={openAssign}
-          />
-        ) : null}
-        {tab === 'reports' ? <ReportsTab reports={details.reports} /> : null}
+        {tab === 'activities' ? <ActivitiesTab childId={child.id} role={role} /> : null}
+        {tab === 'reports' ? <ReportsTab childId={child.id} /> : null}
+        {tab === 'feedback' ? <TeacherFeedbackTab childId={child.id} /> : null}
       </Tabs>
-      {canAssign ? (
-        <AssignActivityDialog
-          isOpen={isAssignOpen}
-          childName={child.name}
-          assignedActivityIds={new Set(activities.map((activity) => activity.activityId))}
-          onAssign={handleAssign}
-          onClose={() => {
-            setIsAssignOpen(false);
-          }}
-        />
+      {isParent ? (
+        <>
+          <ChildFormDialog
+            isOpen={isEditOpen}
+            child={child}
+            onClose={() => {
+              setIsEditOpen(false);
+            }}
+            onSaved={() => {
+              setIsEditOpen(false);
+              setSavedMessage('تم حفظ بيانات الطفل.');
+            }}
+          />
+          <ConfirmDialog
+            isOpen={isDeleteOpen}
+            title="حذف ملف الطفل"
+            description={`سيتم حذف ملف «${child.fullName}» نهائياً. لا يمكن التراجع عن هذا الإجراء.`}
+            confirmLabel="حذف"
+            tone="danger"
+            isConfirming={deleteMutation.isPending}
+            onCancel={() => {
+              setIsDeleteOpen(false);
+            }}
+            onConfirm={() => {
+              deleteMutation.mutate(child.id, {
+                onSuccess: () => {
+                  setIsDeleteOpen(false);
+                  void navigate(paths.children, { replace: true });
+                },
+                onError: () => {
+                  setIsDeleteOpen(false);
+                },
+              });
+            }}
+          />
+        </>
       ) : null}
+    </>
+  );
+}
+
+/**
+ * Child profile for every role. Parent: `GET Parent/{childId}` (+ edit/delete); staff: the child
+ * from their assigned list; tabs read plan activities and reports from the API.
+ */
+export function ChildProfilePage() {
+  const { role, paths } = useRoleArea();
+  const { childId = '' } = useParams();
+  const profile = useChildProfile(role, childId);
+  const backLabel = BACK_TO_CHILDREN[role];
+  const backToList = (
+    <Link to={paths.children} className={getButtonClassName()}>
+      {backLabel}
+    </Link>
+  );
+
+  let content: ReactNode;
+  switch (profile.status) {
+    case 'loading':
+      content = <LoadingState label="جارٍ تحميل ملف الطفل…" />;
+      break;
+    case 'error':
+      content = (
+        <ErrorState
+          title="تعذّر تحميل ملف الطفل"
+          description={profile.error.message}
+          action={
+            <Button variant="outline" onClick={profile.retry}>
+              إعادة المحاولة
+            </Button>
+          }
+        />
+      );
+      break;
+    case 'blocked':
+      content = (
+        <EmptyState
+          icon={<ServerOff />}
+          title="ملف الطفل غير متاح للمدير من الخادم"
+          description="لا يوفّر الخادم حالياً بيانات ملف الطفل لحساب المدير."
+          action={backToList}
+        />
+      );
+      break;
+    case 'not-found':
+      content = (
+        <EmptyState
+          icon={<UserX />}
+          title="لم يتم العثور على الطفل"
+          description="قد يكون الرابط غير صحيح أو أن الملف غير متاح."
+          action={backToList}
+        />
+      );
+      break;
+    case 'ready':
+      content = <ProfileContent child={profile.child} role={role} />;
+      break;
+  }
+
+  return (
+    <div className={styles.page}>
+      <Link to={paths.children} className={styles.backLink}>
+        <ArrowRight aria-hidden="true" />
+        {backLabel}
+      </Link>
+      {content}
     </div>
   );
 }

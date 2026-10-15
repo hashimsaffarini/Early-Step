@@ -1,34 +1,34 @@
-import { CalendarDays, ClipboardCheck, Layers } from 'lucide-react';
+import { ClipboardCheck } from 'lucide-react';
 
 import { SectionHeader } from '@/components/shared/SectionHeader';
-import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { formatDisplayDate } from '@/utils/dateFormat';
+import { ProgressBar } from '@/components/ui/Feedback';
+import { useAssessmentResult } from '@/hooks/api/childResources';
 
-import type { ChildAssessment } from '@/features/children/types';
-
-import { ASSESSMENT_STATE_DISPLAY } from './labels';
 import styles from './profile.module.css';
 import { StartAssessmentLink } from './StartAssessmentLink';
+import { QueryStatus } from './TabStatus';
 
 const HEADING_ID = 'profile-assessment-title';
 
-const SUMMARY_TEXT = {
-  completed: 'تم إكمال التقييم المبدئي',
-  'in-progress': 'التقييم المبدئي قيد التنفيذ',
-  'not-started': 'لم يبدأ التقييم المبدئي بعد',
-} as const;
-
 export interface AssessmentSummaryCardProps {
-  assessment: ChildAssessment | undefined;
   childId: string;
   childName: string;
+  /** Only the parent starts the initial assessment (for their child). */
+  canStart: boolean;
+  /** The result endpoint is for the assigned Specialist and Admin only. */
+  canReadResult: boolean;
 }
 
+/**
+ * Initial assessment. Staff: the saved overall result. Parent: an invitation to start it (the saved
+ * result is for staff — product decision 2026-10-14).
+ */
 export function AssessmentSummaryCard({
-  assessment,
   childId,
   childName,
+  canStart,
+  canReadResult,
 }: AssessmentSummaryCardProps) {
   return (
     <Card as="section" className={styles.card} aria-labelledby={HEADING_ID}>
@@ -37,40 +37,41 @@ export function AssessmentSummaryCard({
         title="التقييم المبدئي"
         icon={ClipboardCheck}
         iconTone="primary"
-        action={
-          assessment ? (
-            <Badge tone={ASSESSMENT_STATE_DISPLAY[assessment.state].tone} hasDot>
-              {ASSESSMENT_STATE_DISPLAY[assessment.state].label}
-            </Badge>
-          ) : undefined
-        }
       />
-      <p className={styles.lead}>{SUMMARY_TEXT[assessment?.state ?? 'not-started']}</p>
-      {assessment?.state === 'completed' ? (
-        <ul className={styles.meta}>
-          {assessment.completedAt ? (
-            <li>
-              <CalendarDays aria-hidden="true" />
-              تاريخ الإكمال: {formatDisplayDate(assessment.completedAt)}
-            </li>
-          ) : null}
-          {assessment.totalSections ? (
-            <li>
-              <Layers aria-hidden="true" />
-              الأقسام المكتملة: {assessment.completedSections ?? 0} من {assessment.totalSections}
-            </li>
-          ) : null}
-        </ul>
+      {canStart ? (
+        <>
+          <p className={styles.muted}>
+            يتكوّن التقييم المبدئي من أنشطة وألعاب قصيرة مناسبة لعمر الطفل، ويراجع الأخصائي نتيجته.
+          </p>
+          <div className={styles.footer}>
+            <StartAssessmentLink childId={childId} childName={childName} />
+          </div>
+        </>
+      ) : canReadResult ? (
+        <StaffResultSummary childId={childId} />
       ) : (
-        <p className={styles.muted}>
-          يتكوّن التقييم المبدئي من أنشطة وألعاب قصيرة مناسبة لعمر الطفل.
-        </p>
-      )}
-      {assessment?.state === 'completed' ? null : (
-        <div className={styles.footer}>
-          <StartAssessmentLink childId={childId} childName={childName} />
-        </div>
+        <p className={styles.muted}>نتيجة التقييم المبدئي متاحة للأخصائي المتابِع للطفل.</p>
       )}
     </Card>
   );
+}
+
+function StaffResultSummary({ childId }: { childId: string }) {
+  const query = useAssessmentResult(childId);
+  let body;
+  if (query.isPending || query.isError) {
+    body = <QueryStatus query={query} errorTitle="تعذّر تحميل نتيجة التقييم" />;
+  } else if (query.data) {
+    body = (
+      <ProgressBar
+        label="النتيجة العامة للتقييم المبدئي"
+        value={query.data.overallScore}
+        max={100}
+        showLabel
+      />
+    );
+  } else {
+    body = <p className={styles.muted}>لم يُكمل الطفل التقييم المبدئي بعد.</p>;
+  }
+  return body;
 }

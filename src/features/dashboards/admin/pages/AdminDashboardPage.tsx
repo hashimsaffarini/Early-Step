@@ -1,93 +1,64 @@
-import { ArrowLeft, FileText, HeartHandshake, UserRound, Users } from 'lucide-react';
+import { FolderCog, UserCog } from 'lucide-react';
 import { Link } from 'react-router';
 
+import { SectionHeader } from '@/components/shared/SectionHeader';
 import { getButtonClassName } from '@/components/ui/Button';
-import { getAreaPaths } from '@/constants/routes';
-import { ChildrenDirectory } from '@/features/dashboards/components/ChildrenDirectory';
+import { Card } from '@/components/ui/Card';
+import { ADMIN_PATHS } from '@/constants/routes';
+import { useDashboardStats } from '@/features/dashboards/api/dashboardsApi';
 import { DashboardGreetingBanner } from '@/features/dashboards/components/DashboardGreetingBanner';
 import { dashboardPageStyles } from '@/features/dashboards/components/dashboardPageStyles';
-import { DashboardStatsGrid } from '@/features/dashboards/components/DashboardStatsGrid';
-import { StaffChildCard } from '@/features/dashboards/components/StaffChildCard';
-import { MOCK_ROSTER_CHILDREN, MOCK_ROSTER_USERS } from '@/features/dashboards/mock/roster.mock';
-import { RecentActivityCard } from '@/features/dashboards/parent/components/RecentActivityCard';
-import { countReports, countUsersByRole } from '@/features/dashboards/roster';
-import type { DashboardStat } from '@/features/dashboards/types';
+import { DashboardStatsSection } from '@/features/dashboards/components/DashboardStatsGrid';
 
-import { MOCK_ADMIN_ACTIVITY } from '../mock/adminActivity.mock';
-
-const paths = getAreaPaths('Admin');
-
-function buildStats(): DashboardStat[] {
-  const followUpTeam =
-    countUsersByRole(MOCK_ROSTER_USERS, 'Specialist') +
-    countUsersByRole(MOCK_ROSTER_USERS, 'Teacher');
-  return [
-    {
-      label: 'الأطفال المسجّلون',
-      value: MOCK_ROSTER_CHILDREN.length,
-      icon: Users,
-      tone: 'primary',
-    },
-    {
-      label: 'أولياء الأمور',
-      value: countUsersByRole(MOCK_ROSTER_USERS, 'Parent'),
-      icon: UserRound,
-      tone: 'success',
-    },
-    {
-      label: 'الأخصائيون والمعلمون',
-      value: followUpTeam,
-      icon: HeartHandshake,
-      tone: 'violet',
-    },
-    {
-      label: 'التقارير',
-      value: countReports(MOCK_ROSTER_CHILDREN),
-      icon: FileText,
-      tone: 'warning',
-    },
-  ];
-}
+import styles from './AdminDashboardPage.module.css';
 
 export interface AdminDashboardPageProps {
   userName: string;
 }
 
 /**
- * Admin overview. Replit showed admins the parent dashboard; this keeps its visual language
- * (brand hero, stat row, child grid, activity side card) with admin-level content. UI only.
+ * Admin overview: stats from `GET Admin/dashboard` (server labels). The API has no admin
+ * children list or activity feed, so the page links to users (parents → children → assign
+ * specialist) and content management instead of showing invented lists.
  */
 export function AdminDashboardPage({ userName }: AdminDashboardPageProps) {
+  const stats = useDashboardStats('admin');
   return (
     <div className={dashboardPageStyles.page}>
       <DashboardGreetingBanner
         name={userName}
-        subtitle="نظرة عامة على الأطفال والفريق والتقارير."
+        subtitle="نظرة عامة على المستخدمين والأطفال والمحتوى."
         showDate
       />
-      <DashboardStatsGrid stats={buildStats()} />
-      <div className={dashboardPageStyles.columns}>
-        <ChildrenDirectory
-          headingId="admin-children-title"
-          title="الأطفال"
-          items={MOCK_ROSTER_CHILDREN}
-          searchLabel="ابحث باسم الطفل..."
-          emptyTitle="لا يوجد أطفال مسجّلون بعد"
-          action={
-            <Link
-              to={paths.children}
-              className={getButtonClassName({ variant: 'ghost', size: 'sm' })}
-            >
-              عرض الكل
-              <ArrowLeft aria-hidden="true" />
+      <DashboardStatsSection
+        stats={stats.data}
+        isPending={stats.isPending}
+        error={stats.error}
+        onRetry={() => void stats.refetch()}
+      />
+      <section aria-labelledby="admin-shortcuts-title" className={styles.shortcuts}>
+        <SectionHeader id="admin-shortcuts-title" title="إجراءات سريعة" icon={UserCog} />
+        <div className={styles.grid}>
+          <Card className={styles.card}>
+            <h3 className={styles.cardTitle}>المستخدمون والأطفال</h3>
+            <p className={styles.cardText}>
+              تصفّح أولياء الأمور وأطفالهم، وأسنِد الأطفال إلى أخصائي.
+            </p>
+            <Link to={ADMIN_PATHS.users} className={getButtonClassName({ variant: 'soft' })}>
+              <UserCog aria-hidden="true" />
+              إدارة المستخدمين
             </Link>
-          }
-          renderCard={(child) => (
-            <StaffChildCard child={child} profilePath={paths.childProfile(child.id)} showParent />
-          )}
-        />
-        <RecentActivityCard items={MOCK_ADMIN_ACTIVITY} />
-      </div>
+          </Card>
+          <Card className={styles.card}>
+            <h3 className={styles.cardTitle}>المحتوى</h3>
+            <p className={styles.cardText}>التصنيفات والأنشطة والأسئلة والتقييم المبدئي.</p>
+            <Link to={ADMIN_PATHS.content} className={getButtonClassName({ variant: 'soft' })}>
+              <FolderCog aria-hidden="true" />
+              إدارة المحتوى
+            </Link>
+          </Card>
+        </div>
+      </section>
     </div>
   );
 }

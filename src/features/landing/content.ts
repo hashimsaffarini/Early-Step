@@ -2,7 +2,8 @@ import { Activity, Heart, Trophy, type LucideIcon } from 'lucide-react';
 
 /**
  * Landing copy from the Replit prototype. Its fabricated or unverifiable claims
- * ("+85% تحسّن", "آمن 100%", "تقارير ذكاء اصطناعي") are replaced by descriptive text.
+ * ("+85% تحسّن", "آمن 100%", "تقارير ذكاء اصطناعي", "تحليل ذكي ودقيق", a fixed age range) are
+ * replaced by text that describes what the product actually does.
  */
 export const LANDING_COPY = {
   nav: { login: 'تسجيل الدخول', start: 'ابدأ الآن' },
@@ -13,8 +14,8 @@ export const LANDING_COPY = {
     titleHighlight: 'طوّر قدراته',
     titleLine2End: 'بسهولة',
     description:
-      'منصة تفاعلية ممتعة مصممة لاكتشاف صعوبات التعلم مبكراً من خلال ألعاب واختبارات ذكية، وتقديم تقارير دقيقة للأهالي والمعلمين.',
-    features: ['ألعاب واختبارات تفاعلية', 'تحليل ذكي ودقيق', 'توصيات ومتابعة مستمرة'],
+      'منصة تفاعلية ممتعة تساعد على اكتشاف صعوبات التعلم مبكراً من خلال ألعاب واختبارات، مع تقارير ومتابعة من الأخصائي للأهالي والمعلمين.',
+    features: ['ألعاب واختبارات تفاعلية', 'تقييم مبدئي يراجعه أخصائي', 'توصيات ومتابعة مستمرة'],
     primaryCta: 'سجل مجاناً',
     secondaryCta: 'تسجيل الدخول',
     imageAlt: 'أمّ تبتسم بجانب طفلها وهو يلعب نشاطاً تعليمياً مصوّراً على الطاولة',
@@ -58,7 +59,7 @@ export const HIGHLIGHT_CARDS: readonly HighlightCard[] = [
   {
     id: 'children',
     title: 'مصممة للأطفال',
-    subtitle: 'من عمر 4 إلى 10 سنوات',
+    subtitle: 'أنشطة ممتعة بلغة بسيطة',
     icon: Heart,
     tone: 'success',
   },

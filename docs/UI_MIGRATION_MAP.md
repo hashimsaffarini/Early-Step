@@ -1,5 +1,10 @@
 # UI Migration Map — Replit → new React app
 
+> **Update 2026-10-06 (backend integration branch):** the notifications menu was removed — the
+> backend has no notifications API, so the bell is disabled ("قريباً"). Several screens now show
+> only real API fields (no report strengths/types, no free-text plans, age instead of birth date).
+> See `BACKEND_INTEGRATION_STATUS.md`.
+
 Maps every Replit screen/component (visual reference) to its home in this codebase. **Every row
 has a status** — ✅ Implemented · ⛔ Excluded (intentional) · — N/A. The per-screen comparison
 with routes and differences is in [`UI_COMPLETENESS_AUDIT.md`](UI_COMPLETENESS_AUDIT.md). Routes

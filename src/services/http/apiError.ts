@@ -56,15 +56,38 @@ const STATUS_MESSAGES: Partial<Record<number, string>> = {
 };
 
 /**
- * Pulls message / code / field errors out of the backend error body.
- *
- * TBD: the backend error response format is not documented yet. Implement
- * this against the real API documentation — do not guess field names.
+ * Pulls message / field errors out of the backend error body. Formats verified against the live
+ * backend (2026-10-06):
+ * - ASP.NET ProblemDetails: `{ title, status, errors?: { Field: string[] } }` (validation, 401)
+ * - `{ message: string }` (domain errors, mostly Arabic, e.g. "المستخدم غير موجود.")
+ * - a bare string, or an array of strings (e.g. reset-password `["Invalid or expired code."]`)
+ * ProblemDetails `title` is generic English ("Unauthorized"), so it is never shown to users.
  */
 function extractBackendDetails(
-  _data: unknown,
+  data: unknown,
 ): Pick<AppErrorOptions, 'code' | 'fieldErrors'> & { message?: string } {
-  return {};
+  if (typeof data === 'string') return data.trim() ? { message: data.trim() } : {};
+  if (Array.isArray(data)) {
+    const messages = data.filter((item): item is string => typeof item === 'string');
+    return messages.length > 0 ? { message: messages.join(' ') } : {};
+  }
+  if (typeof data !== 'object' || data === null) return {};
+
+  const record = data as Record<string, unknown>;
+  const result: Pick<AppErrorOptions, 'code' | 'fieldErrors'> & { message?: string } = {};
+  if (typeof record.message === 'string' && record.message.trim()) {
+    result.message = record.message.trim();
+  }
+  if (typeof record.errors === 'object' && record.errors !== null) {
+    const fieldErrors: Record<string, string[]> = {};
+    for (const [field, value] of Object.entries(record.errors as Record<string, unknown>)) {
+      if (Array.isArray(value)) {
+        fieldErrors[field] = value.filter((item): item is string => typeof item === 'string');
+      }
+    }
+    if (Object.keys(fieldErrors).length > 0) result.fieldErrors = fieldErrors;
+  }
+  return result;
 }
 
 function messageForStatus(status: number): string {

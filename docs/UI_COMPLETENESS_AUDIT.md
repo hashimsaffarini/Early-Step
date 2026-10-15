@@ -1,5 +1,10 @@
 # UI completeness audit — Replit → Early Step (2026-09-29)
 
+> **Update 2026-10-06 (backend integration branch):** the notifications menu was removed — the
+> backend has no notifications API, so the bell is disabled ("قريباً"). Several screens now show
+> only real API fields (no report strengths/types, no free-text plans, age instead of birth date).
+> See `BACKEND_INTEGRATION_STATUS.md`.
+
 Final comparison of the Replit screen inventory (`REPLIT_AUDIT.md` §1, 23 screens + sub-views)
 against the Early Step React app after the complete UI migration pass (ADR-019).
 

@@ -1,24 +1,10 @@
-import type { AssessmentState } from '@/features/children/types';
-
-/** Arabic labels + badge tone for assessment states (child profile). */
-export const ASSESSMENT_STATE_DISPLAY: Record<
-  AssessmentState,
-  { label: string; tone: 'success' | 'warning' | 'primary' }
-> = {
-  completed: { label: 'مكتمل', tone: 'success' },
-  'in-progress': { label: 'قيد التنفيذ', tone: 'primary' },
-  'not-started': { label: 'لم يبدأ بعد', tone: 'warning' },
-};
-
 export function countCompleted(items: readonly { isCompleted: boolean }[]): number {
   return items.filter((item) => item.isCompleted).length;
 }
 
 export function formatActivityProgress(completed: number, total: number): string {
-  return `${completed} من ${total} أنشطة`;
+  return `${completed.toString()} من ${total.toString()} أنشطة`;
 }
-
-export const ASSIGN_ACTIVITY_LABEL = 'تعيين نشاط جديد';
 
 const FEW_MIN = 3;
 const FEW_MAX = 10;
@@ -29,4 +15,14 @@ export function formatActivityCount(count: number): string {
   if (count === 2) return 'نشاطان';
   if (count >= FEW_MIN && count <= FEW_MAX) return `${count.toString()} أنشطة`;
   return `${count.toString()} نشاط`;
+}
+
+/** First non-empty line of a multi-line server text (report excerpts). */
+export function firstLine(text: string): string {
+  return (
+    text
+      .split('\n')
+      .find((line) => line.trim())
+      ?.trim() ?? ''
+  );
 }

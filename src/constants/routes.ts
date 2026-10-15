@@ -21,6 +21,11 @@ export const ROUTE_PATHS = {
   unauthorized: '/unauthorized',
 } as const;
 
+/** Where a signed-in user lands (area roots redirect to their dashboard). */
+export function getRoleHomePath(role: UserRole): string {
+  return ROLE_NAMESPACES[role];
+}
+
 /** URL namespace for each role's area. */
 export const ROLE_NAMESPACES = {
   Parent: '/parent',
@@ -36,19 +41,14 @@ export const ROLE_NAMESPACES = {
  */
 export type AreaRole = Exclude<UserRole, 'SuperAdmin'>;
 
-export const AREA_ROLES = [
-  'Parent',
-  'Teacher',
-  'Specialist',
-  'Admin',
-] as const satisfies readonly AreaRole[];
-
 /** Route segments inside every role area (relative to the role namespace). */
 export const AREA_SEGMENTS = {
   dashboard: 'dashboard',
   children: 'children',
   childProfile: 'children/:childId',
   childPlans: 'children/:childId/plans',
+  /** Teacher feedback notes for a child (Teacher only). */
+  childNotes: 'children/:childId/notes',
   tests: 'tests',
   testPlay: 'tests/:testId/play',
   games: 'games',
@@ -57,11 +57,39 @@ export const AREA_SEGMENTS = {
   reports: 'reports',
   reportCreate: 'reports/new',
   reportDetail: 'reports/:reportId',
+  reportEdit: 'reports/:reportId/edit',
+  /** A training-plan activity played by the child (test questions from the plan). */
+  planActivityPlay: 'children/:childId/activities/:activityId/play',
   messages: 'messages',
 } as const;
 
-/** Roles that can open the create-report screen (Replit: Specialist, Admin). */
-export const REPORT_AUTHOR_ROLES = ['Specialist', 'Admin'] as const satisfies readonly AreaRole[];
+/** Admin-only segments (under `/admin`): users and content management (no Replit UI). */
+export const ADMIN_SEGMENTS = {
+  content: 'content',
+  users: 'users',
+  userDetail: 'users/:userId',
+  categories: 'content/categories',
+  activities: 'content/activities',
+  activityDetail: 'content/activities/:activityType/:activityId',
+  initialAssessment: 'content/initial-assessment',
+} as const;
+
+export const ADMIN_PATHS = {
+  content: `/admin/${ADMIN_SEGMENTS.content}`,
+  users: `/admin/${ADMIN_SEGMENTS.users}`,
+  categories: `/admin/${ADMIN_SEGMENTS.categories}`,
+  activities: `/admin/${ADMIN_SEGMENTS.activities}`,
+  initialAssessment: `/admin/${ADMIN_SEGMENTS.initialAssessment}`,
+  userDetail: (userId: string) => `/admin/users/${encodeURIComponent(userId)}`,
+  activityDetail: (activityType: string, activityId: string) =>
+    `/admin/content/activities/${encodeURIComponent(activityType)}/${encodeURIComponent(activityId)}`,
+} as const;
+
+/**
+ * Roles that can create/edit/delete reports. The API exposes these only under `/specialist/*`
+ * (Swagger tag "Specialist"), so only the Specialist (Replit also allowed Admin — no admin endpoint).
+ */
+export const REPORT_AUTHOR_ROLES = ['Specialist'] as const satisfies readonly AreaRole[];
 
 export function canCreateReports(role: AreaRole): boolean {
   return (REPORT_AUTHOR_ROLES as readonly AreaRole[]).includes(role);
@@ -79,10 +107,13 @@ export interface AreaPaths {
   messages: string;
   childProfile: (childId: string) => string;
   childPlans: (childId: string) => string;
+  childNotes: (childId: string) => string;
   testPlay: (testId: string) => string;
   gamePlay: (gameId: string) => string;
   assessment: (childId: string) => string;
   reportDetail: (reportId: string) => string;
+  reportEdit: (reportId: string) => string;
+  planActivityPlay: (childId: string, activityId: string) => string;
 }
 
 export function getAreaPaths(role: AreaRole): AreaPaths {
@@ -102,10 +133,18 @@ export function getAreaPaths(role: AreaRole): AreaPaths {
     messages: at(AREA_SEGMENTS.messages),
     childProfile: withId(AREA_SEGMENTS.childProfile, ':childId'),
     childPlans: withId(AREA_SEGMENTS.childPlans, ':childId'),
+    childNotes: withId(AREA_SEGMENTS.childNotes, ':childId'),
     testPlay: withId(AREA_SEGMENTS.testPlay, ':testId'),
     gamePlay: withId(AREA_SEGMENTS.gamePlay, ':gameId'),
     assessment: withId(AREA_SEGMENTS.assessment, ':childId'),
     reportDetail: withId(AREA_SEGMENTS.reportDetail, ':reportId'),
+    reportEdit: withId(AREA_SEGMENTS.reportEdit, ':reportId'),
+    planActivityPlay: (childId: string, activityId: string) =>
+      at(
+        AREA_SEGMENTS.planActivityPlay
+          .replace(':childId', encodeURIComponent(childId))
+          .replace(':activityId', encodeURIComponent(activityId)),
+      ),
   };
 }
 

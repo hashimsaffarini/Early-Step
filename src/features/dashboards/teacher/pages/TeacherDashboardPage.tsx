@@ -1,44 +1,27 @@
-import { ClipboardCheck, FileText, GraduationCap, Target, Users } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
 
 import { getAreaPaths } from '@/constants/routes';
-
+import { useDashboardStats } from '@/features/dashboards/api/dashboardsApi';
 import { ChildrenDirectory } from '@/features/dashboards/components/ChildrenDirectory';
 import { DashboardGreetingBanner } from '@/features/dashboards/components/DashboardGreetingBanner';
 import { dashboardPageStyles } from '@/features/dashboards/components/dashboardPageStyles';
-import { DashboardStatsGrid } from '@/features/dashboards/components/DashboardStatsGrid';
+import { DashboardStatsSection } from '@/features/dashboards/components/DashboardStatsGrid';
 import { StaffChildCard } from '@/features/dashboards/components/StaffChildCard';
-import { pickChildren, TEACHER_CHILD_IDS } from '@/features/dashboards/mock/roster.mock';
-import { countByStatus, countReports } from '@/features/dashboards/roster';
-import type { DashboardStat, RosterChild } from '@/features/dashboards/types';
+import { useChildrenForRole } from '@/hooks/api/childResources';
 
 const paths = getAreaPaths('Teacher');
 
 export interface TeacherDashboardPageProps {
   userName: string;
-  /** Assigned students (defaults to the TEMPORARY mock roster). */
-  students?: readonly RosterChild[];
 }
 
-function buildStats(students: readonly RosterChild[]): DashboardStat[] {
-  const activePlans = countByStatus(students, 'training-plan-active');
-  return [
-    { label: 'طلابي', value: students.length, icon: Users, tone: 'primary' },
-    { label: 'خطط تدريبية نشطة', value: activePlans, icon: Target, tone: 'violet' },
-    {
-      label: 'تقييمات مكتملة',
-      value: activePlans + countByStatus(students, 'assessment-completed'),
-      icon: ClipboardCheck,
-      tone: 'success',
-    },
-    { label: 'تقارير الفصل', value: countReports(students), icon: FileText, tone: 'warning' },
-  ];
-}
-
-/** Teacher dashboard (Replit TeacherDashboard): greeting hero, stats, "طلاب الفصل". UI only. */
-export function TeacherDashboardPage({
-  userName,
-  students = pickChildren(TEACHER_CHILD_IDS),
-}: TeacherDashboardPageProps) {
+/**
+ * Teacher dashboard: greeting hero, stats from `GET Teacher/dashboard`, assigned children from
+ * `GET Teacher/children`. Only server values are shown.
+ */
+export function TeacherDashboardPage({ userName }: TeacherDashboardPageProps) {
+  const stats = useDashboardStats('teacher');
+  const children = useChildrenForRole('Teacher');
   return (
     <div className={dashboardPageStyles.page}>
       <DashboardGreetingBanner
@@ -48,15 +31,23 @@ export function TeacherDashboardPage({
         greetingEmoji="👋"
         showAvatar
       />
-      <DashboardStatsGrid stats={buildStats(students)} />
+      <DashboardStatsSection
+        stats={stats.data}
+        isPending={stats.isPending}
+        error={stats.error}
+        onRetry={() => void stats.refetch()}
+      />
       <ChildrenDirectory
         headingId="teacher-students-title"
         title="طلاب الفصل"
         icon={GraduationCap}
-        items={students}
+        items={children.data}
+        isPending={children.isPending}
+        error={children.error}
+        onRetry={() => void children.refetch()}
         searchLabel="ابحث عن طالب..."
         emptyTitle="لا يوجد طلاب مُسنَدون لك بعد"
-        emptyDescription="تواصل مع المسؤول لإسناد طلاب لفصلك."
+        emptyDescription="يُسنِد الأخصائي الأطفال إلى المعلم."
         renderCard={(child) => (
           <StaffChildCard child={child} profilePath={paths.childProfile(child.id)} />
         )}

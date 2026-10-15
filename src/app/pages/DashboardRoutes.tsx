@@ -1,4 +1,3 @@
-import { MOCK_SESSION_USERS } from '@/app/dev/mockSessions';
 import {
   AdminDashboardPage,
   ParentDashboardPage,
@@ -6,25 +5,30 @@ import {
   SuperAdminPanelPage,
   TeacherDashboardPage,
 } from '@/features/dashboards';
+import { useSession } from '@/services/session';
 
-/* Compose each role's dashboard with its TEMPORARY mock session user (no auth yet). */
+/* Compose each role's dashboard with the signed-in user's name (routes are behind RequireRole). */
+
+function useUserName(): string {
+  return useSession()?.user.name ?? '';
+}
 
 export function ParentDashboardRoute() {
-  return <ParentDashboardPage parentName={MOCK_SESSION_USERS.Parent.name} />;
+  return <ParentDashboardPage parentName={useUserName()} />;
 }
 
 export function TeacherDashboardRoute() {
-  return <TeacherDashboardPage userName={MOCK_SESSION_USERS.Teacher.name} />;
+  return <TeacherDashboardPage userName={useUserName()} />;
 }
 
 export function SpecialistDashboardRoute() {
-  return <SpecialistDashboardPage userName={MOCK_SESSION_USERS.Specialist.name} />;
+  return <SpecialistDashboardPage userName={useUserName()} />;
 }
 
 export function AdminDashboardRoute() {
-  return <AdminDashboardPage userName={MOCK_SESSION_USERS.Admin.name} />;
+  return <AdminDashboardPage userName={useUserName()} />;
 }
 
 export function SuperAdminPanelRoute() {
-  return <SuperAdminPanelPage userName={MOCK_SESSION_USERS.SuperAdmin.name} />;
+  return <SuperAdminPanelPage userName={useUserName()} />;
 }

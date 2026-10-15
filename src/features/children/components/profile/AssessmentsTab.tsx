@@ -1,73 +1,71 @@
-import { CalendarDays, ClipboardCheck, Layers } from 'lucide-react';
+import { ClipboardCheck } from 'lucide-react';
 
 import { EmptyState } from '@/components/shared/EmptyState';
-import { SectionHeader } from '@/components/shared/SectionHeader';
-import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { formatDisplayDate } from '@/utils/dateFormat';
+import { useAssessmentResult } from '@/hooks/api/childResources';
 
-import type { ChildAssessment } from '@/features/children/types';
-
-import { ASSESSMENT_STATE_DISPLAY } from './labels';
+import { AssessmentResultView } from './AssessmentResultView';
 import styles from './profile.module.css';
 import { StartAssessmentLink } from './StartAssessmentLink';
-
-const HEADING_ID = 'profile-assessments-title';
+import { QueryStatus } from './TabStatus';
 
 export interface AssessmentsTabProps {
-  assessments: readonly ChildAssessment[];
   childId: string;
   childName: string;
+  canStart: boolean;
+  /** The result endpoint is for the assigned Specialist and Admin only. */
+  canReadResult: boolean;
 }
 
-export function AssessmentsTab({ assessments, childId, childName }: AssessmentsTabProps) {
-  if (assessments.length === 0) {
-    return <EmptyState icon={<ClipboardCheck />} title="لا توجد تقييمات بعد" />;
-  }
-
-  return (
-    <Card as="section" className={styles.card} aria-labelledby={HEADING_ID}>
-      <SectionHeader
-        id={HEADING_ID}
-        title="سجل التقييمات"
-        icon={ClipboardCheck}
-        iconTone="primary"
+/**
+ * Staff: the child's initial-assessment result (`GET initial-assessment/{childId}/result`).
+ * Parent: only the way to start it — the saved result is for staff (product decision 2026-10-14).
+ */
+export function AssessmentsTab({
+  childId,
+  childName,
+  canStart,
+  canReadResult,
+}: AssessmentsTabProps) {
+  if (canStart) {
+    return (
+      <EmptyState
+        icon={<ClipboardCheck />}
+        title="التقييم المبدئي"
+        description="يُكمل طفلك التقييم المبدئي مرة واحدة، ويراجع الأخصائي النتيجة."
+        action={<StartAssessmentLink childId={childId} childName={childName} />}
       />
-      <ul className={styles.list}>
-        {assessments.map((assessment) => {
-          const state = ASSESSMENT_STATE_DISPLAY[assessment.state];
-          return (
-            <li key={assessment.id} className={styles.row}>
-              <span className={`${styles.iconTile} ${styles.tonePrimary}`} aria-hidden="true">
-                <ClipboardCheck />
-              </span>
-              <div className={styles.rowBody}>
-                <p className={styles.rowTitle}>{assessment.title}</p>
-                <ul className={styles.meta}>
-                  {assessment.completedAt ? (
-                    <li>
-                      <CalendarDays aria-hidden="true" />
-                      {formatDisplayDate(assessment.completedAt)}
-                    </li>
-                  ) : null}
-                  {assessment.totalSections ? (
-                    <li>
-                      <Layers aria-hidden="true" />
-                      {assessment.completedSections ?? 0} من {assessment.totalSections} أقسام
-                    </li>
-                  ) : null}
-                </ul>
-              </div>
-              <Badge tone={state.tone} hasDot>
-                {state.label}
-              </Badge>
-              {assessment.state === 'not-started' ? (
-                <StartAssessmentLink childId={childId} childName={childName} size="sm" />
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+    );
+  }
+  if (!canReadResult) {
+    return (
+      <EmptyState
+        icon={<ClipboardCheck />}
+        title="يراجع الأخصائي نتيجة التقييم المبدئي"
+        description="نتيجة التقييم المبدئي متاحة للأخصائي المتابِع للطفل."
+      />
+    );
+  }
+  return <StaffAssessmentResult childId={childId} />;
+}
+
+function StaffAssessmentResult({ childId }: { childId: string }) {
+  const query = useAssessmentResult(childId);
+  if (query.isPending || query.isError) {
+    return <QueryStatus query={query} errorTitle="تعذّر تحميل نتيجة التقييم" />;
+  }
+  if (!query.data) {
+    return (
+      <EmptyState
+        icon={<ClipboardCheck />}
+        title="لم يُكمل الطفل التقييم المبدئي بعد"
+        description="ستظهر النتيجة هنا بعد إنهاء التقييم المبدئي."
+      />
+    );
+  }
+  return (
+    <Card as="section" className={styles.card} aria-label="نتيجة التقييم المبدئي">
+      <AssessmentResultView result={query.data} />
     </Card>
   );
 }

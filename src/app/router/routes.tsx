@@ -4,6 +4,7 @@ import { devPreviewRoutes } from '@/app/dev/ui-preview/devRoutes';
 import { NotFoundPage } from '@/app/pages/NotFoundPage';
 import { UnauthorizedPage } from '@/app/pages/UnauthorizedPage';
 import { areaRoutes } from '@/app/router/areaRoutes';
+import { PublicOnly } from '@/app/router/guards';
 import { RouteErrorPage } from '@/app/router/RouteErrorPage';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { RootLayout } from '@/components/layout/RootLayout';
@@ -14,8 +15,8 @@ import { LandingPage } from '@/features/landing';
 const loadAuth = () => import('@/features/auth');
 
 /**
- * Route tree: public landing + auth UI, then every role area (UI only, mock data, no guards
- * yet) — see docs/ROUTING.md. The landing page is eager for first paint.
+ * Route tree: public landing + auth, then every role area behind `RequireRole` — see
+ * docs/ROUTING.md. The landing page is eager for first paint.
  */
 export const routes: RouteObject[] = [
   {
@@ -24,7 +25,11 @@ export const routes: RouteObject[] = [
     children: [
       { path: ROUTE_PATHS.home, element: <LandingPage /> },
       {
-        element: <AuthLayout />,
+        element: (
+          <PublicOnly>
+            <AuthLayout />
+          </PublicOnly>
+        ),
         children: [
           {
             path: ROUTE_PATHS.login,

@@ -1,19 +1,12 @@
+/*
+ * Server dashboards return a varying number of stats (4–5 observed), so columns fit the count:
+ * every card at least 12rem wide, one row on desktop when they fit.
+ */
 .grid {
   display: grid;
-  gap: var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--space-6);
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-@media (min-width: 40rem) {
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 80rem) {
-  .grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 }
