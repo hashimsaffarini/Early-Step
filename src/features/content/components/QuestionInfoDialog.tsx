@@ -29,7 +29,12 @@ export function QuestionInfoDialog({ question, onClose }: QuestionInfoDialogProp
     formState: { errors },
   } = useForm<QuestionInfoFormValues>({
     resolver: zodResolver(questionInfoSchema),
-    defaultValues: { text: question.text, image: null, type: question.type ?? 'SingleChoice' },
+    // An unknown server type is never silently replaced: the admin must pick one.
+    defaultValues: {
+      text: question.text,
+      image: null,
+      ...(question.type === null ? {} : { type: question.type }),
+    },
   });
 
   const onSubmit = handleSubmit((values) => {
@@ -50,6 +55,7 @@ export function QuestionInfoDialog({ question, onClose }: QuestionInfoDialogProp
         >
           {(field) => (
             <Select {...field} {...register('type')}>
+              {question.type === null ? <option value="">اختر النوع…</option> : null}
               {QUESTION_TYPES.map((questionType) => (
                 <option key={questionType} value={questionType}>
                   {QUESTION_TYPE_LABELS[questionType]}

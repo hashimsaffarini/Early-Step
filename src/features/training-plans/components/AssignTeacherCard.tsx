@@ -53,7 +53,8 @@ export function AssignTeacherCard({
       {lastAssigned ? (
         <Alert tone="success">{`تم تعيين ${lastAssigned} معلماً لـ ${childName}.`}</Alert>
       ) : null}
-      <ApiErrorAlert error={teachers.error ?? assign.error} />
+      <ApiErrorAlert error={teachers.error} onRetry={() => void teachers.refetch()} />
+      <ApiErrorAlert error={assign.error} />
       <div className={styles.teacherRow}>
         <FormField label="اختر المعلم">
           {(field) => (

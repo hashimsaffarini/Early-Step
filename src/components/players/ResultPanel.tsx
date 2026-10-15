@@ -14,7 +14,8 @@ export interface ResultPanelProps {
   title: string;
   /** Neutral result line, e.g. "7 من 8 إجابات صحيحة" (no percentages or clinical claims). */
   scoreText: string;
-  stars: number;
+  /** Omitted when there is no real score to rate (e.g. a saved plan activity). */
+  stars?: number | undefined;
   maxStars?: number;
   children?: ReactNode;
   /** Buttons/links below the panel (play again, back to catalogue). */
@@ -47,7 +48,7 @@ export function ResultPanel({
           {title}
         </h2>
         <p className={styles.score}>{scoreText}</p>
-        <StarRating value={stars} max={maxStars} size="lg" onDark />
+        {stars === undefined ? null : <StarRating value={stars} max={maxStars} size="lg" onDark />}
         {children ? <div className={styles.extra}>{children}</div> : null}
       </div>
       <div className={styles.actions}>{actions}</div>

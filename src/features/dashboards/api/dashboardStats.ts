@@ -26,7 +26,7 @@ interface StatDisplay {
  * Known dashboard fields → display. VERIFIED LIVE (2026-10-06):
  * - Admin: `إجمالي المستخدمين`, `إجمالي التقارير`, `إجمالي الانشطة`, `إجمالي الفئات`, `عدد الأطفال`
  * - Specialist: `عددالأطفال الكلي`, `عددالتقارير` (sic, no space)
- * - SuperAdmin: `totalUsers`, `totalReports`, `totalActivities` (+ `usersByRole[]`, read separately)
+ * - SuperAdmin: `totalUsers`, `totalReports`, `totalActivities` (+ `usersByRole[]`, read by `useUsersByRole`)
  * Teacher: not verified (no teacher demo account). Other English keys stay as a fallback.
  */
 const KNOWN_STATS: Readonly<Record<string, StatDisplay>> = {

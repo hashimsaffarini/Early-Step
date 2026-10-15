@@ -34,7 +34,6 @@ import {
 import styles from './TestPlayerPage.module.css';
 
 const OPTION_LETTERS = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'] as const;
-const RESULT_STARS = 3;
 
 /** The server rejects a submission unless every question is answered (live 2026-10-14). */
 function isPlayable(question: PlanQuestion): boolean {
@@ -84,8 +83,6 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
           category="neutral"
           title="أحسنت! 👏"
           scoreText={`تم حفظ إجاباتك (${answers.length.toString()} من ${questions.length.toString()} أسئلة).`}
-          stars={RESULT_STARS}
-          maxStars={RESULT_STARS}
           actions={
             <Link to={exitTo} className={getButtonClassName({ size: 'lg' })}>
               العودة إلى ملف الطفل
@@ -153,6 +150,7 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
             <li key={option.id}>
               <AnswerTile
                 label={option.text}
+                imageUrl={resolveMediaUrl(option.imageUrl)}
                 badge={badge}
                 state={tileState(selection, option.id)}
                 onClick={() => {

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { IMAGE_ACCEPT } from '../schemas/contentForms';
 
 import styles from './content.module.css';
-import { ServerImage } from './ServerImage';
+import { ServerImage } from '@/components/shared/ServerImage';
 
 export interface ImageFieldProps {
   label: string;

@@ -184,7 +184,7 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
   });
 
   it('Parent: initial assessment start → answer every type → complete; staff GET the result', async () => {
-    await signInLive('SPECIALIST');
+    await signInLive('ADMIN');
     expect(await fetchAssessmentResult(childId)).toBeNull();
     await signInLive('PARENT');
     const started = await startAssessment(childId);
@@ -195,7 +195,10 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     }
     await completeAssessment(started.assessmentId);
     // The Result endpoint is the source of truth, for staff (the parent does not reopen it).
+    // Since 2026-10-15 a specialist not assigned to the child gets 403; Admin reads it.
     await signInLive('SPECIALIST');
+    await expect(fetchAssessmentResult(childId)).rejects.toMatchObject({ status: 403 });
+    await signInLive('ADMIN');
     const saved = await fetchAssessmentResult(childId);
     expect(saved?.assessmentId).toBe(started.assessmentId);
     expect(typeof saved?.overallScore).toBe('number');
@@ -212,6 +215,8 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     await assignChildrenToSpecialist({ specialistId, childIds: [childId] });
     await signInLive('SPECIALIST');
     expect((await fetchChildrenForRole('Specialist')).some((c) => c.id === childId)).toBe(true);
+    // Once assigned, the specialist reads the child's saved result.
+    expect((await fetchAssessmentResult(childId))?.overallScore).toEqual(expect.any(Number));
   });
 
   it('Specialist: report create → edit → PDF → delete; parent sees it while it exists', async () => {

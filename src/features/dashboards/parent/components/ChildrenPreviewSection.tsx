@@ -16,7 +16,8 @@ const HEADING_ID = 'parent-children-title';
 
 /** Plan progress from the child's plan activities (shown only when the plan has activities). */
 function PlanProgress({ childId }: { childId: string }) {
-  const { data } = useChildPlanActivities(childId);
+  const { data, isError } = useChildPlanActivities(childId);
+  if (isError) return <p className={styles.planError}>تعذّر تحميل تقدّم الخطة.</p>;
   if (!data || data.length === 0) return null;
   const completed = data.filter((activity) => activity.isCompleted).length;
   return (

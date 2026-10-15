@@ -52,7 +52,6 @@ const categoryWithCountsSchema = z.looseObject({
   name: z.string().nullish(),
   count: z.number().nullish(),
   isDeleted: z.boolean().nullish(),
-  isInInitialAssessment: z.boolean().nullish(),
 });
 
 const activitySchema = z.looseObject({
@@ -114,7 +113,7 @@ function mapActivity(dto: z.infer<typeof activitySchema>): ActivitySummary {
     type: normalizeActivityType(dto.type),
     categoryId: dto.categoryId ?? null,
     categoryName: dto.categoryName ? trimName(dto.categoryName) : null,
-    questionCount: dto.questionCount ?? 0,
+    questionCount: dto.questionCount ?? null,
   };
 }
 
@@ -176,8 +175,7 @@ export async function fetchCategoriesWithCounts(type: ActivityType): Promise<Cat
     .map((dto) => ({
       id: dto.id,
       name: trimName(dto.name),
-      count: dto.count ?? 0,
-      isInInitialAssessment: dto.isInInitialAssessment ?? false,
+      count: dto.count ?? null,
     }));
 }
 

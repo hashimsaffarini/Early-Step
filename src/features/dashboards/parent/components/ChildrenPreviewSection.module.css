@@ -13,3 +13,9 @@
   /* Fits the column it sits in: 3 cards full width, 2 in the main column of a split page. */
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
 }
+
+.planError {
+  margin: 0;
+  color: var(--color-danger-strong);
+  font-size: var(--font-size-sm);
+}

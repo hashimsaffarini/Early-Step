@@ -39,6 +39,13 @@ export function getEnv(): AppEnv {
   return cachedEnv;
 }
 
+/**
+ * The static practice tests/games (frontend demo content, not backend Activities) are offered only
+ * in development mock mode. Inlined by Vite, so production builds drop them entirely.
+ */
+export const showPracticeCatalogs: boolean =
+  import.meta.env.DEV && import.meta.env.VITE_USE_MOCKS === 'true';
+
 /** Development mock mode (MSW in the browser). Never on in production builds. */
 export function isMockMode(): boolean {
   return import.meta.env.DEV && import.meta.env.VITE_USE_MOCKS === 'true';

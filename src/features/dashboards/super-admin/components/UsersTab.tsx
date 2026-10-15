@@ -1,4 +1,4 @@
-import { UserMinus, UserPlus, UserX } from 'lucide-react';
+import { UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { useState } from 'react';
 
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -13,6 +13,7 @@ import { ConfirmDialog } from '@/components/ui/Modal';
 import {
   ROLE_WIRE_VALUES,
   useDeactivateUser,
+  useReactivateUser,
   useSuperAdminUsers,
   type PanelUser,
 } from '@/features/dashboards/api/superAdminApi';
@@ -33,12 +34,14 @@ const FILTERABLE_ROLES = Object.keys(ROLE_WIRE_VALUES) as UserRole[];
 
 /**
  * Users from `GET SuperAdmin/users?Search=&Role=` (server-side search and filter). The Super
- * Admin creates teacher / specialist accounts and deactivates accounts (`SuperAdmin/users`).
- * Editing is not offered: the list does not return `isActive`, which the edit endpoint requires.
+ * Admin creates teacher / specialist accounts, deactivates accounts and re-activates them
+ * (`SuperAdmin/users`). The active state is the server's `isActive`; name/email editing is not
+ * offered in this panel.
  */
 export function UsersTab() {
   const session = useSession();
   const deactivate = useDeactivateUser();
+  const reactivate = useReactivateUser();
   const [isCreating, setIsCreating] = useState(false);
   const [toDeactivate, setToDeactivate] = useState<PanelUser | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -81,6 +84,7 @@ export function UsersTab() {
       <ul className={styles.list} aria-label="المستخدمون">
         {users.data.map((user) => {
           const role = user.role ? ROLE_DISPLAY[user.role] : null;
+          const canManage = user.role !== 'SuperAdmin' && user.id !== session?.user.id;
           return (
             <li key={user.id} className={styles.row}>
               <Avatar name={user.name} />
@@ -97,7 +101,27 @@ export function UsersTab() {
                   {role ? <role.icon aria-hidden="true" size={14} /> : null}
                   {role?.label ?? user.roleValue}
                 </Badge>
-                {user.role !== 'SuperAdmin' && user.id !== session?.user.id ? (
+                {user.isActive === false ? <Badge tone="danger">موقوف</Badge> : null}
+                {canManage && user.isActive === false ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconStart={<UserCheck aria-hidden="true" />}
+                    aria-label={`تفعيل حساب ${user.name}`}
+                    disabled={reactivate.isPending}
+                    onClick={() => {
+                      deactivate.reset();
+                      reactivate.mutate(user, {
+                        onSuccess: () => {
+                          setNotice(`تم تفعيل حساب ${user.name}.`);
+                        },
+                      });
+                    }}
+                  >
+                    تفعيل
+                  </Button>
+                ) : null}
+                {canManage && user.isActive !== false ? (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -159,6 +183,7 @@ export function UsersTab() {
       </div>
       {notice ? <Alert tone="success">{notice}</Alert> : null}
       <ApiErrorAlert error={deactivate.error} />
+      <ApiErrorAlert error={reactivate.error} />
       {content}
       <CreateStaffDialog
         isOpen={isCreating}

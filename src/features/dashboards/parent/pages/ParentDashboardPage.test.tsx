@@ -30,7 +30,7 @@ describe('ParentDashboardPage', () => {
     const value = (label: string) => within(summary).getByText(label).nextElementSibling;
     expect(value('عدد الأطفال')).toHaveTextContent('3');
     await waitFor(() => {
-      expect(value('التقارير')).toHaveTextContent('2');
+      expect(value('أطفال لديهم تقرير')).toHaveTextContent('2');
     });
     await waitFor(() => {
       expect(value('أنشطة الخطط التدريبية')).toHaveTextContent('2');

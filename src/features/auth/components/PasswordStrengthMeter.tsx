@@ -2,7 +2,11 @@ import { CircleCheck, CircleX } from 'lucide-react';
 
 import { cx } from '@/utils/classNames';
 
-import { evaluatePassword, PASSWORD_CRITERIA, PASSWORD_STRENGTH_LABELS } from '@/utils/passwordPolicy';
+import {
+  evaluatePassword,
+  PASSWORD_CRITERIA,
+  PASSWORD_STRENGTH_LABELS,
+} from '@/utils/passwordPolicy';
 
 import styles from './PasswordStrengthMeter.module.css';
 

@@ -113,6 +113,8 @@ describe('PlanActivityPlayerPage', () => {
       await userEvent.click(screen.getByRole('button', { name: 'إنهاء النشاط وحفظ النتيجة' }));
 
       expect(await screen.findByText('تم حفظ إجاباتك (3 من 3 أسئلة).')).toBeInTheDocument();
+      // No invented rating: the child gets no score, so no stars are shown.
+      expect(screen.queryByRole('img', { name: /نجوم/ })).not.toBeInTheDocument();
       expect(submitUrl).toContain(`/TrainingPlan/children/${CHILD_ID}/activities/pa-1/submit`);
       expect(body).toEqual({
         answers: [

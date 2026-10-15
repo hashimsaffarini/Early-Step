@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { isAppError } from '@/services/http/apiError';
+import { AppError } from '@/services/http/apiError';
 import { httpClient } from '@/services/http/httpClient';
 import { HTTP_STATUS } from '@/services/http/httpStatus';
 
@@ -113,7 +113,13 @@ export function mapAssessmentResult(dto: z.infer<typeof assessmentResultSchema>)
   };
 }
 
-/** `GET initial-assessment/{childId}/result` — null while the child has no completed assessment. */
+/** VERIFIED LIVE 2026-10-15: before completion → 404 `text/plain` with this text. */
+const NO_RESULT_MESSAGE = 'No completed assessment found';
+
+/**
+ * `GET initial-assessment/{childId}/result` — null while the child has no completed assessment.
+ * Only that exact 404 means "not completed"; any other 404 is a real error.
+ */
 export async function fetchAssessmentResult(childId: string): Promise<AssessmentResult | null> {
   try {
     const { data } = await httpClient.get<unknown>(
@@ -121,7 +127,13 @@ export async function fetchAssessmentResult(childId: string): Promise<Assessment
     );
     return mapAssessmentResult(assessmentResultSchema.parse(data));
   } catch (error) {
-    if (isAppError(error) && error.status === HTTP_STATUS.NOT_FOUND) return null;
+    if (
+      error instanceof AppError &&
+      error.status === HTTP_STATUS.NOT_FOUND &&
+      error.message.includes(NO_RESULT_MESSAGE)
+    ) {
+      return null;
+    }
     throw error;
   }
 }

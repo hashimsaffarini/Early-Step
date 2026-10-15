@@ -1,19 +1,27 @@
-import { FileText, ListChecks, Users } from 'lucide-react';
+import { FileText, ListChecks, RotateCcw, Users } from 'lucide-react';
 
 import { StatCard } from '@/components/shared/StatCard';
+import { Button } from '@/components/ui/Button';
 
-import type { ParentDashboardStats } from '../types';
+import type { DerivedCount, ParentDashboardStats } from '../types';
 
 import styles from './ParentStatsGrid.module.css';
 
-const PENDING = '…';
+function display(count: DerivedCount): string | number {
+  if (count === 'loading') return '…';
+  if (count === 'error') return '—';
+  return count;
+}
 
 export interface ParentStatsGridProps {
   stats: ParentDashboardStats;
+  /** Re-fetches the per-child queries after a failure. */
+  onRetry: () => void;
 }
 
 /** Counts from the API only (children list, plan summaries, child reports). */
-export function ParentStatsGrid({ stats }: ParentStatsGridProps) {
+export function ParentStatsGrid({ stats, onRetry }: ParentStatsGridProps) {
+  const failed = stats.planActivities === 'error' || stats.childrenWithReport === 'error';
   return (
     <section aria-label="ملخص">
       <ul className={styles.grid}>
@@ -23,20 +31,33 @@ export function ParentStatsGrid({ stats }: ParentStatsGridProps) {
         <li>
           <StatCard
             label="أنشطة الخطط التدريبية"
-            value={stats.planActivities ?? PENDING}
+            value={display(stats.planActivities)}
             icon={ListChecks}
             tone="warning"
           />
         </li>
         <li>
           <StatCard
-            label="التقارير"
-            value={stats.reports ?? PENDING}
+            label="أطفال لديهم تقرير"
+            value={display(stats.childrenWithReport)}
             icon={FileText}
             tone="violet"
           />
         </li>
       </ul>
+      {failed ? (
+        <p className={styles.error} role="alert">
+          تعذّر تحميل بعض الأرقام من الخادم.
+          <Button
+            variant="outline"
+            size="sm"
+            iconStart={<RotateCcw aria-hidden="true" />}
+            onClick={onRetry}
+          >
+            إعادة المحاولة
+          </Button>
+        </p>
+      ) : null}
     </section>
   );
 }

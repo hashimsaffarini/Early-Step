@@ -20,8 +20,9 @@ import type { UserRole } from '@/types/roles';
  * disposable teacher: `POST SuperAdmin/users { fullName, email, password, role }` → 201
  * `{ message, id, fullName, email, role, isActive }`; `DELETE SuperAdmin/users/{id}` → 200 "User
  * deactivated successfully." (soft: the user stays listed, and login is refused).
- * `PUT SuperAdmin/users/{id} { fullName, email, role, isActive }` exists but is not used: the list
- * does not return `isActive`, so an edit could not keep it (BACKEND_REQUESTS).
+ * Since 2026-10-15 the list returns `isActive` (VERIFIED LIVE), so a deactivated account is shown
+ * as such and can be re-activated with `PUT SuperAdmin/users/{id} { fullName, email, role,
+ * isActive: true }` (200 live; the user's own values are sent back unchanged).
  */
 const userItemSchema = z.looseObject({
   id: z.string(),
@@ -30,6 +31,7 @@ const userItemSchema = z.looseObject({
   role: z.string().nullish(),
   emailConfirmed: z.boolean().nullish(),
   childrenCount: z.number().nullish(),
+  isActive: z.boolean().nullish(),
 });
 
 const usersResponseSchema = z.union([
@@ -44,6 +46,8 @@ export interface PanelUser {
   /** Canonical role, or null when the backend value is unknown (raw value kept for display). */
   role: UserRole | null;
   roleValue: string;
+  /** From the server; null when it was not sent (then neither state is claimed). */
+  isActive: boolean | null;
 }
 
 /** Role values as the backend sends them — all five VERIFIED LIVE (user lists, login). */
@@ -67,6 +71,7 @@ export async function fetchSuperAdminUsers(role: string, search: string): Promis
     email: item.email ?? null,
     role: normalizeRole(item.role),
     roleValue: item.role ?? '',
+    isActive: item.isActive ?? null,
   }));
 }
 
@@ -92,6 +97,16 @@ export async function createStaffUser(input: CreateStaffInput): Promise<void> {
 
 export async function deactivateUser(userId: string): Promise<void> {
   await httpClient.delete(`SuperAdmin/users/${encodeURIComponent(userId)}`);
+}
+
+/** Re-activates a deactivated account, sending its own name, email and backend role back. */
+export async function reactivateUser(user: PanelUser): Promise<void> {
+  await httpClient.put(`SuperAdmin/users/${encodeURIComponent(user.id)}`, {
+    fullName: user.name,
+    email: user.email,
+    role: user.roleValue,
+    isActive: true,
+  });
 }
 
 export async function fetchSuperAdminChildren(name: string): Promise<ChildSummary[]> {
@@ -123,6 +138,11 @@ function useRefreshUsers() {
 export function useCreateStaffUser() {
   const refresh = useRefreshUsers();
   return useMutation({ mutationFn: createStaffUser, onSuccess: refresh });
+}
+
+export function useReactivateUser() {
+  const refresh = useRefreshUsers();
+  return useMutation({ mutationFn: reactivateUser, onSuccess: refresh });
 }
 
 export function useDeactivateUser() {

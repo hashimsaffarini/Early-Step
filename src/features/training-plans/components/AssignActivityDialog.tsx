@@ -51,7 +51,7 @@ export function AssignActivityDialog({
   if (available.isPending) {
     list = <LoadingState label="جارٍ تحميل الأنشطة…" />;
   } else if (available.error) {
-    list = <ApiErrorAlert error={available.error} />;
+    list = <ApiErrorAlert error={available.error} onRetry={() => void available.refetch()} />;
   } else if (items.length === 0) {
     list = (
       <EmptyState

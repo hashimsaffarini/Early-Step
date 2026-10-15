@@ -14,7 +14,7 @@ import { QUESTION_TYPE_LABELS, type Question, type QuestionOption } from '../typ
 import styles from './content.module.css';
 import { OptionEditDialog } from './OptionEditDialog';
 import { QuestionInfoDialog } from './QuestionInfoDialog';
-import { ServerImage } from './ServerImage';
+import { ServerImage } from '@/components/shared/ServerImage';
 
 type PendingDelete =
   { kind: 'question' } | { kind: 'allOptions' } | { kind: 'option'; option: QuestionOption };

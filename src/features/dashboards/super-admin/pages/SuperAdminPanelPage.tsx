@@ -50,7 +50,7 @@ export function SuperAdminPanelPage({ userName }: SuperAdminPanelPageProps) {
         greetingEmoji="👑"
       />
       <Tabs label="أقسام لوحة التحكم" items={tabItems} value={tab} onChange={setTab}>
-        {tab === 'overview' ? <OverviewTab users={allUsers.data} /> : null}
+        {tab === 'overview' ? <OverviewTab /> : null}
         {tab === 'users' ? <UsersTab /> : null}
         {tab === 'children' ? <ChildrenTab /> : null}
         {tab === 'reports' ? <ReportsTab /> : null}

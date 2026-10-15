@@ -1,17 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
 
-export type ActivityKind = 'assessment' | 'report' | 'plan';
-
-/** Activity feed item (used by the admin dashboard's recent-activity card). */
-export interface ParentActivityItem {
-  id: string;
-  kind: ActivityKind;
-  title: string;
-  description: string;
-  /** ISO date. */
-  date: string;
-}
-
 export interface ParentTip {
   id: string;
   title: string;
@@ -20,9 +8,12 @@ export interface ParentTip {
   tone: 'primary' | 'success' | 'violet';
 }
 
-/** Dashboard counts from the API. `null` = still loading or unavailable. */
+/** A count derived from per-child API calls: the number, or why there is none yet. */
+export type DerivedCount = number | 'loading' | 'error';
+
+/** Dashboard counts from the API (never placeholders). */
 export interface ParentDashboardStats {
   children: number;
-  planActivities: number | null;
-  reports: number | null;
+  planActivities: DerivedCount;
+  childrenWithReport: DerivedCount;
 }

@@ -1,4 +1,5 @@
 import { rmSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
 import react from '@vitejs/plugin-react';
@@ -7,16 +8,20 @@ import { configDefaults, defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [
     react(),
-    {
-      // The MSW worker is for development mock mode only — never ship it.
-      name: 'drop-mock-service-worker',
-      apply: 'build',
-      closeBundle() {
-        rmSync(fileURLToPath(new URL('./dist/mockServiceWorker.js', import.meta.url)), {
-          force: true,
-        });
-      },
-    },
+    (() => {
+      // The MSW worker is for development mock mode only — never ship it (whatever the outDir).
+      let outDir = 'dist';
+      return {
+        name: 'drop-mock-service-worker',
+        apply: 'build' as const,
+        configResolved(config: { root: string; build: { outDir: string } }) {
+          outDir = resolve(config.root, config.build.outDir);
+        },
+        closeBundle() {
+          rmSync(resolve(outDir, 'mockServiceWorker.js'), { force: true });
+        },
+      };
+    })(),
   ],
   resolve: {
     alias: {

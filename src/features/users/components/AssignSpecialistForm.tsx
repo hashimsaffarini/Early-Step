@@ -62,7 +62,7 @@ export function AssignSpecialistForm({ childrenOfParent }: AssignSpecialistFormP
         <Alert tone="success">{`تم إسناد الأطفال المختارين إلى ${specialistName}.`}</Alert>
       ) : null}
       <ApiErrorAlert error={assign.error} />
-      <ApiErrorAlert error={specialists.error} />
+      <ApiErrorAlert error={specialists.error} onRetry={() => void specialists.refetch()} />
       <form
         className={styles.assign}
         noValidate

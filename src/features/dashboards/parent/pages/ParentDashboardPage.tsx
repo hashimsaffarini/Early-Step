@@ -17,6 +17,7 @@ import { ParentStatsGrid } from '../components/ParentStatsGrid';
 import { ParentTipsCard } from '../components/ParentTipsCard';
 import { ParentWelcomeBanner } from '../components/ParentWelcomeBanner';
 import { PARENT_TIPS } from '../content/tips';
+import type { DerivedCount } from '../types';
 
 import styles from './ParentDashboardPage.module.css';
 
@@ -25,9 +26,18 @@ export interface ParentDashboardPageProps {
   parentName: string;
 }
 
-/** Sums a per-child count once every query has data; null while any is pending or failed. */
-function sumWhenReady<T>(results: readonly { data?: T | undefined }[], pick: (value: T) => number) {
-  if (results.some((result) => result.data === undefined)) return null;
+interface PerChildResult<T> {
+  data?: T | undefined;
+  isError: boolean;
+}
+
+/** Sums a per-child count once every query has data; reports a failure instead of a number. */
+function sumWhenReady<T>(
+  results: readonly PerChildResult<T>[],
+  pick: (value: T) => number,
+): DerivedCount {
+  if (results.some((result) => result.isError)) return 'error';
+  if (results.some((result) => result.data === undefined)) return 'loading';
   return results.reduce((total, result) => total + (result.data ? pick(result.data) : 0), 0);
 }
 
@@ -92,7 +102,12 @@ export function ParentDashboardPage({ parentName }: ParentDashboardPageProps) {
           stats={{
             children: children.length,
             planActivities: sumWhenReady(summaries, (summary) => summary.totalCount),
-            reports: sumWhenReady(reports, (report) => (report ? 1 : 0)),
+            childrenWithReport: sumWhenReady(reports, (report) => (report ? 1 : 0)),
+          }}
+          onRetry={() => {
+            for (const result of [...summaries, ...reports]) {
+              if (result.isError) void result.refetch();
+            }
           }}
         />
       ) : null}

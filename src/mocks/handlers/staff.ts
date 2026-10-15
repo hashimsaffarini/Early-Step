@@ -17,8 +17,11 @@ const LISTED_ROLES: readonly MockUser['role'][] = ['Parent', 'Teacher', 'Special
 
 /** Accounts the Super Admin created in this mock session (soft-deactivated ones stay listed). */
 const createdUsers: MockUser[] = [];
+/** Soft-deactivated accounts (`DELETE SuperAdmin/users/{id}`); `PUT … isActive` toggles it. */
+const deactivatedUserIds = new Set<string>();
 registerMockTable(() => {
   createdUsers.splice(0, createdUsers.length);
+  deactivatedUserIds.clear();
 });
 
 const STAFF_ROLE_BY_WIRE: Record<string, MockUser['role']> = {
@@ -107,10 +110,15 @@ export const staffHandlers: HttpHandler[] = [
   http.get(apiUrl('SuperAdmin/dashboard'), ({ request }) => {
     const user = requireRole(request, ['SuperAdmin']);
     if (user instanceof Response) return user;
+    // Live shape (2026-10-15): totals + `usersByRole: [{ role, count }]` with backend role values.
+    const counts = new Map<string, number>();
+    for (const item of MOCK_USERS)
+      counts.set(item.roleValue, (counts.get(item.roleValue) ?? 0) + 1);
     return HttpResponse.json({
       totalUsers: MOCK_USERS.length,
-      totalChildren: mockChildren.length,
       totalReports: mockReports.length,
+      totalActivities: 0,
+      usersByRole: [...counts].map(([role, count]) => ({ role, count })),
     });
   }),
 
@@ -188,6 +196,7 @@ export const staffHandlers: HttpHandler[] = [
         email,
         role: roleValue,
         emailConfirmed: false,
+        isActive: !deactivatedUserIds.has(id),
       })),
     );
   }),
@@ -235,7 +244,24 @@ export const staffHandlers: HttpHandler[] = [
         { status: 404 },
       );
     }
+    deactivatedUserIds.add(String(params.id));
     return HttpResponse.json({ message: 'User deactivated successfully.' });
+  }),
+  http.put(apiUrl('SuperAdmin/users/:id'), async ({ request, params }) => {
+    const admin = requireRole(request, ['SuperAdmin']);
+    if (admin instanceof Response) return admin;
+    const body = (await request.json()) as {
+      fullName?: string;
+      email?: string;
+      role?: string;
+      isActive?: boolean;
+    };
+    if (!body.fullName || !body.email || !body.role) {
+      return badRequest('One or more validation errors occurred.');
+    }
+    if (body.isActive === true) deactivatedUserIds.delete(String(params.id));
+    if (body.isActive === false) deactivatedUserIds.add(String(params.id));
+    return HttpResponse.json({ message: 'User updated successfully.' });
   }),
   http.get(apiUrl('SuperAdmin/children'), ({ request }) => {
     const user = requireRole(request, ['SuperAdmin']);

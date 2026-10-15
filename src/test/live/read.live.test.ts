@@ -14,7 +14,11 @@ import {
   fetchCategoriesWithCounts,
   fetchQuestion,
 } from '@/features/content/api/contentApi';
-import { fetchDashboardStats } from '@/features/dashboards/api/dashboardsApi';
+import {
+  DASHBOARD_PATHS,
+  fetchDashboardStats,
+  toUsersByRole,
+} from '@/features/dashboards/api/dashboardsApi';
 import {
   fetchSuperAdminChildren,
   fetchSuperAdminUsers,
@@ -33,6 +37,7 @@ import { fetchChildReport } from '@/services/api/childReports';
 import { fetchChildrenForRole } from '@/services/api/childrenLists';
 import { fetchChildFeedbacks } from '@/services/api/teacherFeedback';
 import { isAppError } from '@/services/http/apiError';
+import { httpClient } from '@/services/http/httpClient';
 
 import { hasAccount, signInLive, signOutLive, type LiveAccount } from './liveSession';
 
@@ -148,7 +153,7 @@ describe.runIf(hasAccount('ADMIN'))('live — Admin', () => {
     for (const type of ['test', 'game'] as const) {
       await fetchCategoriesWithCounts(type);
       const activities = await fetchActivities(type);
-      const withQuestions = activities.find((activity) => activity.questionCount > 0);
+      const withQuestions = activities.find((activity) => (activity.questionCount ?? 0) > 0);
       if (withQuestions) {
         const detail = await fetchActivity(type, withQuestions.id);
         const question = detail.questions[0];
@@ -163,7 +168,13 @@ describe.runIf(hasAccount('SUPERADMIN'))('live — Super Admin', () => {
     const session = await signInLive('SUPERADMIN');
     expect(session.user.role).toBe('SuperAdmin');
     expect((await fetchDashboardStats('superAdmin')).length).toBeGreaterThan(0);
-    expect((await fetchSuperAdminUsers('', '')).length).toBeGreaterThan(0);
+    const users = await fetchSuperAdminUsers('', '');
+    expect(users.length).toBeGreaterThan(0);
+    // Since 2026-10-15 every listed user carries the server's isActive.
+    expect(users.every((user) => typeof user.isActive === 'boolean')).toBe(true);
+    const { data } = await httpClient.get<unknown>(DASHBOARD_PATHS.superAdmin);
+    const byRole = toUsersByRole(data);
+    expect(byRole?.length).toBeGreaterThan(0);
     expect(Array.isArray(await fetchSuperAdminChildren(''))).toBe(true);
   });
 });

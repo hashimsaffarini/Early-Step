@@ -95,9 +95,11 @@ export function InitialAssessmentAdminPage() {
                         {category.isInInitialAssessment ? 'ضمن التقييم' : 'غير مضاف'}
                       </Badge>
                     </li>
-                    <li>
-                      <Badge>{`${category.count.toString()} أنشطة`}</Badge>
-                    </li>
+                    {category.count !== null ? (
+                      <li>
+                        <Badge>{`${category.count.toString()} أنشطة`}</Badge>
+                      </li>
+                    ) : null}
                   </ul>
                 </div>
                 <div className={styles.actions}>
@@ -138,6 +140,11 @@ export function InitialAssessmentAdminPage() {
           لا توفّر الواجهة البرمجية قائمة بالأسئلة المضافة حالياً إلى التقييم، لذا تظهر هنا فقط
           الإجراءات التي نفّذتها في هذه الجلسة.
         </Alert>
+        <ApiErrorAlert
+          error={activitiesQuery.error}
+          message="تعذّر تحميل قائمة الاختبارات."
+          onRetry={() => void activitiesQuery.refetch()}
+        />
         <Card className={styles.filter}>
           <FormField label="اختر اختباراً لعرض أسئلته">
             {(field) => (

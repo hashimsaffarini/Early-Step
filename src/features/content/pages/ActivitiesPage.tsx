@@ -15,7 +15,7 @@ import { ActivityFormDialog } from '../components/ActivityFormDialog';
 import styles from '../components/content.module.css';
 import { ContentPage } from '../components/ContentPage';
 import { QueryStatus } from '../components/QueryStatus';
-import { ServerImage } from '../components/ServerImage';
+import { ServerImage } from '@/components/shared/ServerImage';
 import { ACTIVITY_TYPE_LABELS, type ActivitySummary } from '../types';
 
 const TYPES: readonly ActivityType[] = ['test', 'game'];
@@ -96,6 +96,11 @@ export function ActivitiesPage() {
         </div>
       </div>
 
+      <ApiErrorAlert
+        error={categoriesQuery.error}
+        message="تعذّر تحميل التصنيفات، لذلك لا يمكن التصفية أو إضافة نشاط الآن."
+        onRetry={() => void categoriesQuery.refetch()}
+      />
       {categoriesQuery.isSuccess && categories.length === 0 ? (
         <p className={styles.muted}>أضف تصنيفاً أولاً من صفحة التصنيفات لتتمكن من إضافة الأنشطة.</p>
       ) : null}
@@ -138,9 +143,11 @@ export function ActivitiesPage() {
                       <Badge tone="primary">{activity.categoryName}</Badge>
                     </li>
                   ) : null}
-                  <li>
-                    <Badge>{`${activity.questionCount.toString()} أسئلة`}</Badge>
-                  </li>
+                  {activity.questionCount !== null ? (
+                    <li>
+                      <Badge>{`${activity.questionCount.toString()} أسئلة`}</Badge>
+                    </li>
+                  ) : null}
                 </ul>
               </div>
               <div className={styles.actions}>

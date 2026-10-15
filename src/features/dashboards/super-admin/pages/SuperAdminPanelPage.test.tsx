@@ -15,7 +15,18 @@ function renderPanel() {
 }
 
 describe('SuperAdminPanelPage', () => {
-  it('shows server stats and users-by-role counted from the real user list', async () => {
+  it("shows server stats and the server's usersByRole counts (not counted on the client)", async () => {
+    server.use(
+      http.get(apiUrl('SuperAdmin/dashboard'), () =>
+        HttpResponse.json({
+          totalUsers: 40,
+          usersByRole: [
+            { role: 'ولي أمر', count: 23 },
+            { role: 'معلم/ة', count: 6 },
+          ],
+        }),
+      ),
+    );
     renderPanel();
 
     const summary = await screen.findByRole('region', { name: 'ملخص النظام' });
@@ -23,6 +34,44 @@ describe('SuperAdminPanelPage', () => {
     expect(
       await screen.findByRole('heading', { name: 'المستخدمون حسب الدور' }),
     ).toBeInTheDocument();
+    const byRole = screen.getByRole('region', { name: 'المستخدمون حسب الدور' });
+    expect(await within(byRole).findByText('23')).toBeInTheDocument();
+    expect(within(byRole).getByText('6')).toBeInTheDocument();
+    expect(within(byRole).getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  it('shows a deactivated account from isActive and re-activates it with PUT', async () => {
+    const bodies: unknown[] = [];
+    server.use(
+      http.get(apiUrl('SuperAdmin/users'), () =>
+        HttpResponse.json([
+          {
+            id: 'u-off',
+            fullName: 'معلم موقوف',
+            email: 'off@example.com',
+            role: 'معلم/ة',
+            emailConfirmed: false,
+            isActive: false,
+          },
+        ]),
+      ),
+      http.put(apiUrl('SuperAdmin/users/u-off'), async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json({ message: 'ok' });
+      }),
+    );
+    renderPanel();
+
+    await userEvent.click(screen.getByRole('tab', { name: /المستخدمون/ }));
+    const list = await screen.findByRole('list', { name: 'المستخدمون' });
+    expect(within(list).getByText('موقوف')).toBeInTheDocument();
+    expect(within(list).queryByRole('button', { name: /إيقاف حساب/ })).toBeNull();
+
+    await userEvent.click(within(list).getByRole('button', { name: 'تفعيل حساب معلم موقوف' }));
+    expect(await screen.findByText('تم تفعيل حساب معلم موقوف.')).toBeInTheDocument();
+    expect(bodies).toEqual([
+      { fullName: 'معلم موقوف', email: 'off@example.com', role: 'معلم/ة', isActive: true },
+    ]);
   });
 
   it('searches users on the server and filters by the backend role value', async () => {

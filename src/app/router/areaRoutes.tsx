@@ -3,6 +3,7 @@ import { Navigate, type RouteObject } from 'react-router';
 import { RoleAreaLayout } from '@/app/layouts/RoleAreaLayout';
 import { RoleAreaRoot } from '@/app/layouts/RoleAreaRoot';
 import { RequireRole } from '@/app/router/guards';
+import { showPracticeCatalogs } from '@/config/env';
 import {
   ADMIN_PATHS,
   ADMIN_SEGMENTS,
@@ -18,8 +19,9 @@ const loadDashboards = () => import('@/app/pages/DashboardRoutes');
 const loadChildren = () => import('@/features/children');
 const loadActivities = () => import('@/features/activities');
 const loadReports = () => import('@/features/reports');
+const loadPractice = () => import('@/features/activities/practice');
 
-/** Each role has its own dashboard screen (with its mock session user). */
+/** Each role has its own dashboard screen. */
 async function loadDashboardRoute(role: AreaRole) {
   const dashboards = await loadDashboards();
   const byRole = {
@@ -89,14 +91,18 @@ function buildAreaRoute(role: AreaRole): RouteObject {
         Component: (await import('@/features/training-plans')).ChildPlansPage,
       }),
     },
-    {
-      path: AREA_SEGMENTS.tests,
-      lazy: async () => ({ Component: (await loadActivities()).TestsCatalogPage }),
-    },
-    {
-      path: AREA_SEGMENTS.games,
-      lazy: async () => ({ Component: (await loadActivities()).GamesCatalogPage }),
-    },
+    ...(showPracticeCatalogs
+      ? [
+          {
+            path: AREA_SEGMENTS.tests,
+            lazy: async () => ({ Component: (await loadPractice()).TestsCatalogPage }),
+          },
+          {
+            path: AREA_SEGMENTS.games,
+            lazy: async () => ({ Component: (await loadPractice()).GamesCatalogPage }),
+          },
+        ]
+      : []),
     {
       path: AREA_SEGMENTS.reports,
       lazy: async () => ({ Component: (await loadReports()).ReportsListPage }),
@@ -139,14 +145,18 @@ function buildAreaRoute(role: AreaRole): RouteObject {
   ];
 
   const fullScreenPages: RouteObject[] = [
-    {
-      path: AREA_SEGMENTS.testPlay,
-      lazy: async () => ({ Component: (await loadActivities()).TestPlayerPage }),
-    },
-    {
-      path: AREA_SEGMENTS.gamePlay,
-      lazy: async () => ({ Component: (await loadActivities()).GamePlayerPage }),
-    },
+    ...(showPracticeCatalogs
+      ? [
+          {
+            path: AREA_SEGMENTS.testPlay,
+            lazy: async () => ({ Component: (await loadPractice()).TestPlayerPage }),
+          },
+          {
+            path: AREA_SEGMENTS.gamePlay,
+            lazy: async () => ({ Component: (await loadPractice()).GamePlayerPage }),
+          },
+        ]
+      : []),
     {
       path: AREA_SEGMENTS.planActivityPlay,
       lazy: async () => ({ Component: (await loadActivities()).PlanActivityPlayerPage }),

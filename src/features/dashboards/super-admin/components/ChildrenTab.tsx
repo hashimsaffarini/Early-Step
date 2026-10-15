@@ -48,10 +48,10 @@ export function ChildrenTab() {
           if (child.parentName) {
             details.push({ icon: UserRound, label: `ولي الأمر: ${child.parentName}` });
           }
-          details.push({
-            icon: BriefcaseMedical,
-            label: `الأخصائي: ${child.specialistName ?? 'لم يُعيَّن بعد'}`,
-          });
+          // `SuperAdmin/children` does not send the specialist (live 2026-10-15): shown only if sent.
+          if (child.specialistName) {
+            details.push({ icon: BriefcaseMedical, label: `الأخصائي: ${child.specialistName}` });
+          }
           return (
             <li key={child.id}>
               <ChildCard name={child.fullName} headingLevel={2} details={details} />

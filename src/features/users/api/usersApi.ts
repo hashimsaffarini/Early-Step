@@ -35,7 +35,8 @@ const usersResponseSchema = z.looseObject({
 
 const userDetailSchema = userItemSchema.extend({
   phoneNumber: z.string().nullish(),
-  children: z.array(childListItemSchema).nullish(),
+  // Always sent live; required so a missing list is an error, not "no children".
+  children: z.array(childListItemSchema),
 });
 
 export interface AdminUser {
@@ -109,7 +110,7 @@ export async function fetchAdminUser(userId: string): Promise<AdminUserDetail> {
   return {
     ...mapUser(dto),
     phoneNumber: dto.phoneNumber ?? null,
-    children: (dto.children ?? []).map(mapChildSummary),
+    children: dto.children.map(mapChildSummary),
   };
 }
 
@@ -118,7 +119,8 @@ const specialistSchema = z.looseObject({
   id: z.string(),
   fullName: z.string().nullish(),
   email: z.string().nullish(),
-  isActive: z.boolean().nullish(),
+  // Always sent live; required so an unknown state is never shown as active.
+  isActive: z.boolean(),
 });
 
 export interface AdminSpecialist {
@@ -138,7 +140,7 @@ export async function fetchSpecialists(): Promise<AdminSpecialist[]> {
       id: dto.id,
       name: dto.fullName?.trim() ?? '',
       email: dto.email ?? null,
-      isActive: dto.isActive ?? true,
+      isActive: dto.isActive,
     }));
 }
 

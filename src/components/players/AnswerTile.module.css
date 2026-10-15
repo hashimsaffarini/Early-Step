@@ -47,6 +47,13 @@
   line-height: 1;
 }
 
+.image {
+  max-inline-size: 100%;
+  max-block-size: 8rem;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+}
+
 .label {
   line-height: var(--line-height-snug);
 }

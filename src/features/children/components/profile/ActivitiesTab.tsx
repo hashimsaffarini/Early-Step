@@ -9,6 +9,7 @@ import { getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import type { AreaRole } from '@/constants/routes';
 import { useChildPlanActivities } from '@/hooks/api/childResources';
+import { ServerImage } from '@/components/shared/ServerImage';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import type { ActivityType } from '@/services/api/activityType';
 import type { PlanActivity } from '@/services/api/childPlan';
@@ -52,17 +53,21 @@ function ActivityRow({
   canPlay: boolean;
 }) {
   const { paths } = useRoleArea();
-  const hasResults = activity.correctAnswers !== null || activity.wrongAnswers !== null;
+  // Only the counts the server sent — a missing one is not shown as 0.
+  const counts = [
+    activity.correctAnswers === null ? null : `إجابات صحيحة: ${activity.correctAnswers.toString()}`,
+    activity.wrongAnswers === null ? null : `غير صحيحة: ${activity.wrongAnswers.toString()}`,
+  ].filter((part) => part !== null);
   return (
     <li className={styles.row}>
-      <CategoryTile category="neutral" emoji={emoji} size="sm" />
+      {activity.iconUrl ? (
+        <ServerImage path={activity.iconUrl} alt="" className={styles.activityIcon} />
+      ) : (
+        <CategoryTile category="neutral" emoji={emoji} size="sm" />
+      )}
       <div className={styles.rowBody}>
         <p className={styles.rowTitle}>{activity.title}</p>
-        {hasResults ? (
-          <p className={styles.muted}>
-            {`إجابات صحيحة: ${(activity.correctAnswers ?? 0).toString()} · غير صحيحة: ${(activity.wrongAnswers ?? 0).toString()}`}
-          </p>
-        ) : null}
+        {counts.length > 0 ? <p className={styles.muted}>{counts.join(' · ')}</p> : null}
       </div>
       <div className={styles.rowActions}>
         {activity.isCompleted ? (

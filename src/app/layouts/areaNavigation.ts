@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import type { NavLinkItem } from '@/components/layout/navigation';
+import { showPracticeCatalogs } from '@/config/env';
 import { ADMIN_PATHS, getAreaPaths, ROUTE_PATHS, type AreaRole } from '@/constants/routes';
 import type { UserRole } from '@/types/roles';
 
@@ -23,7 +24,10 @@ const CHILDREN_LABEL: Record<AreaRole, string> = {
   Admin: 'الأطفال',
 };
 
-/** Replit sidebar order: dashboard, children, tests, games, reports, messages. */
+/**
+ * Sidebar order: dashboard, children, reports, messages. The static practice tests/games are
+ * listed only in development mock mode (they are not backend data).
+ */
 function buildAreaNav(role: AreaRole, unreadMessages: number): NavLinkItem[] {
   const paths = getAreaPaths(role);
   return [
@@ -39,8 +43,12 @@ function buildAreaNav(role: AreaRole, unreadMessages: number): NavLinkItem[] {
           { to: ADMIN_PATHS.content, label: 'إدارة المحتوى', icon: FolderCog },
         ]
       : []),
-    { to: paths.tests, label: 'الاختبارات', icon: BrainCircuit },
-    { to: paths.games, label: 'الألعاب', icon: Gamepad2 },
+    ...(showPracticeCatalogs
+      ? [
+          { to: paths.tests, label: 'الاختبارات', icon: BrainCircuit },
+          { to: paths.games, label: 'الألعاب', icon: Gamepad2 },
+        ]
+      : []),
     { to: paths.reports, label: 'التقارير', icon: FileText },
     { to: paths.messages, label: 'الرسائل', icon: MessageCircle, badgeCount: unreadMessages },
   ];

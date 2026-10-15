@@ -23,11 +23,15 @@ export interface Category {
   count: number | null;
 }
 
+/**
+ * A category from `categoriesActivity`. Its `isInInitialAssessment` flag is not mapped: live it is
+ * always false, so membership comes from `initial-assessment/categories` only.
+ */
 export interface CategoryWithCounts {
   id: string;
   name: string;
-  count: number;
-  isInInitialAssessment: boolean;
+  /** Activities in the category; null when the server did not send it. */
+  count: number | null;
 }
 
 export interface ActivitySummary {
@@ -39,7 +43,8 @@ export interface ActivitySummary {
   type: ActivityType | null;
   categoryId: string | null;
   categoryName: string | null;
-  questionCount: number;
+  /** Null when the server did not send it (never shown as 0). */
+  questionCount: number | null;
 }
 
 export interface QuestionOption {

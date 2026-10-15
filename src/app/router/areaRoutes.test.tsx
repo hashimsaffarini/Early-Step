@@ -156,14 +156,7 @@ describe('role area routing', () => {
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'));
     const paths = getAreaPaths('Parent');
-    expect(hrefs).toEqual([
-      paths.dashboard,
-      paths.children,
-      paths.tests,
-      paths.games,
-      paths.reports,
-      paths.messages,
-    ]);
+    expect(hrefs).toEqual([paths.dashboard, paths.children, paths.reports, paths.messages]);
     expect(within(desktopNav).queryByText('قريباً')).not.toBeInTheDocument();
   });
 

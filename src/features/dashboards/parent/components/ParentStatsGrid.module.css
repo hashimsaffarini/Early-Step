@@ -17,3 +17,12 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+.error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  color: var(--color-danger-strong);
+}

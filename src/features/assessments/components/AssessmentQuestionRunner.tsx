@@ -121,6 +121,7 @@ export function AssessmentQuestionRunner({
                   <AnswerTile
                     key={option.id}
                     label={option.text}
+                    imageUrl={resolveMediaUrl(option.imageUrl)}
                     badge={
                       type === 'Sequence' && position >= 0 ? (position + 1).toString() : undefined
                     }

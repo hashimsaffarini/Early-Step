@@ -72,6 +72,8 @@ function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }
   // Product rule (2026-10-14): a child with saved activity results is not deleted.
   const plan = useChildPlanActivities(isParent ? child.id : undefined);
   const hasResults = plan.data?.some((activity) => activity.isCompleted) ?? false;
+  // Until the plan is loaded we cannot tell, so delete stays off (never assume "no results").
+  const isDeleteBlocked = !plan.isSuccess || hasResults;
 
   return (
     <>
@@ -92,9 +94,14 @@ function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }
               }
             : undefined
         }
-        isDeleteBlocked={hasResults}
+        isDeleteBlocked={isDeleteBlocked}
       />
       {isParent && hasResults ? <p className={styles.deleteNote}>{DELETE_BLOCKED}</p> : null}
+      {isParent && plan.isError ? (
+        <p className={styles.deleteNote}>
+          تعذّر التحقق من نتائج خطة الطفل، لذلك الحذف غير متاح الآن.
+        </p>
+      ) : null}
       {savedMessage ? <Alert tone="success">{savedMessage}</Alert> : null}
       <ApiErrorAlert error={deleteMutation.error} />
       <Tabs
