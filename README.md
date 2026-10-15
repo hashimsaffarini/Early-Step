@@ -1,118 +1,111 @@
 # Early Step
 
-An Arabic (RTL) web platform for children aged approximately 4–10 who may experience
-learning difficulties, and for the parents, teachers, specialists, and administrators who
-support them.
+An Arabic (RTL) web platform that helps detect learning difficulties early in children, and
+connects the people who support them: parents, teachers, specialists and administrators.
 
-> **Status:** Foundation phase. The project architecture, tooling, and documentation are in
-> place. No product features are implemented yet.
+- **Parents** add their children, run the initial assessment, play the training-plan activities
+  with the child, read the specialist's report and chat with the child's staff.
+- **Specialists** follow their children: assessment results, training plans (activities and the
+  child's answers), reports, the teacher's notes and chat.
+- **Teachers** follow their class, play plan activities with the child and write notes.
+- **Admins** manage content (categories, tests, games, questions, the initial assessment), users
+  and specialist assignment. **Super Admins** manage staff accounts.
 
-## Requirements
+The app uses live backend data only: no demo or mock data in production
+(`docs/PRODUCTION_DATA_AUDIT.md`).
 
-- Node.js **>= 20.17** (see `.nvmrc`)
-- npm (the only package manager used in this repo)
+## Production
 
-## Installation
+| Item    | Value                                                                                   |
+| ------- | --------------------------------------------------------------------------------------- |
+| App     | <https://hashimsaffarini.github.io/Early-Step/> (GitHub Pages)                          |
+| Backend | <https://earlystep22.runasp.net/api/> (Swagger: `/swagger/v1/swagger.json`)             |
+| Repo    | <https://github.com/hashimsaffarini/Early-Step>                                         |
+| Deploy  | GitHub Actions on every push to `main` — see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) |
+
+Production URLs use a hash route, e.g. `…/Early-Step/#/login`, so refreshing any page works on
+GitHub Pages.
+
+## Stack
+
+React 19 · TypeScript (strict) · Vite 6 · React Router 7 · TanStack Query 5 · Axios · Zod 4 ·
+Zustand (session) · React Hook Form · CSS Modules · Vitest + Testing Library + MSW 2.
+
+## Local setup
+
+Requirements: Node.js **>= 20.17** (see `.nvmrc`) and npm.
 
 ```bash
 npm install
+cp .env.example .env   # VITE_API_BASE_URL=https://earlystep22.runasp.net/api/
+npm run dev            # http://localhost:5173 — live backend
 ```
 
-## Environment setup
+| Variable            | Description                                                                                   |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL` | Backend API base URL, ending in `/api/`                                                       |
+| `VITE_USE_MOCKS`    | `true` only for local development against the mock server (MSW); ignored by production builds |
 
-```bash
-cp .env.example .env
-```
+`.env` is gitignored. Never commit credentials or tokens; `VITE_*` values are public (they are
+bundled into the browser code). Sign in with your own backend accounts.
 
-Then set the values in `.env`:
+## Scripts
 
-| Variable            | Description                                |
-| ------------------- | ------------------------------------------ |
-| `VITE_API_BASE_URL` | Absolute base URL of the backend API (TBD) |
+| Script                    | Description                                                                |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `npm run dev`             | Vite dev server (browser URLs, base `/`)                                   |
+| `npm run build`           | Type-check and build for GitHub Pages (`dist/`, base `/Early-Step/`)       |
+| `npm run preview`         | Serve the production build at `http://localhost:4173/Early-Step/`          |
+| `npm run validate`        | Typecheck + lint + unit tests + build (what CI runs)                       |
+| `npm run test`            | Unit tests (Vitest, MSW — no network)                                      |
+| `npm run test:live:read`  | Read-only contract tests against the live backend (needs `.env.e2e.local`) |
+| `npm run test:live:write` | Writes disposable `E2E Test …` records and verifies cleanup                |
+| `npm run lint` / `format` | ESLint (zero warnings) / Prettier                                          |
 
-`.env` is gitignored. Never commit real values or credentials.
+## Deployment (GitHub Pages)
 
-The app shell runs without `VITE_API_BASE_URL`; it is validated the first time an API
-request is made.
+Push to `main` → GitHub Actions (`.github/workflows/deploy-pages.yml`) runs `npm ci` and
+`npm run validate` (which builds `dist/`) → deploys `dist/` to GitHub Pages. One-time setup:
+**Settings → Pages → Build and deployment → Source: GitHub Actions**. Details:
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
-## Available scripts
+## Known backend issue
 
-| Script                 | Description                              |
-| ---------------------- | ---------------------------------------- |
-| `npm run dev`          | Start the Vite dev server                |
-| `npm run build`        | Type-check and create a production build |
-| `npm run preview`      | Preview the production build locally     |
-| `npm run typecheck`    | Run `tsc --noEmit`                       |
-| `npm run lint`         | Run ESLint (zero warnings allowed)       |
-| `npm run lint:fix`     | Run ESLint with auto-fix                 |
-| `npm run format`       | Format all files with Prettier           |
-| `npm run format:check` | Check formatting                         |
-| `npm run test`         | Run tests once (Vitest)                  |
-| `npm run test:watch`   | Run tests in watch mode                  |
-| `npm run validate`     | Typecheck + lint + test + build          |
+Accounts created by the Super Admin (`POST SuperAdmin/users`, e.g. a new Teacher) **cannot log
+in** — the backend answers `Auth/login` with an empty 500. This is a backend bug; the frontend does
+not work around it. Until it is fixed, the Teacher area is integrated but not verified live.
+Open backend items: [`docs/BACKEND_REQUESTS.md`](docs/BACKEND_REQUESTS.md).
 
 ## Folder structure
 
 ```text
 src/
-├── app/            # composition root: App, providers, router, app-level pages
-├── components/
-│   ├── layout/     # structural layouts (root, auth, dashboard, child activity)
-│   └── shared/     # cross-feature components (error boundary, loading/empty/error states)
-├── config/         # typed, validated environment config
-├── constants/      # app-wide constants (e.g. Arabic role labels)
-├── features/       # one folder per business domain (created as features are built)
-├── services/
-│   └── http/       # Axios client, interceptors, error normalization
-├── styles/         # design tokens + global/RTL base styles
-├── test/           # test setup
-└── types/          # cross-feature domain types (e.g. UserRole)
+├── app/            # composition root: App, providers, router, layouts, app-level pages
+├── components/     # ui primitives, layout, shared components, activity players
+├── config/         # typed environment config (API URL, mock mode)
+├── constants/      # routes, role labels, backend role values
+├── features/       # one folder per business domain (auth, children, assessments, …)
+├── hooks/          # shared hooks (child resources, unread count, …)
+├── services/       # HTTP client, API modules, session store
+├── styles/         # design tokens, fonts, global RTL styles
+├── mocks/          # MSW handlers + fixtures (tests and dev mock mode only)
+└── test/           # test setup, helpers, live contract suites
 ```
-
-Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-## Development workflow
-
-Every feature follows [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md):
-read requirements → inspect the API → inspect the Replit UI → plan → implement → validate →
-verify manually → update docs → commit.
 
 ## Documentation
 
-| File                                                               | Purpose                           |
-| ------------------------------------------------------------------ | --------------------------------- |
-| [`CLAUDE.md`](CLAUDE.md)                                           | Rules for AI-assisted development |
-| [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md)               | What Early Step is                |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                     | Structure and dependency rules    |
-| [`docs/PRODUCT_REQUIREMENTS.md`](docs/PRODUCT_REQUIREMENTS.md)     | Known requirements                |
-| [`docs/ROLES_AND_PERMISSIONS.md`](docs/ROLES_AND_PERMISSIONS.md)   | Role matrix (preliminary)         |
-| [`docs/API_INTEGRATION.md`](docs/API_INTEGRATION.md)               | HTTP + TanStack Query conventions |
-| [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)                   | Visual reference (Replit, TBD)    |
-| [`docs/ROUTING.md`](docs/ROUTING.md)                               | Routing strategy                  |
-| [`docs/STATE_MANAGEMENT.md`](docs/STATE_MANAGEMENT.md)             | State rules                       |
-| [`docs/SECURITY.md`](docs/SECURITY.md)                             | Security policy                   |
-| [`docs/TESTING.md`](docs/TESTING.md)                               | Testing strategy                  |
-| [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md)     | Per-feature workflow              |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md)                           | Architecture decision log         |
-| [`docs/API_ENDPOINTS.md`](docs/API_ENDPOINTS.md)                   | Backend endpoint catalogue        |
-| [`docs/USER_FLOWS.md`](docs/USER_FLOWS.md)                         | Mapped user journeys              |
-| [`docs/ACTIVITY_ENGINE.md`](docs/ACTIVITY_ENGINE.md)               | Tests / games / assessment model  |
-| [`docs/GAP_ANALYSIS.md`](docs/GAP_ANALYSIS.md)                     | Requirements vs Replit vs API     |
-| [`docs/REPLIT_AUDIT.md`](docs/REPLIT_AUDIT.md)                     | Replit prototype audit            |
-| [`docs/UI_COMPONENT_INVENTORY.md`](docs/UI_COMPONENT_INVENTORY.md) | Planned UI components             |
-| [`docs/UI_MIGRATION_MAP.md`](docs/UI_MIGRATION_MAP.md)             | Replit screen → new app mapping   |
-| [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)       | Staged implementation plan        |
-
-## Current project status
-
-- [x] Project initialized (React + TypeScript + Vite)
-- [x] Tooling: ESLint, Prettier, Vitest, strict TypeScript, `@/` alias
-- [x] Global RTL / Arabic setup
-- [x] HTTP layer, error normalization, query client, router, layouts
-- [x] Documentation
-- [x] API documentation mapped (not yet verified against a live backend)
-- [x] Design reference (Replit) audited and extracted
-- [ ] Live API verification (needs base URL + demo accounts)
-- [x] UI foundation: design tokens, fonts, RTL shell, layouts, core components (`/ui-preview` in dev)
-- [ ] Authentication
-- [ ] Product features
+| File                                                                       | Purpose                                           |
+| -------------------------------------------------------------------------- | ------------------------------------------------- |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)                                 | GitHub Pages hosting and deploy flow              |
+| [`docs/PRODUCTION_DATA_AUDIT.md`](docs/PRODUCTION_DATA_AUDIT.md)           | Zero mock data in production; API source of truth |
+| [`docs/BACKEND_INTEGRATION_STATUS.md`](docs/BACKEND_INTEGRATION_STATUS.md) | What is verified live, per capability             |
+| [`docs/API_VERIFICATION_MATRIX.md`](docs/API_VERIFICATION_MATRIX.md)       | Every Swagger operation, verified live            |
+| [`docs/BACKEND_REQUESTS.md`](docs/BACKEND_REQUESTS.md)                     | Open items for the backend                        |
+| [`docs/API_INTEGRATION.md`](docs/API_INTEGRATION.md)                       | HTTP + TanStack Query conventions                 |
+| [`docs/USER_FLOWS.md`](docs/USER_FLOWS.md)                                 | User journeys per role                            |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                             | Structure and dependency rules                    |
+| [`docs/ROUTING.md`](docs/ROUTING.md)                                       | Routes and navigation                             |
+| [`docs/SECURITY.md`](docs/SECURITY.md)                                     | Security policy                                   |
+| [`docs/TESTING.md`](docs/TESTING.md)                                       | Testing strategy and results                      |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md)                                   | Architecture decision log                         |
+| [`CLAUDE.md`](CLAUDE.md)                                                   | Rules for AI-assisted development                 |

@@ -556,3 +556,30 @@ assigned", client-side counts).
 Parents, teachers and staff no longer see a second activity list next to the training plan.
 The child plays games only through plan activities until the backend defines game content that
 the engines can render.
+
+## ADR-024 — GitHub Pages hosting with hash routing in production
+
+### Status
+
+Accepted (2026-10-15)
+
+### Context
+
+The frontend is hosted on GitHub Pages at `https://hashimsaffarini.github.io/Early-Step/`.
+GitHub Pages serves static files from a sub-path and has no SPA rewrites, so a refreshed or shared
+`/Early-Step/parent/dashboard` would return 404.
+
+### Decision
+
+- Vite `base` is `/Early-Step/` for `vite build` / `vite preview` and `/` for development and tests.
+- Production builds use `createHashRouter` (`/Early-Step/#/parent/dashboard`); development keeps
+  `createBrowserRouter`. Routes, guards and links are unchanged.
+- In-page anchors (skip link, landing scroll hint) scroll/focus in JavaScript instead of changing
+  the hash.
+- Deployment is the official GitHub Actions Pages flow on pushes to `main` (no `gh-pages` branch).
+
+### Consequences
+
+Every URL works on refresh and as a direct link without a 404 fallback page. URLs carry `#/`,
+which is acceptable for the project. Moving to a host with rewrites later only needs the browser
+router and `BASE_PATH=/`.

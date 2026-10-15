@@ -1,0 +1,62 @@
+# Builds the Vite app and deploys it to GitHub Pages:
+# https://hashimsaffarini.github.io/Early-Step/ (docs/DEPLOYMENT.md).
+# Requires: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push does not cancel a deployment in progress.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Public build-time values (bundled into the browser code) — not secrets.
+      VITE_API_BASE_URL: https://earlystep22.runasp.net/api/
+      VITE_USE_MOCKS: 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # typecheck + lint + unit tests (MSW, no network) + production build into dist/
+      - name: Validate and build
+        run: npm run validate
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload dist
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

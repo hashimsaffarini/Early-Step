@@ -5,6 +5,7 @@ import { Outlet } from 'react-router';
 import { BrandMark } from '@/components/layout/BrandMark';
 import type { NavItemConfig, ShellUser } from '@/components/layout/navigation';
 import { IconButton } from '@/components/ui/IconButton';
+import { jumpToElement } from '@/utils/inPageLink';
 
 import styles from './DashboardLayout.module.css';
 import { MobileNavDrawer } from './MobileNavDrawer';
@@ -43,7 +44,13 @@ export function DashboardLayout({
 
   return (
     <div className={styles.shell}>
-      <a className="skip-link" href="#main-content">
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          jumpToElement(event, 'main-content');
+        }}
+      >
         {LABELS.skipLink}
       </a>
 

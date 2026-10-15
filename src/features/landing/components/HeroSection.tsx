@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { getButtonClassName } from '@/components/ui/Button';
 import { ROUTE_PATHS } from '@/constants/routes';
 import { cx } from '@/utils/classNames';
+import { jumpToElement } from '@/utils/inPageLink';
 
 import { LANDING_COPY } from '../content';
 
@@ -61,7 +62,13 @@ export function HeroSection({ nextSectionId }: HeroSectionProps) {
         </div>
         <HeroVisual />
       </div>
-      <a href={`#${nextSectionId}`} className={styles.scrollHint}>
+      <a
+        href={`#${nextSectionId}`}
+        className={styles.scrollHint}
+        onClick={(event) => {
+          jumpToElement(event, nextSectionId);
+        }}
+      >
         {hero.scrollHint}
         <ChevronDown aria-hidden="true" />
       </a>

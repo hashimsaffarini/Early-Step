@@ -2,7 +2,9 @@
 
 ## Strategy
 
-- React Router 7, data router (`createBrowserRouter` + `RouterProvider`), in `src/app/router/`.
+- React Router 7, data router + `RouterProvider`, in `src/app/router/`: `createBrowserRouter` in
+  development, `createHashRouter` in production builds (GitHub Pages, `/Early-Step/#/…` — ADR-024,
+  `DEPLOYMENT.md`). Paths below are the same in both; production shows them after `#`.
 - `routes.tsx` is the single route tree. Features export page components (and optionally
   `RouteObject[]`); `app/router` composes them under layouts and guards.
 - Paths are constants in `src/constants/routes.ts` (`ROUTE_PATHS`, `ROLE_NAMESPACES`; ADR-018). No
