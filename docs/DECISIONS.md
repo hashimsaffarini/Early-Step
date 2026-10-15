@@ -526,3 +526,33 @@ plan activities have no remove action. No frontend workaround is added for backe
 
 Parents see their child's progress through the specialist (reports, plan), not raw assessment
 scores. The empty 500 on such deletes remains a small backend improvement (descriptive 400/409).
+
+## ADR-023 — Zero dummy data in production runtime
+
+### Status
+
+Accepted (2026-10-15, production-readiness audit — `PRODUCTION_DATA_AUDIT.md`)
+
+### Context
+
+Mock data was already isolated behind MSW (tests and development mock mode), but the sidebar
+still offered static "Tests" and "Games" catalogs (frontend demo content whose results are never
+saved), and a few screens turned missing or failed data into numbers (0, three stars, "not
+assigned", client-side counts).
+
+### Decision
+
+- Production shows only backend data or values derived from it. A value the server did not send
+  is hidden, never replaced by a default; a failed load shows an error with retry.
+- The static practice catalogs exist only in development mock mode (`showPracticeCatalogs`,
+  same condition as `isMockMode()`), so production builds contain none of their content. The game
+  components stay as engines.
+- Server aggregates are preferred over client counting (Super Admin `usersByRole`).
+- Fields known to be unreliable live (`isInInitialAssessment`, specialist `progressPercentage`)
+  are not displayed.
+
+### Consequences
+
+Parents, teachers and staff no longer see a second activity list next to the training plan.
+The child plays games only through plan activities until the backend defines game content that
+the engines can render.

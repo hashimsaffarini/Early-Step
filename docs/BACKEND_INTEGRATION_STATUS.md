@@ -1,7 +1,7 @@
 # Backend integration status
 
-Branch `feature/backend-integration` · updated 2026-10-14 (third backend update + business-rule
-clarifications) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results:
+Branch `feature/backend-integration` · updated 2026-10-15 (production data audit — no dummy data
+in production, `PRODUCTION_DATA_AUDIT.md`; live re-test) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results:
 `API_VERIFICATION_MATRIX.md` · shapes: `api/LIVE_CONTRACTS.md` · open backend items:
 `BACKEND_REQUESTS.md` · players: `PLAYER_BACKEND_COMPATIBILITY.md`.
 
@@ -57,11 +57,11 @@ clarifications) · backend `https://earlystep22.runasp.net/api/` · per-endpoint
 
 ### Initial assessment
 
-| Capability                                          | API                                       | Status                    | Notes                                                                             |
-| --------------------------------------------------- | ----------------------------------------- | ------------------------- | --------------------------------------------------------------------------------- |
-| Start, answer SingleChoice / MultiSelect / Sequence | `POST initial-assessment/{…}`             | **VERIFIED LIVE — WRITE** | exact set (any order) / exact order, scored correctly                             |
-| Complete                                            | `complete` response                       | **VERIFIED LIVE — WRITE** | completes only; its body is not read (the Result endpoint is the source of truth) |
-| Result with per-question details (staff)            | `GET initial-assessment/{childId}/result` | **VERIFIED LIVE**         | Specialist, Admin; child profile "التقييمات" tab                                  |
+| Capability                                          | API                                       | Status                    | Notes                                                                                             |
+| --------------------------------------------------- | ----------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------- |
+| Start, answer SingleChoice / MultiSelect / Sequence | `POST initial-assessment/{…}`             | **VERIFIED LIVE — WRITE** | exact set (any order) / exact order, scored correctly                                             |
+| Complete                                            | `complete` response                       | **VERIFIED LIVE — WRITE** | completes only; its body is not read (the Result endpoint is the source of truth)                 |
+| Result with per-question details (staff)            | `GET initial-assessment/{childId}/result` | **VERIFIED LIVE**         | assigned Specialist, Admin (unassigned specialist 403 since 10-15); child profile "التقييمات" tab |
 
 ### Admin content
 
@@ -102,12 +102,12 @@ clarifications) · backend `https://earlystep22.runasp.net/api/` · per-endpoint
 
 ### Super Admin
 
-| Capability                  | API                            | Status                    | Notes                                                       |
-| --------------------------- | ------------------------------ | ------------------------- | ----------------------------------------------------------- |
-| Dashboard, users, children  | `GET SuperAdmin/…`             | **VERIFIED LIVE**         |                                                             |
-| Create teacher / specialist | `POST SuperAdmin/users`        | PARTIALLY VERIFIED        | 201, but the created account cannot log in (empty 500)      |
-| Deactivate account          | `DELETE SuperAdmin/users/{id}` | **VERIFIED LIVE — WRITE** | soft: stays listed; login refused                           |
-| Edit account                | `PUT SuperAdmin/users/{id}`    | BLOCKED BY BACKEND        | works, but the list has no `isActive` to keep — not offered |
+| Capability                  | API                            | Status                    | Notes                                                                                                                    |
+| --------------------------- | ------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Dashboard, users, children  | `GET SuperAdmin/…`             | **VERIFIED LIVE**         | users-by-role from the server's `usersByRole`; `isActive` shown ("موقوف")                                                |
+| Create teacher / specialist | `POST SuperAdmin/users`        | PARTIALLY VERIFIED        | 201, but the created account cannot log in (empty 500)                                                                   |
+| Deactivate account          | `DELETE SuperAdmin/users/{id}` | **VERIFIED LIVE — WRITE** | soft: stays listed; login refused                                                                                        |
+| Re-activate account         | `PUT SuperAdmin/users/{id}`    | **VERIFIED LIVE — WRITE** | "تفعيل" sends the user's own values + `isActive: true` (list has `isActive` since 10-15); name/email editing not offered |
 
 ### Chat & notifications
 
@@ -124,10 +124,10 @@ clarifications) · backend `https://earlystep22.runasp.net/api/` · per-endpoint
 | Status                     | Rows |
 | -------------------------- | ---: |
 | VERIFIED LIVE              |   19 |
-| VERIFIED LIVE — WRITE      |   15 |
+| VERIFIED LIVE — WRITE      |   16 |
 | PARTIALLY VERIFIED         |    1 |
 | MOCK TESTED                |    1 |
-| BLOCKED BY BACKEND         |    1 |
+| BLOCKED BY BACKEND         |    0 |
 | BLOCKED BY MISSING ACCOUNT |    2 |
 | OUT OF SCOPE               |    3 |
 | NOT REQUIRED               |    2 |

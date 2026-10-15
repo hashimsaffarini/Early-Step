@@ -94,6 +94,18 @@ Base URL `https://earlystep22.runasp.net/api/`; paths below are relative to it.
 | `GET Chats?…`, `messages/old`, `messages/new`                                                                    | oldest → newest; outsider → 404                                                                                                                                                                                                    |
 | `POST Chats/mark-conversation-seen`                                                                              | `true`; status → `Seen`; unread → 0                                                                                                                                                                                                |
 
+## Changes found on 2026-10-15 (supersede the rows below)
+
+Swagger unchanged (84 operations, no schema changes).
+
+| Request                                        | Result                                                                                                                                                                                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET SuperAdmin/users`                         | `[{ id, fullName, email, role, emailConfirmed, isActive }]` — `isActive` on every user                                                                                                                   |
+| `GET SuperAdmin/dashboard`                     | `{ totalUsers, totalReports, totalActivities, usersByRole: [{ role, count }] }`, role values `أخصائي/ة`, `ولي أمر`, `معلم/ة`, `Admin`, `SuperAdmin`                                                      |
+| `GET initial-assessment/{childId}/result`      | specialist **not assigned** to the child → 403 (empty body); assigned specialist and Admin 200; before completion (Admin) 404 `text/plain` "No completed assessment found for this child."               |
+| `POST Auth/login` (SuperAdmin-created teacher) | re-activated with `PUT SuperAdmin/users/{id}` (200) for the check: wrong password → **empty 500** (unknown email / demo account with a wrong password → 401). Deactivated again (200, `isActive: false`) |
+| `Admin/categoriesActivity?type=test`           | `isInInitialAssessment` still false for both categories listed by `initial-assessment/categories`                                                                                                        |
+
 ## Changes found on 2026-10-14 (supersede the rows below)
 
 | Request                                                                             | Result                                                                                                                                                                                                                                                                                                                                                                                            |

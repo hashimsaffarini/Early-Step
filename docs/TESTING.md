@@ -81,32 +81,40 @@ exist — ADR required; credentials only via CI secrets.
 - Don't snapshot whole pages.
 - Don't commit real credentials or real children's data as fixtures.
 
-## Current tests (2026-10-14)
+## Current tests (2026-10-15)
 
-**342 tests in 66 files** (`npm run test`), all against MSW:
+**347 tests in 66 files** (`npm run test`), all against MSW:
 
-| Area                                                  | Files | Covers                                                                                                                                                                                    |
-| ----------------------------------------------------- | ----: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Core (`services`, `constants`, `utils`, `components`) |    14 | error normalization, multipart builder, media URLs, role normalization, password policy, shared choice answers (payload per type), players, primitives                                    |
-| App (`app`)                                           |     3 | route guards, session restore after reload (`Auth/me` ok / 401 → login / 5xx → retry / role from `Auth/me` for direct URLs), logout clears session + cache, role navigation, unread badge |
-| Auth                                                  |     7 | login → `Auth/me` (user and role from `Auth/me`, only the token stored, explicit header wins over a stale token), unknown role refused, register (no `Role`), forgot (neutral), reset     |
-| Children                                              |     3 | list states, add/edit/delete, parent vs staff profile, saved result with per-question details (staff), teacher-notes tab (specialist only)                                                |
-| Assessment & activities                               |    16 | start → answer (exact MultiSelect set, Sequence order + reset) → complete, plan player (all types, 409 without retry, unanswerable activity blocked), practice labels, game logic         |
-| Content (admin)                                       |     6 | categories/activities/questions/options CRUD, assessment composition (badges; error + retry when membership cannot be read)                                                               |
-| Plans & reports                                       |     5 | plan add/remove, score + server progress + child's answers on demand, no-teacher 400 message, reports per role, PDF                                                                       |
-| Dashboards, users, notes                              |     9 | stats, `Admin/specialists` picker (inactive disabled) + assignment refresh, super admin create staff / deactivate, teacher notes list + CRUD                                              |
-| Chat                                                  |     1 | conversations, seen, send, polling, older messages                                                                                                                                        |
-| Landing                                               |     1 | hero, CTAs, no fabricated stats                                                                                                                                                           |
+| Area                                                  | Files | Covers                                                                                                                                                                                                                                   |
+| ----------------------------------------------------- | ----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Core (`services`, `constants`, `utils`, `components`) |    14 | error normalization, multipart builder, media URLs, role normalization, password policy, shared choice answers (payload per type), players, primitives                                                                                   |
+| App (`app`)                                           |     3 | route guards, session restore after reload (`Auth/me` ok / 401 → login / 5xx → retry / role from `Auth/me` for direct URLs), logout clears session + cache, role navigation, unread badge                                                |
+| Auth                                                  |     7 | login → `Auth/me` (user and role from `Auth/me`, only the token stored, explicit header wins over a stale token), unknown role refused, register (no `Role`), forgot (neutral), reset                                                    |
+| Children                                              |     3 | list states, add/edit/delete, parent vs staff profile, saved result with per-question details (staff), teacher-notes tab (specialist only)                                                                                               |
+| Assessment & activities                               |    16 | start → answer (exact MultiSelect set, Sequence order + reset) → complete, plan player (all types, 409 without retry, unanswerable activity blocked, no invented stars), practice labels, game logic                                     |
+| Content (admin)                                       |     6 | categories/activities/questions/options CRUD, assessment composition (badges; error + retry when membership cannot be read)                                                                                                              |
+| Plans & reports                                       |     5 | plan add/remove, score + server progress + child's answers on demand, no-teacher 400 message, reports per role, PDF                                                                                                                      |
+| Dashboards, users, notes                              |     9 | stats, parent counts with error + retry, `Admin/specialists` picker (inactive disabled) + assignment refresh, super admin `usersByRole` from the server, create staff / deactivate / re-activate (`isActive`), teacher notes list + CRUD |
+| Chat                                                  |     1 | conversations, seen, send, polling, older messages                                                                                                                                                                                       |
+| Landing                                               |     1 | hero, CTAs, no fabricated stats                                                                                                                                                                                                          |
 
-**Live suites (2026-10-14, after the business-rule clarifications):** `test:live:read` **13/13**
+**Live suites (2026-10-15, production data audit):** `test:live:read` **13/13**
 — `Auth/me` for every role + anonymous 401, `Admin/specialists` (= the specialist users,
 Specialist 403), Admin assessment membership, parent reads (the saved assessment result is
-staff-only and not read as Parent), specialist results and teacher feedback lists.
-`test:live:write` **6/6** — every question type in the assessment, staff result details,
+staff-only and not read as Parent), specialist results and teacher feedback lists, Super Admin
+`isActive` on every user and `usersByRole`.
+`test:live:write` **6/6** — every question type in the assessment, staff result details (Admin
+before assignment; the unassigned specialist gets 403 since 2026-10-15; the assigned specialist
+reads it),
 `Admin/specialists` assignment, no-teacher 400, empty / partial submit 400, plan result 403 / 404,
 duplicate report 409; cleanup verified. A successful plan submission (score, 409, result) runs only
 with `E2E_PLAN_SUBMIT=1`: by product rule a child with saved results is kept, so it would leave a
 record behind (verified with Python on 2026-10-14).
+
+**No dummy data in production (2026-10-15, `PRODUCTION_DATA_AUDIT.md`):** the sidebar has no
+practice tests/games outside mock mode (route test); a production build — also with
+`VITE_USE_MOCKS=true` — contains no MSW code, no `mockServiceWorker.js` and none of the practice
+content (checked by grepping `dist/`); only the live "not completed" 404 text maps to "no result".
 
 **Product rules covered by unit tests (2026-10-14):** the parent never calls the saved-result
 endpoint (assessment page and profile) and finishes with a confirmation without scores; deleting

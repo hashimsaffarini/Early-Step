@@ -49,14 +49,14 @@ Built by `buildAreaRoute(role)` in `src/app/router/areaRoutes.tsx` (ADR-019). Pa
 | `children`                | ChildrenListPage (parent: add child; staff: parent names, no add) | children       | all four               |
 | `children/:childId`       | ChildProfilePage (staff: assign activity)                         | children       | all four               |
 | `children/:childId/plans` | ChildPlansPage — education plans (Specialist/Admin: new plan)     | training-plans | all four               |
-| `tests`                   | TestsCatalogPage                                                  | activities     | all four               |
-| `games`                   | GamesCatalogPage                                                  | activities     | all four               |
+| `tests`                   | TestsCatalogPage — **development mock mode only** (ADR-023)       | activities     | all four               |
+| `games`                   | GamesCatalogPage — **development mock mode only** (ADR-023)       | activities     | all four               |
 | `reports`                 | ReportsListPage                                                   | reports        | all four               |
 | `reports/new`             | CreateReportPage                                                  | reports        | Specialist, Admin only |
 | `reports/:reportId`       | ReportDetailPage                                                  | reports        | all four               |
 | `messages`                | MessagesPage                                                      | chat           | all four               |
-| `tests/:testId/play`      | TestPlayerPage — **full screen**, no sidebar                      | activities     | all four               |
-| `games/:gameId/play`      | GamePlayerPage — **full screen**, no sidebar                      | activities     | all four               |
+| `tests/:testId/play`      | TestPlayerPage — full screen; **mock mode only**                  | activities     | all four               |
+| `games/:gameId/play`      | GamePlayerPage — full screen; **mock mode only**                  | activities     | all four               |
 | `assessment/:childId`     | AssessmentPage (initial assessment) — **full screen**, no sidebar | assessments    | all four               |
 
 Shell pages render inside `RoleAreaLayout` (DashboardLayout + role navigation + notifications
@@ -72,8 +72,10 @@ know their role (exit links go back into the same area).
 ### Navigation
 
 Every sidebar item is a real route — no "قريباً" nav items remain. Parent: الرئيسية, أطفالي,
-الاختبارات, الألعاب, التقارير, الرسائل (unread badge). Teacher/Specialist/Admin: لوحة القيادة,
-الأطفال, الاختبارات, الألعاب, التقارير, الرسائل. Super Admin: لوحة التحكم. Replit's order is kept.
+التقارير, الرسائل (unread badge). Teacher/Specialist/Admin: لوحة القيادة, الأطفال (+ Admin:
+المستخدمون, إدارة المحتوى), التقارير, الرسائل. Super Admin: لوحة التحكم. The static practice
+الاختبارات / الألعاب items are added only in development mock mode (ADR-023): children play the
+backend activities of their training plan from the child profile.
 Unfinished actions **inside** screens (edit child, change role, PDF download…) are disabled
 "قريباً" buttons, never links to empty pages.
 

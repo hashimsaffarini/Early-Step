@@ -153,9 +153,9 @@ Conversation list → Search/open conversation → Messages → Send → Unread 
 
 ## 8. Super Admin
 
-| Step                    | API                                                                                    | Replit                                              |
-| ----------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Dashboard               | `GET /SuperAdmin/dashboard`                                                            | Dark full-screen panel, overview stats              |
-| Users                   | `GET /SuperAdmin/users?Search&Role` (read-only)                                        | list + change role + delete                         |
-| Children                | `GET /SuperAdmin/children?Name`                                                        | read-only cards                                     |
-| Differentiator vs Admin | **TBD** — API shows SuperAdmin as read-only oversight; Admin owns content & assignment | SuperAdmin is the only role with a management panel |
+| Step                    | API                                                                                                                            | Replit                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| Dashboard               | `GET /SuperAdmin/dashboard` (totals + `usersByRole` tiles)                                                                     | Dark full-screen panel, overview stats              |
+| Users                   | `GET /SuperAdmin/users?Search&Role` (`isActive` → "موقوف"); create staff `POST`, deactivate `DELETE`, re-activate `PUT …/{id}` | list + change role + delete                         |
+| Children                | `GET /SuperAdmin/children?Name`                                                                                                | read-only cards                                     |
+| Differentiator vs Admin | **TBD** — API shows SuperAdmin as read-only oversight; Admin owns content & assignment                                         | SuperAdmin is the only role with a management panel |

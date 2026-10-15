@@ -57,6 +57,9 @@ recommendations) — never a diagnosis, risk level or probability.
 
 ## Activities
 
+> **2026-10-15 (ADR-023):** the practice games and tests below are reachable **only in development
+> mock mode**; production routes and the sidebar do not include them.
+
 - **Games** — the 11 Replit games, ids in `src/features/activities/data/games.ts`
   (`memory-match`, `word-reading`, `missing-numbers`, `sentence-builder`, `pattern-logic`,
   `color-memory`, `listen-choose`, `balloon-pop`, `word-scramble`, `spot-it`, `story-sequence`).
