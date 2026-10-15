@@ -91,6 +91,11 @@ Frontend route guards (`RequireRole`) are **UX only** and do not mitigate any of
 - `.env` is gitignored; `.env.example` contains placeholders only.
 - Everything prefixed `VITE_` is embedded in the public JS bundle. Only put non-secret
   configuration there (e.g. the API base URL).
+- **Production check (2026-10-15):** `.env` holds only `VITE_API_BASE_URL=https://earlystep22.runasp.net/api/`
+  and `VITE_USE_MOCKS=false`; `.env.example` is the only tracked env file; no API key or secret
+  exists in the frontend. A production build ignores `VITE_USE_MOCKS` and ships no MSW worker, no
+  mock or practice content and no test-account data — every `.env.e2e.local` value was grepped
+  against `dist/` with no match (`PRODUCTION_DATA_AUDIT.md` §11–§13).
 
 ## Auth tokens and session (verified live 2026-10-07, `Auth/me` 2026-10-14)
 

@@ -1,4 +1,12 @@
-# Temporary mock data (UI migration phase)
+# Mock data (tests and development mock mode only)
+
+> **Production runtime uses zero mock business data (confirmed 2026-10-15).** Every screen in a
+> production build reads the live API (`https://earlystep22.runasp.net/api/`). Mock data exists
+> only in `src/mocks/**` (MSW fixtures and handlers) and test helpers in `src/test/**`, used by the
+> unit tests and by development mock mode (`VITE_USE_MOCKS=true npm run dev`). A production build
+> ignores `VITE_USE_MOCKS`, ships no MSW worker and contains none of this data or the practice
+> games (verified by grepping `dist/`; `PRODUCTION_DATA_AUDIT.md`). The sections below describe
+> the mock roster for tests and mock mode; they are history, not production content.
 
 > **Update 2026-10-06:** feature-level mock files were removed from production code. Mock data
 > now lives only in `src/mocks/fixtures/*` behind the MSW handlers (tests + development mock

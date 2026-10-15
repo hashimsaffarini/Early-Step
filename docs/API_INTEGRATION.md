@@ -9,7 +9,7 @@
 | Topic                 | Verified fact                                                                                                                                                            | Frontend handling                                                                                                               |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | Base URL              | `https://earlystep22.runasp.net/api/` (root `/` answers "API is running")                                                                                                | `VITE_API_BASE_URL` (must end with `/api/`); request paths are **relative** (`Parent/GetMyChildren`) so `/api/api` can't happen |
-| Contract              | Public Swagger at `/swagger/v1/swagger.json` — 74 operations, **all under `/api/`**, consistent casing                                                                   | Snapshot in `docs/api/swagger.json`; Swagger is the contract source (Apidog is outdated)                                        |
+| Contract              | Public Swagger at `/swagger/v1/swagger.json` — 84 operations (snapshot refreshed 2026-10-15), **all under `/api/`**, consistent casing                                   | Snapshot in `docs/api/swagger.json`; Swagger is the contract source (Apidog is outdated)                                        |
 | Auth                  | `Bearer` scheme; 401 = ProblemDetails                                                                                                                                    | Interceptor adds the token; 401 → sign out + clear cache                                                                        |
 | Errors                | ProblemDetails (`title`, `status`, `errors{Field:[…]}`), `{ message }`, string, string[]                                                                                 | `extractBackendDetails()` in `services/http/apiError.ts`                                                                        |
 | CORS                  | Preflight from `http://localhost:5173` allowed (`*`)                                                                                                                     | Dev server talks to the API directly                                                                                            |
@@ -147,10 +147,16 @@ roles }` (`features/auth/api/currentUser.ts`, role normalized, unknown → refus
 - **Specialists:** `fetchSpecialists()` (`GET Admin/specialists`, key `users.specialists`).
 - **Teacher feedback:** `fetchChildFeedbacks(childId)` (`services/api/teacherFeedback.ts`, key
   `notes.byChild`, hook `useChildFeedbacks`) — teacher notes page and the specialist's
-  "ملاحظات المعلم" tab; note writes invalidate the child's list. Item fields read leniently
-  (unverified: lists were empty).
-- **Super Admin:** `createStaffUser` (Teacher / Specialist wire roles), `deactivateUser`;
-  `PUT SuperAdmin/users/{id}` not used (no `isActive` in the list).
+  "ملاحظات المعلم" tab; note writes invalidate the child's list. Items verified live 2026-10-15:
+  `{ id, childId, childName, teacherId, teacherName, content, createdAt }` (the teacher's name is
+  shown to the specialist).
+- **Super Admin:** `createStaffUser` (Teacher / Specialist wire roles), `deactivateUser`,
+  `reactivateUser` (`PUT SuperAdmin/users/{id}` with the user's own values + `isActive: true`);
+  users-by-role from `SuperAdmin/dashboard` `usersByRole`.
+- **Strict live contracts (2026-10-15):** parsers accept only the live shapes — no Apidog aliases,
+  no 200-with-message failures, no `birthDate`, five role values, `questionId` required in plan
+  activities; a missing activity is a real 404. Server images go through `ServerImage` /
+  `resolveMediaUrl` with a neutral fallback only when the field is null or the image fails.
 - **Reports:** one report per child — `fetchChildReport(childId)`; the backend answers 409 to a
   second one.
 - **Registration:** no `Role` is sent (public registration = Parent).

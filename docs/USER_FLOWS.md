@@ -116,13 +116,13 @@ Assigned child → Review → Training plan → Add activities → Assign teache
 Assigned child → View plan → Follow child → Submit feedback
 ```
 
-| Step                 | API                                                                                                  | Replit                       | Notes                                                      |
-| -------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------- |
-| Dashboard            | `GET /Teacher/dashboard`                                                                             | Teacher dashboard            |                                                            |
-| Assigned children    | `GET /Teacher/children`                                                                              | student cards                |                                                            |
-| View plan            | `GET /TrainingPlan/children/{childId}/activities` (_role TBD_)                                       | child profile activities tab |                                                            |
-| Follow progress      | plan counts (`correctAnswers`, `wrongAnswers`, `isCompleted`, `completedAt`) after the child submits | charts                       | Teacher unverified (no usable account)                     |
-| Feedback list + CRUD | `GET /Teacher/children/{childId}/feedbacks`, `POST …/notes`, `PUT/DELETE /Teacher/notes/{id}`        | none                         | Mock- and browser-tested (mock mode); live Teacher blocked |
+| Step                 | API                                                                                                  | Replit                       | Notes                                                                                                                                    |
+| -------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Dashboard            | `GET /Teacher/dashboard`                                                                             | Teacher dashboard            |                                                                                                                                          |
+| Assigned children    | `GET /Teacher/children`                                                                              | student cards                |                                                                                                                                          |
+| View plan            | `GET /TrainingPlan/children/{childId}/activities` (_role TBD_)                                       | child profile activities tab |                                                                                                                                          |
+| Follow progress      | plan counts (`correctAnswers`, `wrongAnswers`, `isCompleted`, `completedAt`) after the child submits | charts                       | Teacher unverified (no usable account). The assessment result is staff-only: the Teacher sees a neutral note, the endpoint is not called |
+| Feedback list + CRUD | `GET /Teacher/children/{childId}/feedbacks`, `POST …/notes`, `PUT/DELETE /Teacher/notes/{id}`        | none                         | Mock- and browser-tested (mock mode); live Teacher blocked                                                                               |
 
 ## 6. Reporting
 

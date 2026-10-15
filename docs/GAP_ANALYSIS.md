@@ -175,3 +175,13 @@ with a confirmation); records with results are kept (deleting such a child and r
 activity are blocked in the app); `complete` only completes (the Result endpoint is the source of
 truth); no completion date; SignalR out of scope (REST + polling); teacher feedback works (lists
 were empty for lack of data). Remaining blocker: staff created by the Super Admin cannot log in.
+
+### Production data audit (2026-10-15)
+
+Production shows only backend data (`PRODUCTION_DATA_AUDIT.md`, ADR-023): the static practice
+tests / games run only in development mock mode; stale compatibility code for old shapes was
+removed (assessment start aliases, 200-with-message failures, plan question id fallbacks, child
+`birthDate`, Apidog-only fields); every list has loading / error + retry / Arabic empty states;
+server images are shown wherever the API sends them. Backend fixes found live: `isActive` in the
+Super Admin user list, result access limited to the assigned specialist. Remaining blocker: staff
+created by the Super Admin cannot log in, so the Teacher area is integrated but not verified live.

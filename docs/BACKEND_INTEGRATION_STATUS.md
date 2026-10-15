@@ -1,7 +1,7 @@
 # Backend integration status
 
-Branch `feature/backend-integration` · updated 2026-10-15 (production data audit — no dummy data
-in production, `PRODUCTION_DATA_AUDIT.md`; live re-test) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results:
+Branch `feature/backend-integration` · updated 2026-10-15 (production data audit and final checks —
+no dummy data in production, strict live contracts, `PRODUCTION_DATA_AUDIT.md`) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results:
 `API_VERIFICATION_MATRIX.md` · shapes: `api/LIVE_CONTRACTS.md` · open backend items:
 `BACKEND_REQUESTS.md` · players: `PLAYER_BACKEND_COMPATIBILITY.md`.
 
@@ -83,16 +83,16 @@ in production, `PRODUCTION_DATA_AUDIT.md`; live re-test) · backend `https://ear
 
 ### Specialist & training plans
 
-| Capability                                   | API                                   | Status                    | Notes                                                                                        |
-| -------------------------------------------- | ------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------- |
-| Dashboard, children, teachers                | `GET specialist/…`                    | **VERIFIED LIVE**         | `progressPercentage` still 0                                                                 |
-| Plan (score, progress), available activities | `GET TrainingPlan/specialist/…`       | **VERIFIED LIVE**         | `score` per activity and plan `progress` are filled now                                      |
-| Child's answers to an activity               | `GET …/{planActivityId}/result`       | **VERIFIED LIVE**         | Specialist only; "عرض إجابات الطفل" in the plan                                              |
-| Assign teacher                               | `POST specialist/assign-teacher`      | **VERIFIED LIVE — WRITE** |                                                                                              |
-| Add first / further plan activities          | `POST …/activities`                   | **VERIFIED LIVE — WRITE** | no teacher → 400 with a message (shown as sent)                                              |
-| Remove plan activity                         | `DELETE …/activities/{id}`            | **VERIFIED LIVE — WRITE** | unplayed activities only; played ones keep their results (no remove button)                  |
-| Report create / edit / delete                | `specialist/*`                        | **VERIFIED LIVE — WRITE** | 2nd report → 409                                                                             |
-| Read the teacher's notes                     | `GET Teacher/children/{id}/feedbacks` | **VERIFIED LIVE**         | Specialist 200; lists empty because no feedback exists yet (re-check with a Teacher account) |
+| Capability                                   | API                                   | Status                    | Notes                                                                                                   |
+| -------------------------------------------- | ------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Dashboard, children, teachers                | `GET specialist/…`                    | **VERIFIED LIVE**         | `progressPercentage` still 0                                                                            |
+| Plan (score, progress), available activities | `GET TrainingPlan/specialist/…`       | **VERIFIED LIVE**         | `score` per activity and plan `progress` are filled now                                                 |
+| Child's answers to an activity               | `GET …/{planActivityId}/result`       | **VERIFIED LIVE**         | Specialist only; "عرض إجابات الطفل" in the plan                                                         |
+| Assign teacher                               | `POST specialist/assign-teacher`      | **VERIFIED LIVE — WRITE** |                                                                                                         |
+| Add first / further plan activities          | `POST …/activities`                   | **VERIFIED LIVE — WRITE** | no teacher → 400 with a message (shown as sent)                                                         |
+| Remove plan activity                         | `DELETE …/activities/{id}`            | **VERIFIED LIVE — WRITE** | unplayed activities only; played ones keep their results (no remove button)                             |
+| Report create / edit / delete                | `specialist/*`                        | **VERIFIED LIVE — WRITE** | 2nd report → 409                                                                                        |
+| Read the teacher's notes                     | `GET Teacher/children/{id}/feedbacks` | **VERIFIED LIVE**         | Specialist 200; item shape verified 2026-10-15 with one existing feedback (teacher name and date shown) |
 
 ### Teacher
 

@@ -83,7 +83,10 @@ exist — ADR required; credentials only via CI secrets.
 
 ## Current tests (2026-10-15)
 
-**347 tests in 66 files** (`npm run test`), all against MSW:
+**346 tests in 67 files** (`npm run test`), all against MSW. The final pass removed the tests of
+deleted legacy code (200-with-message failures, old start shapes, birth-date ages, unused helpers)
+and added tests for the new rules (Teacher never calls the staff-only result, report creation
+waits for existing reports, `ServerImage` fallback, rejected legacy shapes):
 
 | Area                                                  | Files | Covers                                                                                                                                                                                                                                   |
 | ----------------------------------------------------- | ----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -97,6 +100,11 @@ exist — ADR required; credentials only via CI secrets.
 | Dashboards, users, notes                              |     9 | stats, parent counts with error + retry, `Admin/specialists` picker (inactive disabled) + assignment refresh, super admin `usersByRole` from the server, create staff / deactivate / re-activate (`isActive`), teacher notes list + CRUD |
 | Chat                                                  |     1 | conversations, seen, send, polling, older messages                                                                                                                                                                                       |
 | Landing                                               |     1 | hero, CTAs, no fabricated stats                                                                                                                                                                                                          |
+
+**Production build (2026-10-15):** `npm run build` + `npm run preview` — direct refresh of
+every area route returns the app, assets load, no mock worker, the built login form calls
+`https://earlystep22.runasp.net/api/Auth/login` (checked in the browser with made-up
+credentials → 401).
 
 **Live suites (2026-10-15, production data audit):** `test:live:read` **13/13**
 — `Auth/me` for every role + anonymous 401, `Admin/specialists` (= the specialist users,

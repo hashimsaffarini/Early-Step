@@ -46,6 +46,8 @@ and is not part of this list.
 ## Accounts / data
 
 - A **Teacher demo account** that can log in, with an assigned child — or the fix for request 1.
+  (A teacher feedback item now exists live and is shown to the specialist; the Teacher's own
+  screens still cannot be verified.)
 - Please delete in the database (test data the API cannot remove):
   - the child **"E2E Test Child 6acf4742"** (demo parent; kept by the results rule);
   - the deactivated user **"E2E Test Teacher 6acf46e5 Edited"**;
