@@ -30,10 +30,18 @@ interface PlanChild {
   name: string;
 }
 
-function LoadError({ error, onRetry }: { error: AppError; onRetry: () => void }) {
+function LoadError({
+  error,
+  onRetry,
+  title = 'تعذّر تحميل الخطة التدريبية',
+}: {
+  error: AppError;
+  onRetry: () => void;
+  title?: string;
+}) {
   return (
     <ErrorState
-      title="تعذّر تحميل الخطة التدريبية"
+      title={title}
       description={error.message}
       action={
         <Button variant="outline" onClick={onRetry}>
@@ -242,6 +250,7 @@ export function ChildPlansPage() {
       <div className={styles.page}>
         <LoadError
           error={childrenQuery.error}
+          title="تعذّر تحميل قائمة الأطفال"
           onRetry={() => {
             void childrenQuery.refetch();
           }}

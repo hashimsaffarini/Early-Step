@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 
 import { ChildCard, type ChildCardDetail } from '@/components/shared/ChildCard';
 import { SectionHeader } from '@/components/shared/SectionHeader';
-import { getButtonClassName } from '@/components/ui/Button';
+import { Button, getButtonClassName } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/Feedback';
 import { buildParentChildProfilePath, ROUTE_PATHS } from '@/constants/routes';
 import { useChildPlanActivities } from '@/hooks/api/childResources';
@@ -16,8 +16,17 @@ const HEADING_ID = 'parent-children-title';
 
 /** Plan progress from the child's plan activities (shown only when the plan has activities). */
 function PlanProgress({ childId }: { childId: string }) {
-  const { data, isError } = useChildPlanActivities(childId);
-  if (isError) return <p className={styles.planError}>تعذّر تحميل تقدّم الخطة.</p>;
+  const { data, isError, refetch } = useChildPlanActivities(childId);
+  if (isError) {
+    return (
+      <p className={styles.planError} role="alert">
+        تعذّر تحميل تقدّم الخطة.{' '}
+        <Button variant="ghost" size="sm" onClick={() => void refetch()}>
+          إعادة المحاولة
+        </Button>
+      </p>
+    );
+  }
   if (!data || data.length === 0) return null;
   const completed = data.filter((activity) => activity.isCompleted).length;
   return (

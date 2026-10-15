@@ -49,8 +49,9 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
 
   const confirm = () => {
     if (!pending) return;
+    // Close on failure too, so the error alert below is not hidden behind the dialog.
     const done = {
-      onSuccess: () => {
+      onSettled: () => {
         setPending(null);
       },
     };

@@ -6,6 +6,7 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { SearchField } from '@/components/shared/SearchField';
 import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ROLE_LABELS } from '@/constants/roleLabels';
 
@@ -18,6 +19,7 @@ export interface NewConversationDialogProps {
   contacts: readonly ChatContact[];
   isLoading: boolean;
   error: Error | null;
+  onRetry: () => void;
   onClose: () => void;
   onPick: (contact: ChatContact) => void;
 }
@@ -28,6 +30,7 @@ export function NewConversationDialog({
   contacts,
   isLoading,
   error,
+  onRetry,
   onClose,
   onPick,
 }: NewConversationDialogProps) {
@@ -39,7 +42,16 @@ export function NewConversationDialog({
     if (isLoading) return <LoadingState label="جارٍ تحميل المستخدمين…" />;
     if (error) {
       return (
-        <ErrorState isBoxed={false} title="تعذّر تحميل المستخدمين" description={error.message} />
+        <ErrorState
+          isBoxed={false}
+          title="تعذّر تحميل المستخدمين"
+          description={error.message}
+          action={
+            <Button variant="outline" onClick={onRetry}>
+              إعادة المحاولة
+            </Button>
+          }
+        />
       );
     }
     if (visible.length === 0) {

@@ -209,7 +209,7 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
 
   it('Admin: picks the specialist from Admin/specialists and assigns the child', async () => {
     const specialist = await signInLive('SPECIALIST');
-    specialistId = specialist.user.id ?? '';
+    specialistId = specialist.user.id;
     await signInLive('ADMIN');
     expect((await fetchSpecialists()).some((item) => item.id === specialistId)).toBe(true);
     await assignChildrenToSpecialist({ specialistId, childIds: [childId] });

@@ -41,13 +41,6 @@ export const ROLE_NAMESPACES = {
  */
 export type AreaRole = Exclude<UserRole, 'SuperAdmin'>;
 
-export const AREA_ROLES = [
-  'Parent',
-  'Teacher',
-  'Specialist',
-  'Admin',
-] as const satisfies readonly AreaRole[];
-
 /** Route segments inside every role area (relative to the role namespace). */
 export const AREA_SEGMENTS = {
   dashboard: 'dashboard',

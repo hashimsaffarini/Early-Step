@@ -5,7 +5,7 @@ import { Link } from 'react-router';
 import { ChildCard, type ChildCardDetail } from '@/components/shared/ChildCard';
 import { getButtonClassName } from '@/components/ui/Button';
 import type { ChildSummary } from '@/services/api/childrenLists';
-import { ageInYears, formatAge } from '@/utils/age';
+import { formatAge } from '@/utils/age';
 
 import styles from './StaffChildCard.module.css';
 
@@ -15,23 +15,20 @@ export interface StaffChildCardProps {
   profilePath: string;
   /** Extra action next to "عرض الملف" (e.g. the specialist's "تقرير جديد"). */
   extraAction?: ReactNode;
-  today?: Date;
 }
 
-/** Age in years: the API's integer age, or computed from a birth date when that is all we have. */
-function ageText(child: ChildSummary, today: Date | undefined): string | null {
-  if (child.age !== null) return formatAge(child.age);
-  if (child.birthDate) return formatAge(ageInYears(child.birthDate.slice(0, 10), today));
-  return null;
+/** Age in years from the API's integer age. */
+function ageText(child: ChildSummary): string | null {
+  return child.age === null ? null : formatAge(child.age);
 }
 
 /**
  * Child card for staff dashboards. Shows only what the API returns (age, gender, parent).
  * No journey status or report counts: the children endpoints do not provide them.
  */
-export function StaffChildCard({ child, profilePath, extraAction, today }: StaffChildCardProps) {
+export function StaffChildCard({ child, profilePath, extraAction }: StaffChildCardProps) {
   const details: ChildCardDetail[] = [];
-  const age = ageText(child, today);
+  const age = ageText(child);
   const parts = [age ? `العمر: ${age}` : null, child.gender].filter(Boolean);
   if (parts.length > 0) details.push({ icon: CalendarDays, label: parts.join(' · ') });
   if (child.parentName) details.push({ icon: UserRound, label: `ولي الأمر: ${child.parentName}` });

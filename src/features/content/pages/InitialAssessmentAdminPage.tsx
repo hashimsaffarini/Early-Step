@@ -155,7 +155,13 @@ export function InitialAssessmentAdminPage() {
                   setActivityId(event.target.value);
                 }}
               >
-                <option value="">اختر…</option>
+                <option value="">
+                  {activitiesQuery.isPending
+                    ? 'جارٍ تحميل الاختبارات…'
+                    : activitiesQuery.data?.length === 0
+                      ? 'لا توجد اختبارات بعد'
+                      : 'اختر…'}
+                </option>
                 {(activitiesQuery.data ?? []).map((activity) => (
                   <option key={activity.id} value={activity.id}>
                     {activity.title}

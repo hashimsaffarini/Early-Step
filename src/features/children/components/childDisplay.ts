@@ -1,15 +1,14 @@
 import type { ChildSummary } from '@/services/api/childrenLists';
-import { ageInYears, formatAge } from '@/utils/age';
+import { formatAge } from '@/utils/age';
 
 export interface ChildDetail {
   kind: 'age' | 'gender';
   label: string;
 }
 
-/** Age from the API's integer age, or computed from a birth date if that is what is returned. */
+/** Age from the API's integer age. */
 export function childAgeYears(child: ChildSummary): number | null {
-  if (child.age !== null) return child.age;
-  return child.birthDate ? ageInYears(child.birthDate.slice(0, 10)) : null;
+  return child.age;
 }
 
 /** Display rows for the fields the API provides — nothing invented when a field is missing. */

@@ -101,8 +101,8 @@ export function UsersTab() {
                   {role ? <role.icon aria-hidden="true" size={14} /> : null}
                   {role?.label ?? user.roleValue}
                 </Badge>
-                {user.isActive === false ? <Badge tone="danger">موقوف</Badge> : null}
-                {canManage && user.isActive === false ? (
+                {!user.isActive ? <Badge tone="danger">موقوف</Badge> : null}
+                {canManage && !user.isActive ? (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -121,7 +121,7 @@ export function UsersTab() {
                     تفعيل
                   </Button>
                 ) : null}
-                {canManage && user.isActive !== false ? (
+                {canManage && user.isActive ? (
                   <Button
                     variant="ghost"
                     size="sm"

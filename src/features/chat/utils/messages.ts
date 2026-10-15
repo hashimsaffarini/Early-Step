@@ -36,15 +36,7 @@ export function firstConfirmedId(messages: readonly ChatMessage[]): string | nul
   return messages.find((message) => !message.pending)?.id ?? null;
 }
 
-/**
- * Own message? Compares with the session user id. The login response may not include the user id
- * (NOT LIVE-VERIFIED); then anything not sent by the other participant counts as ours.
- */
-export function isOwnMessage(
-  message: ChatMessage,
-  currentUserId: string | null,
-  contactId: string,
-): boolean {
-  if (message.pending) return true;
-  return currentUserId ? message.senderId === currentUserId : message.senderId !== contactId;
+/** Own message? Compares with the session user id (always sent by `GET Auth/me`). */
+export function isOwnMessage(message: ChatMessage, currentUserId: string): boolean {
+  return message.pending === true || message.senderId === currentUserId;
 }

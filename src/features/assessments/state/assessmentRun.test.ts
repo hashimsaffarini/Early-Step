@@ -1,6 +1,6 @@
 import type { AssessmentQuestion } from '../types';
 
-import { countAnswerable, isAnswerable, listSections } from './assessmentRun';
+import { isAnswerable } from './assessmentRun';
 
 function question(overrides: Partial<AssessmentQuestion>): AssessmentQuestion {
   return {
@@ -21,17 +21,5 @@ describe('assessment run helpers', () => {
     expect(isAnswerable(question({ type: 'Sequence' }))).toBe(true);
     expect(isAnswerable(question({ options: [] }))).toBe(false);
     expect(isAnswerable(question({ type: null }))).toBe(false);
-    expect(countAnswerable([question({}), question({ type: 'Sequence', options: [] })])).toBe(1);
-  });
-
-  it('lists section titles in order without repeats', () => {
-    expect(
-      listSections([
-        question({ sectionTitle: 'القراءة' }),
-        question({ sectionTitle: 'القراءة' }),
-        question({ sectionTitle: 'الرياضيات' }),
-        question({ sectionTitle: null }),
-      ]),
-    ).toEqual(['القراءة', 'الرياضيات']);
   });
 });

@@ -2,10 +2,10 @@ import { ADMIN_PATHS, ADMIN_SEGMENTS } from '@/constants/routes';
 import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
-import { ActivitiesPage } from './ActivitiesPage';
-import { ActivityDetailPage } from './ActivityDetailPage';
-import { CategoriesPage } from './CategoriesPage';
-import { InitialAssessmentAdminPage } from './InitialAssessmentAdminPage';
+import { ActivitiesPage } from '@/features/content/pages/ActivitiesPage';
+import { ActivityDetailPage } from '@/features/content/pages/ActivityDetailPage';
+import { CategoriesPage } from '@/features/content/pages/CategoriesPage';
+import { InitialAssessmentAdminPage } from '@/features/content/pages/InitialAssessmentAdminPage';
 
 const contentRoutes = [
   { path: ADMIN_PATHS.categories, element: <CategoriesPage /> },

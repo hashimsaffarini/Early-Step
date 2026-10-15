@@ -12,8 +12,9 @@ import { httpClient } from '@/services/http/httpClient';
 import type { UserRole } from '@/types/roles';
 
 /**
- * Super Admin reads — VERIFIED LIVE (2026-10-06):
- * - `SuperAdmin/users?Search=&Role=` → array of `{ id, fullName, email, role, emailConfirmed }`
+ * Super Admin reads — VERIFIED LIVE (2026-10-06, `isActive` since 2026-10-15):
+ * - `SuperAdmin/users?Search=&Role=` → array of `{ id, fullName, email, role, emailConfirmed,
+ *   isActive }`
  * - `SuperAdmin/children?Name=` → array of `{ id, fullName, age, gender, parentId, parentName }`
  * Role values include `Admin` and `SuperAdmin` (English) besides the Arabic ones.
  * User management (added 2026-10-14, Super Admin only — Admin 403), verified live with one
@@ -30,14 +31,9 @@ const userItemSchema = z.looseObject({
   email: z.string().nullish(),
   role: z.string().nullish(),
   emailConfirmed: z.boolean().nullish(),
-  childrenCount: z.number().nullish(),
-  isActive: z.boolean().nullish(),
+  // Always sent live; required so an unknown state is never shown as active.
+  isActive: z.boolean(),
 });
-
-const usersResponseSchema = z.union([
-  z.array(userItemSchema),
-  z.looseObject({ users: z.array(userItemSchema) }),
-]);
 
 export interface PanelUser {
   id: string;
@@ -46,8 +42,7 @@ export interface PanelUser {
   /** Canonical role, or null when the backend value is unknown (raw value kept for display). */
   role: UserRole | null;
   roleValue: string;
-  /** From the server; null when it was not sent (then neither state is claimed). */
-  isActive: boolean | null;
+  isActive: boolean;
 }
 
 /** Role values as the backend sends them — all five VERIFIED LIVE (user lists, login). */
@@ -63,16 +58,17 @@ export async function fetchSuperAdminUsers(role: string, search: string): Promis
   const { data } = await httpClient.get<unknown>('SuperAdmin/users', {
     params: { ...(role ? { Role: role } : {}), ...(search ? { Search: search } : {}) },
   });
-  const parsed = usersResponseSchema.parse(data);
-  const items = Array.isArray(parsed) ? parsed : parsed.users;
-  return items.map((item) => ({
-    id: item.id,
-    name: item.fullName ?? '',
-    email: item.email ?? null,
-    role: normalizeRole(item.role),
-    roleValue: item.role ?? '',
-    isActive: item.isActive ?? null,
-  }));
+  return z
+    .array(userItemSchema)
+    .parse(data)
+    .map((item) => ({
+      id: item.id,
+      name: item.fullName ?? '',
+      email: item.email ?? null,
+      role: normalizeRole(item.role),
+      roleValue: item.role ?? '',
+      isActive: item.isActive,
+    }));
 }
 
 /** Staff roles the Super Admin creates (wire values; public registration creates parents). */

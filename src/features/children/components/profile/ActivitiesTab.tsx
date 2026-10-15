@@ -60,11 +60,12 @@ function ActivityRow({
   ].filter((part) => part !== null);
   return (
     <li className={styles.row}>
-      {activity.iconUrl ? (
-        <ServerImage path={activity.iconUrl} alt="" className={styles.activityIcon} />
-      ) : (
-        <CategoryTile category="neutral" emoji={emoji} size="sm" />
-      )}
+      <ServerImage
+        path={activity.iconUrl}
+        alt=""
+        className={styles.activityIcon}
+        fallback={<CategoryTile category="neutral" emoji={emoji} size="sm" />}
+      />
       <div className={styles.rowBody}>
         <p className={styles.rowTitle}>{activity.title}</p>
         {counts.length > 0 ? <p className={styles.muted}>{counts.join(' · ')}</p> : null}

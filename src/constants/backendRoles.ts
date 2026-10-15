@@ -3,17 +3,16 @@ import type { UserRole } from '@/types/roles';
 /**
  * Backend role values → the frontend's canonical `UserRole`.
  *
- * Observed live (2026-10-06, user list): `ولي أمر`, `معلم/ة`, `أخصائي/ة`. English identifiers are
- * accepted too because ASP.NET Identity role claims may carry them (NOT LIVE-VERIFIED). The Arabic
- * wire values for Admin and SuperAdmin have not been observed yet — unknown values normalize to
- * `null` and the user gets no role-specific access (fail closed).
+ * VERIFIED LIVE (2026-10-15, `Auth/me`, user lists, chat contacts): exactly `ولي أمر`, `معلم/ة`,
+ * `أخصائي/ة`, `Admin`, `SuperAdmin`. Anything else normalizes to `null` and the user gets no
+ * role-specific access (fail closed).
  */
 const ROLE_ALIASES: Record<UserRole, readonly string[]> = {
-  Parent: ['Parent', 'ولي أمر', 'ولي الأمر'],
-  Teacher: ['Teacher', 'معلم/ة', 'معلم', 'معلمة'],
-  Specialist: ['Specialist', 'أخصائي/ة', 'أخصائي', 'أخصائية'],
-  Admin: ['Admin', 'Administrator'],
-  SuperAdmin: ['SuperAdmin', 'Super Admin', 'Super_Admin'],
+  Parent: ['ولي أمر'],
+  Teacher: ['معلم/ة'],
+  Specialist: ['أخصائي/ة'],
+  Admin: ['Admin'],
+  SuperAdmin: ['SuperAdmin'],
 };
 
 function canonical(value: string): string {

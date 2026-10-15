@@ -5,16 +5,14 @@ import { httpClient } from '@/services/http/httpClient';
 import { HTTP_STATUS } from '@/services/http/httpStatus';
 
 /**
- * Initial-assessment result (shared by the assessment flow and the child profile). Verified live
- * 2026-10-14: `POST initial-assessment/{assessmentId}/complete` and
- * `GET initial-assessment/{childId}/result` return `{ childId, childName, parentId, parentName,
+ * Initial-assessment result for staff (child profile). Verified live 2026-10-14:
+ * `GET initial-assessment/{childId}/result` returns `{ childId, childName, parentId, parentName,
  * overallScore, assessmentId, categories: [{ categoryId, categoryName, percentage, totalQuestions,
  * correctAnswers, questions: [{ questionId, questionText, questionType, isCorrect,
  * childAnswers: [{ optionId, optionText, optionImageUrl }], correctAnswers: [...] }] }] }` (no
- * completion date). `complete` leaves `totalQuestions`/`correctAnswers` at 0 and `questions` empty;
- * the GET fills them. The GET is readable by Specialist and Admin (Parent and Super Admin: 403 since
- * 2026-10-14); before completion it answers 404 (plain text). Per-question details are shown only
- * when the server sends them, so the server decides who sees correct answers.
+ * completion date). Readable by the child's assigned Specialist and Admin (Parent, Super Admin and an
+ * unassigned specialist: 403 — 2026-10-15); before completion it answers 404 (plain text). The app
+ * does not read the `complete` response.
  */
 const resultOptionSchema = z.looseObject({
   optionId: z.string().nullish(),
@@ -69,7 +67,7 @@ export interface AssessmentResultQuestion {
 export interface AssessmentResultCategory {
   name: string;
   percentage: number;
-  /** Null when the server did not count them (`complete` sends 0 / 0). */
+  /** Null when the server did not send them. */
   totalQuestions: number | null;
   correctAnswers: number | null;
   questions: AssessmentResultQuestion[];
@@ -94,12 +92,11 @@ export function mapAssessmentResult(dto: z.infer<typeof assessmentResultSchema>)
     assessmentId: dto.assessmentId ?? null,
     overallScore: dto.overallScore,
     categories: (dto.categories ?? []).map((category) => {
-      const counted = (category.totalQuestions ?? 0) > 0;
       return {
         name: category.categoryName?.trim() ?? '',
         percentage: category.percentage,
-        totalQuestions: counted ? (category.totalQuestions ?? null) : null,
-        correctAnswers: counted ? (category.correctAnswers ?? null) : null,
+        totalQuestions: category.totalQuestions ?? null,
+        correctAnswers: category.correctAnswers ?? null,
         questions: (category.questions ?? []).map((question) => ({
           id: question.questionId,
           text: question.questionText?.trim() ?? '',

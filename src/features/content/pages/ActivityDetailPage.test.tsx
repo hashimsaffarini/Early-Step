@@ -6,7 +6,7 @@ import { ADMIN_PATHS } from '@/constants/routes';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
 
-import { LETTERS_TEST_ID, renderContent } from './contentTestUtils';
+import { LETTERS_TEST_ID, renderContent } from '@/test/contentTestUtils';
 
 const DETAIL = ADMIN_PATHS.activityDetail('test', LETTERS_TEST_ID);
 

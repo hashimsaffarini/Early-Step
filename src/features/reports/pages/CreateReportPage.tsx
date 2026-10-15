@@ -102,8 +102,24 @@ export function CreateReportPage() {
   let body;
   if (createMutation.isSuccess) {
     body = <SavedState onWriteAnother={writeAnother} reportsPath={paths.reports} />;
-  } else if (childrenQuery.isPending) {
+  } else if (
+    childrenQuery.isPending ||
+    (existingReports.isSupported && existingReports.isPending)
+  ) {
+    // The existing reports decide which children may get a new one: wait for them too.
     body = <LoadingState label="جارٍ تحميل الأطفال…" />;
+  } else if (existingReports.isSupported && existingReports.error) {
+    body = (
+      <ErrorState
+        title="تعذّر تحميل التقارير الحالية"
+        description={existingReports.error.message}
+        action={
+          <Button variant="outline" onClick={existingReports.refetch}>
+            إعادة المحاولة
+          </Button>
+        }
+      />
+    );
   } else if (childrenQuery.error) {
     body = (
       <ErrorState

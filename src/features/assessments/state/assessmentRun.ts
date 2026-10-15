@@ -18,17 +18,3 @@ export function isAnswerable(question: AssessmentQuestion): boolean {
     question.options.length > 0
   );
 }
-
-export function countAnswerable(questions: readonly AssessmentQuestion[]): number {
-  return questions.filter(isAnswerable).length;
-}
-
-/** Section headings in question order (consecutive questions share a section). */
-export function listSections(questions: readonly AssessmentQuestion[]): string[] {
-  const titles: string[] = [];
-  for (const question of questions) {
-    const title = question.sectionTitle;
-    if (title && titles.at(-1) !== title) titles.push(title);
-  }
-  return titles;
-}

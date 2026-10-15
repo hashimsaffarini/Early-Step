@@ -22,13 +22,13 @@ export interface NoteCardProps {
 
 /** One note from the child's list, with edit and confirmed delete for the teacher. */
 export function NoteCard({ childId, note, canEdit }: NoteCardProps) {
-  const noteId = note.id ?? '';
+  const noteId = note.id;
   const update = useUpdateNote(childId, noteId);
   const remove = useDeleteNote(childId);
   const [isEditing, setIsEditing] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const date = note.updatedAt ?? note.createdAt;
-  const isEditable = canEdit && noteId !== '';
+  const date = note.createdAt;
+  const isEditable = canEdit;
 
   return (
     <Card as="li" className={styles.card}>

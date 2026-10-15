@@ -17,7 +17,7 @@ export const REPORT_PATHS = {
 
 export { fetchChildReport };
 
-/** `GET specialist/Reports` — the specialist's reports. Item shape NOT LIVE-VERIFIED. */
+/** `GET specialist/Reports` — the specialist's reports (VERIFIED LIVE). */
 export async function fetchSpecialistReports(): Promise<ChildReport[]> {
   const { data } = await httpClient.get<unknown>(REPORT_PATHS.specialistList);
   return reportListSchema.parse(data).map(mapReport);

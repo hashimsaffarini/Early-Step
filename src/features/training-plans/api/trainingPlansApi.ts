@@ -145,7 +145,7 @@ export async function assignActivity(childId: string, activityId: string): Promi
   await httpClient.post(TRAINING_PLAN_PATHS.activities(childId), { activityId });
 }
 
-/** `DELETE …/activities/{activityId}` — the catalogue activity id (Apidog example). */
+/** `DELETE …/activities/{activityId}` — the catalogue activity id (VERIFIED LIVE — WRITE). */
 export async function removeActivity(childId: string, activityId: string): Promise<void> {
   await httpClient.delete(TRAINING_PLAN_PATHS.activity(childId, activityId));
 }
@@ -166,7 +166,7 @@ export async function fetchTeachers(): Promise<TeacherOption[]> {
     .map((teacher) => ({ id: teacher.id, name: teacher.fullName?.trim() ?? '' }));
 }
 
-/** `POST specialist/assign-teacher { teacherId, childIds }` (Swagger). Response not verified (write). */
+/** `POST specialist/assign-teacher { teacherId, childIds }` — VERIFIED LIVE — WRITE; 400 message when the child has no teacher to assign. */
 export async function assignTeacher(teacherId: string, childIds: readonly string[]): Promise<void> {
   await httpClient.post('specialist/assign-teacher', { teacherId, childIds });
 }
@@ -204,8 +204,9 @@ export interface PlanActivityResultQuestion {
   text: string;
   /** Backend question type as sent. */
   type: string | null;
+  imageUrl: string | null;
   /** The child's choices, in the child's order. */
-  selected: { id: string; text: string }[];
+  selected: { id: string; text: string; imageUrl: string | null }[];
   isCorrect: boolean | null;
 }
 
@@ -228,9 +229,11 @@ export async function fetchPlanActivityResult(
       id: question.questionId,
       text: question.questionText?.trim() ?? '',
       type: question.type ?? null,
+      imageUrl: question.questionImageUrl ?? null,
       selected: (question.selectedOptions ?? []).map((option) => ({
         id: option.id,
         text: option.optionText?.trim() ?? '',
+        imageUrl: option.optionImageUrl ?? null,
       })),
       isCorrect: question.isCorrect ?? null,
     })),

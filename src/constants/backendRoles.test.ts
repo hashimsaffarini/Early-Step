@@ -5,15 +5,17 @@ describe('normalizeRole', () => {
     ['ولي أمر', 'Parent'],
     ['معلم/ة', 'Teacher'],
     ['أخصائي/ة', 'Specialist'],
-    ['Parent', 'Parent'],
     ['superadmin', 'SuperAdmin'],
     ['  Admin ', 'Admin'],
-  ] as const)('maps %s to %s', (raw, expected) => {
+  ] as const)('maps the live value %s to %s', (raw, expected) => {
     expect(normalizeRole(raw)).toBe(expected);
   });
 
   it('fails closed for unknown or missing values', () => {
     expect(normalizeRole('Owner')).toBeNull();
+    // Never observed live, so not accepted (only the five live values are).
+    expect(normalizeRole('Parent')).toBeNull();
+    expect(normalizeRole('Super Admin')).toBeNull();
     expect(normalizeRole(undefined)).toBeNull();
     expect(normalizeRole(3)).toBeNull();
   });

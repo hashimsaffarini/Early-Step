@@ -1,12 +1,12 @@
 /**
  * Activity type. The URL segment uses `test` / `game` (Swagger `/Admin/activities/{type}`);
- * responses carry Arabic labels (Apidog example: `اختبارات`). Unknown values → null.
+ * responses carry the Arabic labels `اختبارات` / `ألعاب` (verified live). Unknown values → null.
  */
 export type ActivityType = 'test' | 'game';
 
 const TYPE_ALIASES: Record<ActivityType, readonly string[]> = {
-  test: ['test', 'tests', 'اختبار', 'اختبارات'],
-  game: ['game', 'games', 'لعبة', 'ألعاب', 'العاب'],
+  test: ['test', 'اختبارات'],
+  game: ['game', 'ألعاب'],
 };
 
 export function normalizeActivityType(value: unknown): ActivityType | null {

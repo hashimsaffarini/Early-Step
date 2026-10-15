@@ -67,6 +67,7 @@ export interface ThreadMessages {
   retry: () => void;
   hasOlder: boolean;
   isLoadingOlder: boolean;
+  olderFailed: boolean;
   loadOlder: () => void;
 }
 
@@ -82,7 +83,12 @@ export function useThreadMessages(
   const queryClient = useQueryClient();
   const key = threadKey(thread);
   const conversationId = thread.kind === 'conversation' ? thread.conversationId : null;
-  const [olderState, setOlderState] = useState({ key: '', exhausted: false, loading: false });
+  const [olderState, setOlderState] = useState({
+    key: '',
+    exhausted: false,
+    loading: false,
+    failed: false,
+  });
   const keyString = JSON.stringify(key);
 
   const query = useQuery({
@@ -140,7 +146,7 @@ export function useThreadMessages(
     const current = queryClient.getQueryData<ChatMessage[]>(key) ?? [];
     const beforeId = firstConfirmedId(current);
     if (!conversationId || !beforeId) return;
-    setOlderState({ key: keyString, exhausted: false, loading: true });
+    setOlderState({ key: keyString, exhausted: false, loading: true, failed: false });
     fetchOlderMessages(conversationId, beforeId)
       .then((older) => {
         queryClient.setQueryData<ChatMessage[]>(key, (latest) =>
@@ -150,10 +156,12 @@ export function useThreadMessages(
           key: keyString,
           exhausted: older.length < MESSAGE_PAGE_SIZE,
           loading: false,
+          failed: false,
         });
       })
       .catch(() => {
-        setOlderState({ key: keyString, exhausted: false, loading: false });
+        // Shown under the button; pressing it again retries.
+        setOlderState({ key: keyString, exhausted: false, loading: false, failed: true });
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, keyString, queryClient]);
@@ -165,6 +173,7 @@ export function useThreadMessages(
     retry: () => void query.refetch(),
     hasOlder: Boolean(conversationId) && !exhausted,
     isLoadingOlder: olderState.key === keyString && olderState.loading,
+    olderFailed: olderState.key === keyString && olderState.failed,
     loadOlder,
   };
 }

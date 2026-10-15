@@ -10,8 +10,8 @@ import { httpClient } from '@/services/http/httpClient';
 /**
  * Parent child management (Swagger tag "Parent"). Paths are relative to `VITE_API_BASE_URL`.
  * Request bodies are documented (`multipart/form-data`: `FullName`, `Age` int32, `Gender`
- * `ولد`|`بنت`). Response bodies are undocumented — child objects are read leniently with the
- * shared child schema. NOT LIVE-VERIFIED.
+ * `ولد`|`بنت`). VERIFIED LIVE — WRITE (disposable `E2E Test` children, cleanup verified); child
+ * objects are read with the shared child schema.
  */
 export const CHILDREN_PATHS = {
   collection: 'Parent',

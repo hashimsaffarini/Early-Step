@@ -16,6 +16,8 @@ export interface AssessmentSummaryCardProps {
   childName: string;
   /** Only the parent starts the initial assessment (for their child). */
   canStart: boolean;
+  /** The result endpoint is for the assigned Specialist and Admin only. */
+  canReadResult: boolean;
 }
 
 /**
@@ -26,6 +28,7 @@ export function AssessmentSummaryCard({
   childId,
   childName,
   canStart,
+  canReadResult,
 }: AssessmentSummaryCardProps) {
   return (
     <Card as="section" className={styles.card} aria-labelledby={HEADING_ID}>
@@ -44,8 +47,10 @@ export function AssessmentSummaryCard({
             <StartAssessmentLink childId={childId} childName={childName} />
           </div>
         </>
-      ) : (
+      ) : canReadResult ? (
         <StaffResultSummary childId={childId} />
+      ) : (
+        <p className={styles.muted}>نتيجة التقييم المبدئي متاحة للأخصائي المتابِع للطفل.</p>
       )}
     </Card>
   );

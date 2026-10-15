@@ -110,14 +110,6 @@ export function AdminUserDetailPage() {
           {data.emailConfirmed === false ? <Badge tone="warning">البريد غير مؤكَّد</Badge> : null}
         </div>
         <dl className={styles.facts}>
-          {data.phoneNumber ? (
-            <div className={styles.fact}>
-              <dt>رقم الهاتف</dt>
-              <dd>
-                <bdi dir="ltr">{data.phoneNumber}</bdi>
-              </dd>
-            </div>
-          ) : null}
           {data.childrenCount !== null ? (
             <div className={styles.fact}>
               <dt>عدد الأطفال</dt>

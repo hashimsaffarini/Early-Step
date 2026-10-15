@@ -60,12 +60,13 @@ function OpenThread({ thread, contactRole, onBack, onCreated }: OpenThreadProps)
       contactName={thread.contactName}
       contactRole={contactRole}
       messages={thread$.messages}
-      isOwn={(message) => isOwnMessage(message, session?.user.id ?? null, thread.contactId)}
+      isOwn={(message) => isOwnMessage(message, session?.user.id ?? '')}
       isLoading={thread$.isLoading}
       loadError={thread$.error}
       onRetry={thread$.retry}
       hasOlder={thread$.hasOlder}
       isLoadingOlder={thread$.isLoadingOlder}
+      olderFailed={thread$.olderFailed}
       onLoadOlder={thread$.loadOlder}
       sendError={sendMutation.error}
       onSend={async (text) => {
@@ -173,6 +174,7 @@ export function MessagesPage() {
         contacts={users.data ?? []}
         isLoading={users.isPending}
         error={users.error}
+        onRetry={() => void users.refetch()}
         onClose={() => {
           setIsPickerOpen(false);
         }}

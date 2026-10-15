@@ -83,7 +83,11 @@ export function AssignSpecialistForm({ childrenOfParent }: AssignSpecialistFormP
               }}
             >
               <option value="">
-                {specialists.isPending ? 'جارٍ تحميل الأخصائيين…' : 'اختر الأخصائي'}
+                {specialists.isPending
+                  ? 'جارٍ تحميل الأخصائيين…'
+                  : specialistOptions.length === 0 && specialists.isSuccess
+                    ? 'لا يوجد أخصائيون في النظام بعد'
+                    : 'اختر الأخصائي'}
               </option>
               {specialistOptions.map((user) => (
                 <option key={user.id} value={user.id} disabled={!user.isActive}>

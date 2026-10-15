@@ -214,7 +214,18 @@ export function PlanActivityPlayerPage() {
         <ErrorState
           title="تعذّر تحميل النشاط"
           description={query.error.message}
-          action={backLink}
+          action={
+            query.error.status === HTTP_STATUS.NOT_FOUND ? (
+              backLink
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => void query.refetch()}>
+                  إعادة المحاولة
+                </Button>
+                {backLink}
+              </>
+            )
+          }
         />
       </PlayerShell>
     );

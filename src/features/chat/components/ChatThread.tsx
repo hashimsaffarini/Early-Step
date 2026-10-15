@@ -30,6 +30,8 @@ export interface ChatThreadProps {
   onRetry: () => void;
   hasOlder: boolean;
   isLoadingOlder: boolean;
+  /** Loading older messages failed (the button retries). */
+  olderFailed?: boolean;
   onLoadOlder: () => void;
   /** Sends the text; resolves true when the server accepted it (the draft is then cleared). */
   onSend: (text: string) => Promise<boolean>;
@@ -50,6 +52,7 @@ export function ChatThread({
   onRetry,
   hasOlder,
   isLoadingOlder,
+  olderFailed = false,
   onLoadOlder,
   onSend,
   sendError,
@@ -165,8 +168,13 @@ export function ChatThread({
         {hasOlder && !isLoading && !loadError ? (
           <li className={styles.day}>
             <Button variant="ghost" size="sm" isLoading={isLoadingOlder} onClick={onLoadOlder}>
-              تحميل رسائل أقدم
+              {olderFailed ? 'إعادة محاولة تحميل الرسائل الأقدم' : 'تحميل رسائل أقدم'}
             </Button>
+            {olderFailed ? (
+              <p role="alert" className={styles.olderError}>
+                تعذّر تحميل الرسائل الأقدم.
+              </p>
+            ) : null}
           </li>
         ) : null}
         {renderBody()}

@@ -8,7 +8,7 @@ import { server } from '@/mocks/server';
 
 import { CreateReportPage } from './CreateReportPage';
 import { EditReportPage } from './EditReportPage';
-import { renderReportsPage, REPORT_YOUSEF } from './reportsTestUtils';
+import { renderReportsPage, REPORT_YOUSEF } from '@/test/reportsTestUtils';
 
 const SALMA = 'c0000000-0000-4000-8000-000000000005';
 
@@ -46,6 +46,19 @@ describe('CreateReportPage', () => {
     expect(screen.getByText('الرجاء كتابة الجوانب التي تحتاج إلى دعم')).toBeInTheDocument();
     expect(screen.getByText('الرجاء كتابة التوصيات')).toBeInTheDocument();
     expect(screen.queryByLabelText(/نقاط القوة/)).not.toBeInTheDocument();
+  });
+
+  it('does not offer any child while the existing reports cannot be read', async () => {
+    server.use(
+      http.get(apiUrl('specialist/Reports'), () =>
+        HttpResponse.json({ message: 'خطأ في الخادم' }, { status: 500 }),
+      ),
+    );
+    renderCreate();
+
+    expect(await screen.findByText('تعذّر تحميل التقارير الحالية')).toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'إعادة المحاولة' })).toBeInTheDocument();
   });
 
   it('creates the report with the Swagger JSON body', async () => {

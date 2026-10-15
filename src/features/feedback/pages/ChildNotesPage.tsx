@@ -45,8 +45,8 @@ function NotesWorkspace({ childId }: { childId: string }) {
   } else {
     list = (
       <ul className={styles.list} aria-label="الملاحظات">
-        {notes.data.map((note, index) => (
-          <NoteCard key={note.id ?? index} childId={childId} note={note} canEdit />
+        {notes.data.map((note) => (
+          <NoteCard key={note.id} childId={childId} note={note} canEdit />
         ))}
       </ul>
     );

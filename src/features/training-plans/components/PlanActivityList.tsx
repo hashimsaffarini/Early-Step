@@ -1,5 +1,6 @@
 import { CircleCheck, Clock, Gamepad2, ListChecks, Trash2 } from 'lucide-react';
 
+import { ServerImage } from '@/components/shared/ServerImage';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import type { PlanActivity } from '@/services/api/childPlan';
@@ -40,7 +41,12 @@ export function PlanActivityList({ activities, onRemove, resultChildId }: PlanAc
         return (
           <li key={activity.id} className={styles.item}>
             <span className={styles.itemIcon} aria-hidden="true">
-              {activity.type === 'game' ? <Gamepad2 /> : <ListChecks />}
+              <ServerImage
+                path={activity.iconUrl}
+                alt=""
+                className={styles.itemIconImage}
+                fallback={activity.type === 'game' ? <Gamepad2 /> : <ListChecks />}
+              />
             </span>
             <div className={styles.itemText}>
               <h3 className={styles.itemTitle}>{title}</h3>

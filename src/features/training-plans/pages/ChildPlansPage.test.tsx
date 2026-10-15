@@ -33,6 +33,15 @@ function renderPlans(role: AreaRole, childId: string) {
   );
 }
 
+/** The options listed after a result label ("إجابة الطفل:"), in order. */
+function optionsAfter(container: HTMLElement, label: string): string[] {
+  const line = within(container).getByText(`${label}:`).parentElement;
+  if (!line) throw new Error(`no line for ${label}`);
+  return within(line)
+    .getAllByRole('listitem')
+    .map((item) => item.textContent);
+}
+
 describe('ChildPlansPage — read-only roles', () => {
   it('shows the parent the plan activities, their status and real progress', async () => {
     renderPlans('Parent', YOUSEF);
@@ -208,7 +217,8 @@ describe('ChildPlansPage — results (specialist)', () => {
 
     const answers = await screen.findByRole('list', { name: 'إجابات «اختبار الحروف»' });
     expect(within(answers).getByText('إجابة غير صحيحة')).toBeInTheDocument();
-    expect(within(answers).getByText('ترتيب · إجابة الطفل: ب ← أ')).toBeInTheDocument();
+    expect(within(answers).getByText('ترتيب')).toBeInTheDocument();
+    expect(optionsAfter(answers, 'إجابة الطفل')).toEqual(['ب', 'أ']);
   });
 });
 

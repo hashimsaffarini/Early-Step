@@ -61,7 +61,7 @@ function getFacts(report: ReportView): Fact[] {
 
 /**
  * Report detail. There is no GET-by-id endpoint, so the report is resolved from the role's
- * report list (NOT LIVE-VERIFIED). Only real API fields are shown; the PDF comes from the server.
+ * report list (verified live). Only real API fields are shown; the PDF comes from the server.
  */
 export function ReportDetailPage() {
   const { reportId = '' } = useParams();

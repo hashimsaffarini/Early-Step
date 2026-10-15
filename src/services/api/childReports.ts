@@ -63,8 +63,7 @@ export function isNoReportsError(error: unknown): boolean {
 /**
  * `GET Reports/child/{childId}` — the child's report, or `null` when there is none (404 + message).
  * Business rule confirmed by the backend team (2026-10-08): ONE initial-assessment report per
- * child, so the endpoint returns a single object. (Live, `specialist/CreateReport` still accepts a
- * second report for the same child; this endpoint then returns the newest.)
+ * child, so the endpoint returns a single object (a second report for the same child → 409).
  */
 export async function fetchChildReport(childId: string): Promise<ChildReport | null> {
   try {

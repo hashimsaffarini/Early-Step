@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { createTestSound } from '@/features/activities/games/shared/testSound';
+import { createTestSound } from '@/test/testSound';
 
 import { SENTENCE_ROUNDS } from './content';
 import { SentenceBuilderGame } from './SentenceBuilderGame';

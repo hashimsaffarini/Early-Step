@@ -1,6 +1,6 @@
-import { assertNotKnownFailure, parseStartResponse } from './assessmentApi';
+import { parseStartResponse } from './assessmentApi';
 
-describe('parseStartResponse (shape NOT LIVE-VERIFIED)', () => {
+describe('parseStartResponse (live contract 2026-10-14)', () => {
   it('reads questions grouped under categories', () => {
     const result = parseStartResponse({
       assessmentId: 'as-1',
@@ -33,37 +33,14 @@ describe('parseStartResponse (shape NOT LIVE-VERIFIED)', () => {
     ]);
   });
 
-  it('accepts a flat question list under `data` with an `id`', () => {
-    const result = parseStartResponse({
-      data: { id: 'as-2', questions: [{ id: 'q1', questionText: 'x', type: 'multiselect' }] },
-    });
-
-    expect(result.assessmentId).toBe('as-2');
-    expect(result.questions[0]?.type).toBe('MultiSelect');
-    expect(result.questions[0]?.options).toEqual([]);
-  });
-
-  it('treats a message-only 200 body as a failure with the server message', () => {
+  it('rejects the old guessed shapes (flat questions, `data` wrapper, `id`, message-only body)', () => {
     expect(() =>
-      parseStartResponse({ message: 'الطفل غير موجود أو لا يوجد تقييم أولي متاح.' }),
-    ).toThrow('الطفل غير موجود أو لا يوجد تقييم أولي متاح.');
+      parseStartResponse({ data: { id: 'as-2', questions: [{ id: 'q1', type: 'SingleChoice' }] } }),
+    ).toThrow('استجابة غير متوقعة');
+    expect(() => parseStartResponse({ message: 'الطفل غير موجود.' })).toThrow('استجابة غير متوقعة');
   });
 
   it('fails clearly on an unexpected body', () => {
     expect(() => parseStartResponse('ok')).toThrow('استجابة غير متوقعة');
-  });
-});
-
-describe('assertNotKnownFailure', () => {
-  it('rejects the documented 200 failure messages only', () => {
-    expect(() => {
-      assertNotKnownFailure({ message: 'لا يمكن إرسال الإجابة.' });
-    }).toThrow('لا يمكن إرسال الإجابة.');
-    expect(() => {
-      assertNotKnownFailure({ message: 'تم حفظ الإجابة.' });
-    }).not.toThrow();
-    expect(() => {
-      assertNotKnownFailure(null);
-    }).not.toThrow();
   });
 });

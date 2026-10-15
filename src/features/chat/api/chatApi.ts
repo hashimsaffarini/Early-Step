@@ -7,8 +7,8 @@ import type { ChatContact, ChatMessage, ConversationSummary } from '../types';
 
 /**
  * Chat REST API (Swagger: `/api/Chats/*`, response schemas documented there).
- * NOT LIVE-VERIFIED (no working account yet). Real-time hub: BLOCKED BY BACKEND (hub URL and
- * events undocumented) — the UI refreshes by polling `Chats/messages/new` and `Chats/unread-count`.
+ * VERIFIED LIVE (reads and sends). A real-time hub is out of scope: the UI refreshes by polling
+ * `Chats/messages/new` and `Chats/unread-count` (REST + polling is the accepted chat).
  */
 export const CHAT_PATHS = {
   conversations: 'Chats/conversations',

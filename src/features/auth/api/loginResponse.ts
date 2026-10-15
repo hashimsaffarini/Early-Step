@@ -10,7 +10,7 @@ import type { StoredToken } from '@/services/session';
  * `GET Auth/me` instead (verified 2026-10-14), so the login fields are not duplicated here. The JWT
  * is decoded for the expiry only — never trusted.
  */
-const TOKEN_KEYS = ['accessToken', 'token'] as const;
+const TOKEN_KEYS = ['accessToken'] as const;
 const MS_PER_SECOND = 1000;
 
 type Json = Record<string, unknown>;

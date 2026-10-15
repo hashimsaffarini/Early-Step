@@ -5,6 +5,7 @@ import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { SearchField } from '@/components/shared/SearchField';
+import { ServerImage } from '@/components/shared/ServerImage';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
@@ -64,6 +65,14 @@ export function AssignActivityDialog({
       <ul className={styles.pickerList} aria-label="الأنشطة المتاحة">
         {items.map((item) => (
           <li key={item.id} className={styles.item}>
+            <span className={styles.itemIcon} aria-hidden="true">
+              <ServerImage
+                path={item.iconUrl}
+                alt=""
+                className={styles.itemIconImage}
+                fallback={type === 'game' ? <Gamepad2 /> : <ListChecks />}
+              />
+            </span>
             <div className={styles.itemText}>
               <h3 className={styles.itemTitle}>{item.title || 'نشاط'}</h3>
               <div className={styles.badges}>

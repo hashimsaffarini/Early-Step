@@ -8,6 +8,7 @@ export interface OverviewTabProps {
   childId: string;
   childName: string;
   canStartAssessment: boolean;
+  canReadAssessmentResult: boolean;
   onShowActivities: () => void;
   onShowReports: () => void;
 }
@@ -17,6 +18,7 @@ export function OverviewTab({
   childId,
   childName,
   canStartAssessment,
+  canReadAssessmentResult,
   onShowActivities,
   onShowReports,
 }: OverviewTabProps) {
@@ -26,6 +28,7 @@ export function OverviewTab({
         childId={childId}
         childName={childName}
         canStart={canStartAssessment}
+        canReadResult={canReadAssessmentResult}
       />
       <ProfileSummaryTiles childId={childId} />
       <PlanSummaryCard childId={childId} onShowActivities={onShowActivities} />

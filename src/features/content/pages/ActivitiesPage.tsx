@@ -117,13 +117,11 @@ export function ActivitiesPage() {
           {activities.map((activity) => (
             <li key={activity.id} className={styles.row}>
               <span className={styles.rowIcon} aria-hidden="true">
-                {activity.iconUrl ? (
-                  <ServerImage path={activity.iconUrl} alt="" />
-                ) : type === 'game' ? (
-                  <Gamepad2 />
-                ) : (
-                  <ListChecks />
-                )}
+                <ServerImage
+                  path={activity.iconUrl}
+                  alt=""
+                  fallback={type === 'game' ? <Gamepad2 /> : <ListChecks />}
+                />
               </span>
               <div className={styles.rowMain}>
                 <h2 className={styles.rowTitle}>

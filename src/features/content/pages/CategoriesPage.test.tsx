@@ -6,7 +6,7 @@ import { ADMIN_PATHS } from '@/constants/routes';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
 
-import { renderContent } from './contentTestUtils';
+import { renderContent } from '@/test/contentTestUtils';
 
 async function list() {
   return screen.findByRole('list', { name: 'التصنيفات' });

@@ -22,6 +22,15 @@ function renderProfile(role: AreaRole, childId: string) {
 const heading = (name: string) => screen.findByRole('heading', { level: 1, name });
 const tab = (name: RegExp) => screen.getByRole('tab', { name });
 
+/** The options listed after a result label ("إجابة الطفل:"), in order. */
+function optionsAfter(container: HTMLElement, label: string): string[] {
+  const line = within(container).getByText(`${label}:`).parentElement;
+  if (!line) throw new Error(`no line for ${label}`);
+  return within(line)
+    .getAllByRole('listitem')
+    .map((item) => item.textContent);
+}
+
 describe('ChildProfilePage — resolving the child', () => {
   it('loads the parent child from GET Parent/{id} with API fields only', async () => {
     renderProfile('Parent', YOUSEF);
@@ -235,8 +244,10 @@ describe('ChildProfilePage — tabs from the API', () => {
     const questions = within(region).getByRole('list', { name: 'أسئلة الرياضيات' });
     expect(within(questions).getByText('إجابة صحيحة')).toBeInTheDocument();
     expect(within(questions).getByText('إجابة غير صحيحة')).toBeInTheDocument();
-    expect(within(questions).getByText('إجابة الطفل: 3 ← 1')).toBeInTheDocument();
-    expect(within(questions).getByText('الإجابة الصحيحة: 1 ← 3')).toBeInTheDocument();
+    const sequence = within(questions).getByText('رتّب الأعداد').closest('li');
+    if (!sequence) throw new Error('sequence question not found');
+    expect(optionsAfter(sequence, 'إجابة الطفل')).toEqual(['3', '1']);
+    expect(optionsAfter(sequence, 'الإجابة الصحيحة')).toEqual(['1', '3']);
   });
 
   it("gives the specialist a read-only tab with the teacher's notes", async () => {
@@ -269,6 +280,21 @@ describe('ChildProfilePage — tabs from the API', () => {
     await userEvent.click(tab(/التقييمات/));
 
     expect(screen.queryByRole('link', { name: /بدء التقييم/ })).not.toBeInTheDocument();
+  });
+
+  it('never calls the staff-only result endpoint as Teacher', async () => {
+    let resultCalls = 0;
+    server.events.on('request:start', ({ request }) => {
+      if (request.url.includes('initial-assessment')) resultCalls += 1;
+    });
+    renderProfile('Teacher', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/التقييمات/));
+
+    expect(await screen.findByText('يراجع الأخصائي نتيجة التقييم المبدئي')).toBeInTheDocument();
+    expect(resultCalls).toBe(0);
+    server.events.removeAllListeners();
   });
 });
 

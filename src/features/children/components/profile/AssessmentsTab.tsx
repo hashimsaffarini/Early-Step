@@ -13,13 +13,20 @@ export interface AssessmentsTabProps {
   childId: string;
   childName: string;
   canStart: boolean;
+  /** The result endpoint is for the assigned Specialist and Admin only. */
+  canReadResult: boolean;
 }
 
 /**
  * Staff: the child's initial-assessment result (`GET initial-assessment/{childId}/result`).
  * Parent: only the way to start it — the saved result is for staff (product decision 2026-10-14).
  */
-export function AssessmentsTab({ childId, childName, canStart }: AssessmentsTabProps) {
+export function AssessmentsTab({
+  childId,
+  childName,
+  canStart,
+  canReadResult,
+}: AssessmentsTabProps) {
   if (canStart) {
     return (
       <EmptyState
@@ -27,6 +34,15 @@ export function AssessmentsTab({ childId, childName, canStart }: AssessmentsTabP
         title="التقييم المبدئي"
         description="يُكمل طفلك التقييم المبدئي مرة واحدة، ويراجع الأخصائي النتيجة."
         action={<StartAssessmentLink childId={childId} childName={childName} />}
+      />
+    );
+  }
+  if (!canReadResult) {
+    return (
+      <EmptyState
+        icon={<ClipboardCheck />}
+        title="يراجع الأخصائي نتيجة التقييم المبدئي"
+        description="نتيجة التقييم المبدئي متاحة للأخصائي المتابِع للطفل."
       />
     );
   }

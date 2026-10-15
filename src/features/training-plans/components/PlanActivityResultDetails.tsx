@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
 import { CHOICE_TYPE_LABELS, toChoiceQuestionType } from '@/components/players';
+import { AnswerOptionList } from '@/components/shared/AnswerOptionList';
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
+import { ServerImage } from '@/components/shared/ServerImage';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Feedback';
 
@@ -37,7 +39,7 @@ export function PlanActivityResultDetails({
     >
       <summary>عرض إجابات الطفل</summary>
       {query.isPending && isOpen ? <Spinner label="جارٍ تحميل النتيجة…" /> : null}
-      <ApiErrorAlert error={query.error} />
+      <ApiErrorAlert error={query.error} onRetry={() => void query.refetch()} />
       {query.data?.questions.length === 0 ? (
         <p className={styles.meta}>لم يُرسل الخادم تفاصيل الأسئلة لهذا النشاط.</p>
       ) : null}
@@ -45,8 +47,6 @@ export function PlanActivityResultDetails({
         <ul className={styles.resultList} aria-label={`إجابات «${title}»`}>
           {query.data.questions.map((question) => {
             const type = toChoiceQuestionType(question.type);
-            const separator = type === 'Sequence' ? ' ← ' : '، ';
-            const chosen = question.selected.map((option) => option.text || 'خيار بصورة');
             return (
               <li key={question.id} className={styles.resultItem}>
                 <div className={styles.resultHead}>
@@ -57,10 +57,15 @@ export function PlanActivityResultDetails({
                     </Badge>
                   )}
                 </div>
-                <p className={styles.meta}>
-                  {type ? `${CHOICE_TYPE_LABELS[type]} · ` : ''}
-                  {`إجابة الطفل: ${chosen.length > 0 ? chosen.join(separator) : '—'}`}
-                </p>
+                {question.imageUrl ? (
+                  <ServerImage path={question.imageUrl} alt="" className={styles.resultImage} />
+                ) : null}
+                {type ? <p className={styles.meta}>{CHOICE_TYPE_LABELS[type]}</p> : null}
+                <AnswerOptionList
+                  label="إجابة الطفل"
+                  options={question.selected}
+                  isOrdered={type === 'Sequence'}
+                />
               </li>
             );
           })}

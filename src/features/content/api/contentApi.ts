@@ -17,8 +17,8 @@ import {
 
 /**
  * Admin content API (Swagger `/api/Admin/*`, `/api/initial-assessment/*`).
- * Request shapes are from Swagger. Response shapes are mostly undocumented — read leniently from
- * the Apidog examples. NOT LIVE-VERIFIED (no admin account could sign in).
+ * Request shapes are from Swagger; responses VERIFIED LIVE with the Admin account (reads and
+ * disposable writes — `docs/API_VERIFICATION_MATRIX.md`).
  */
 const enc = encodeURIComponent;
 

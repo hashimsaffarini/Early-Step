@@ -12,8 +12,8 @@ import type { UserRole } from '@/types/roles';
 /**
  * Admin users (Swagger `Admin/users?Role=&Search=`, `Admin/users/{userId}`, `Admin/specialists`,
  * `POST Admin/assign-children-to-specialist`). List shape matches the documented
- * `{ totalUsers, totalParents, totalSpecialists, totalTeachers, users[] }`; detail follows the
- * Apidog example. Creating / editing / deactivating staff is a Super Admin capability
+ * `{ totalUsers, totalParents, totalSpecialists, totalTeachers, users[] }`; detail (verified live)
+ * is the user + `children: [{ …, specialistName | null }]`. Creating / editing / deactivating staff is a Super Admin capability
  * (`SuperAdmin/users`), not an Admin one.
  */
 const userItemSchema = z.looseObject({
@@ -34,7 +34,6 @@ const usersResponseSchema = z.looseObject({
 });
 
 const userDetailSchema = userItemSchema.extend({
-  phoneNumber: z.string().nullish(),
   // Always sent live; required so a missing list is an error, not "no children".
   children: z.array(childListItemSchema),
 });
@@ -63,7 +62,6 @@ export interface AdminUsersResult {
 }
 
 export interface AdminUserDetail extends AdminUser {
-  phoneNumber: string | null;
   children: ChildSummary[];
 }
 
@@ -109,7 +107,6 @@ export async function fetchAdminUser(userId: string): Promise<AdminUserDetail> {
   const dto = userDetailSchema.parse(data);
   return {
     ...mapUser(dto),
-    phoneNumber: dto.phoneNumber ?? null,
     children: dto.children.map(mapChildSummary),
   };
 }

@@ -31,8 +31,8 @@ function UsersByRoleSection() {
       />
     );
   } else if (!query.data || query.data.length === 0) {
-    // The server did not send per-role counts: show nothing rather than counting ourselves.
-    return null;
+    // The server did not send per-role counts: say so rather than counting ourselves.
+    content = <p className={styles.muted}>لم يُرسل الخادم أعداد المستخدمين حسب الدور.</p>;
   } else {
     const counts = query.data;
     content = (

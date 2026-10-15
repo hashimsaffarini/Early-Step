@@ -12,15 +12,14 @@ import {
   type PlanActivity,
 } from '@/services/api/childPlan';
 import { queryKeys } from '@/services/api/queryKeys';
-import { AppError } from '@/services/http/apiError';
-import { HTTP_STATUS } from '@/services/http/httpStatus';
 import { httpClient } from '@/services/http/httpClient';
 
 /**
  * `GET TrainingPlan/children/{childId}/activities/{activityId}` — verified live: questions are
  * `{ planQuestionId, questionId, questionText, questionImageUrl, type, order, options: [{ id,
- * optionText, optionImageUrl, order, correctOrder: null }] }`. Questions have NO `id` and answers
- * are hidden. A missing activity is a 200 `{ message }`.
+ * optionText, optionImageUrl, order, correctOrder: null }] }`. Questions have NO `id` (answers use
+ * `questionId`) and correct answers are hidden. A missing activity is a 404 `{ message }`
+ * (re-verified 2026-10-15), surfaced as a normal `AppError`.
  */
 const optionSchema = z.looseObject({
   id: z.string(),
@@ -29,9 +28,7 @@ const optionSchema = z.looseObject({
 });
 
 const questionSchema = z.looseObject({
-  questionId: z.string().nullish(),
-  planQuestionId: z.string().nullish(),
-  id: z.string().nullish(),
+  questionId: z.string(),
   questionText: z.string().nullish(),
   questionImageUrl: z.string().nullish(),
   type: z.string().nullish(),
@@ -62,21 +59,12 @@ export interface PlanActivityDetail {
   questions: readonly PlanQuestion[];
 }
 
-const NOT_IN_PLAN = 'النشاط غير موجود في الخطة التدريبية.';
-
 export function parsePlanActivityDetail(data: unknown): PlanActivityDetail {
-  const parsed = detailSchema.safeParse(data);
-  if (!parsed.success) {
-    const message =
-      typeof data === 'object' && data !== null && 'message' in data
-        ? String(data.message)
-        : NOT_IN_PLAN;
-    throw new AppError(message, { kind: 'http', status: HTTP_STATUS.NOT_FOUND });
-  }
+  const parsed = detailSchema.parse(data);
   return {
-    activity: mapPlanActivity(parsed.data),
-    questions: (parsed.data.questions ?? []).map((question) => ({
-      id: question.questionId ?? question.id ?? question.planQuestionId ?? '',
+    activity: mapPlanActivity(parsed),
+    questions: (parsed.questions ?? []).map((question) => ({
+      id: question.questionId,
       text: question.questionText ?? '',
       imageUrl: question.questionImageUrl ?? null,
       type: toChoiceQuestionType(question.type),

@@ -185,20 +185,23 @@ function mockResult(session: MockAssessmentSession, withDetails: boolean) {
  * assessments/activities integration) because `trainingPlans.ts` does not cover it. Addressed by
  * the catalogue `activityId`; live shape (verified) with answers hidden.
  */
+const notInPlan = () =>
+  HttpResponse.json({ message: 'النشاط غير موجود في الخطة التدريبية.' }, { status: 404 });
+
 export const planActivityDetailHandler = http.get(
   apiUrl('TrainingPlan/children/:childId/activities/:activityId'),
   ({ request, params }) => {
     const user = currentUser(request);
     if (!user) return unauthorized();
     const child = findMockChild(String(params.childId));
-    if (!child) return HttpResponse.json({ message: 'النشاط غير موجود في الخطة التدريبية.' });
+    if (!child) return notInPlan();
     if (user.role === 'Parent' && child.parentId !== user.id) return forbidden();
     const id = String(params.activityId);
-    // Live: addressed by the catalogue `activityId`; response shape verified 2026-10-06.
+    // Live: addressed by the catalogue `activityId`; shape verified 2026-10-06; missing → 404 (10-15).
     const row = mockPlanActivities.find(
       (item) => item.childId === child.id && item.activityId === id,
     );
-    if (!row) return HttpResponse.json({ message: 'النشاط غير موجود في الخطة التدريبية.' });
+    if (!row) return notInPlan();
     return HttpResponse.json({
       planActivityId: row.id,
       activityId: row.activityId,

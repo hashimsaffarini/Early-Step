@@ -6,7 +6,7 @@ import { ADMIN_PATHS } from '@/constants/routes';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
 
-import { renderContent } from './contentTestUtils';
+import { renderContent } from '@/test/contentTestUtils';
 
 describe('ActivitiesPage', () => {
   it('lists tests and switches to games', async () => {

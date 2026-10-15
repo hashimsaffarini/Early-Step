@@ -144,3 +144,9 @@
 .sendError {
   flex-basis: 100%;
 }
+
+.olderError {
+  margin: var(--space-1) 0 0;
+  color: var(--color-danger-strong);
+  font-size: var(--font-size-sm);
+}

@@ -2,7 +2,7 @@ import type { UserRole } from '@/types/roles';
 
 /** The signed-in user from `GET Auth/me`. Display + routing only (the backend enforces access). */
 export interface SessionUser {
-  id: string | null;
+  id: string;
   name: string;
   email: string | null;
   role: UserRole;

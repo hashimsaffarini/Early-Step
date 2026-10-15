@@ -121,7 +121,10 @@ describe('AssessmentPage (initial assessment)', () => {
   it('shows the backend message when no assessment is available', async () => {
     server.use(
       http.post(apiUrl('initial-assessment/:childId/start'), () =>
-        HttpResponse.json({ message: 'الطفل غير موجود أو لا يوجد تقييم أولي متاح.' }),
+        HttpResponse.json(
+          { message: 'الطفل غير موجود أو لا يوجد تقييم أولي متاح.' },
+          { status: 404 },
+        ),
       ),
     );
     renderAssessment();
@@ -136,7 +139,10 @@ describe('AssessmentPage (initial assessment)', () => {
   it('shows an honest empty state when the server sends no questions', async () => {
     server.use(
       http.post(apiUrl('initial-assessment/:childId/start'), () =>
-        HttpResponse.json({ assessmentId: 'as-1', questions: [] }),
+        HttpResponse.json({
+          assessmentId: 'as-1',
+          categories: [{ name: 'القراءة', questions: [] }],
+        }),
       ),
     );
     renderAssessment();
@@ -154,24 +160,29 @@ describe('AssessmentPage (initial assessment)', () => {
         http.post(apiUrl('initial-assessment/:childId/start'), () =>
           HttpResponse.json({
             assessmentId: 'as-1',
-            questions: [
+            categories: [
               {
-                id: 'q1',
-                questionText: 'اختر الحيوانات',
-                type: 'MultiSelect',
-                options: [
-                  { id: 'o1', optionText: 'قطة' },
-                  { id: 'o2', optionText: 'كرسي' },
-                  { id: 'o5', optionText: 'أرنب' },
-                ],
-              },
-              {
-                id: 'q2',
-                questionText: 'رتّب الصور',
-                type: 'Sequence',
-                options: [
-                  { id: 'o3', optionText: 'أولاً' },
-                  { id: 'o4', optionText: 'ثانياً' },
+                name: 'القراءة',
+                questions: [
+                  {
+                    id: 'q1',
+                    questionText: 'اختر الحيوانات',
+                    type: 'MultiSelect',
+                    options: [
+                      { id: 'o1', optionText: 'قطة' },
+                      { id: 'o2', optionText: 'كرسي' },
+                      { id: 'o5', optionText: 'أرنب' },
+                    ],
+                  },
+                  {
+                    id: 'q2',
+                    questionText: 'رتّب الصور',
+                    type: 'Sequence',
+                    options: [
+                      { id: 'o3', optionText: 'أولاً' },
+                      { id: 'o4', optionText: 'ثانياً' },
+                    ],
+                  },
                 ],
               },
             ],
@@ -217,8 +228,13 @@ describe('AssessmentPage (initial assessment)', () => {
         http.post(apiUrl('initial-assessment/:childId/start'), () =>
           HttpResponse.json({
             assessmentId: 'as-1',
-            questions: [
-              { id: 'q1', questionText: 'سؤال بلا خيارات', type: 'SingleChoice', options: [] },
+            categories: [
+              {
+                name: 'القراءة',
+                questions: [
+                  { id: 'q1', questionText: 'سؤال بلا خيارات', type: 'SingleChoice', options: [] },
+                ],
+              },
             ],
           }),
         ),

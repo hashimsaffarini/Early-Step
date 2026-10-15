@@ -1,21 +1,16 @@
 import { Info } from 'lucide-react';
 
 import { CHOICE_TYPE_LABELS, toChoiceQuestionType } from '@/components/players';
+import { AnswerOptionList } from '@/components/shared/AnswerOptionList';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/Feedback';
 import type {
   AssessmentResult,
   AssessmentResultCategory,
-  AssessmentResultOption,
   AssessmentResultQuestion,
 } from '@/services/api/assessmentResult';
 
 import styles from './profile.module.css';
-
-function optionList(options: readonly AssessmentResultOption[], isOrdered: boolean): string {
-  const texts = options.map((option) => option.text || 'خيار بصورة');
-  return texts.length === 0 ? '—' : texts.join(isOrdered ? ' ← ' : '، ');
-}
 
 function QuestionRow({ question }: { question: AssessmentResultQuestion }) {
   const type = toChoiceQuestionType(question.type);
@@ -30,20 +25,23 @@ function QuestionRow({ question }: { question: AssessmentResultQuestion }) {
           </Badge>
         )}
       </div>
-      <ul className={styles.meta}>
-        {type ? <li>{CHOICE_TYPE_LABELS[type]}</li> : null}
-        <li>{`إجابة الطفل: ${optionList(question.childAnswers, isOrdered)}`}</li>
-        <li>{`الإجابة الصحيحة: ${optionList(question.correctAnswers, isOrdered)}`}</li>
-      </ul>
+      {type ? <p className={styles.muted}>{CHOICE_TYPE_LABELS[type]}</p> : null}
+      <AnswerOptionList label="إجابة الطفل" options={question.childAnswers} isOrdered={isOrdered} />
+      <AnswerOptionList
+        label="الإجابة الصحيحة"
+        options={question.correctAnswers}
+        isOrdered={isOrdered}
+      />
     </li>
   );
 }
 
 function CategoryRow({ category }: { category: AssessmentResultCategory }) {
+  // Only counts the server sent (a missing one is never shown as 0).
   const counts =
-    category.totalQuestions === null
+    category.totalQuestions === null || category.correctAnswers === null
       ? null
-      : `${(category.correctAnswers ?? 0).toString()} من ${category.totalQuestions.toString()} إجابات صحيحة`;
+      : `${category.correctAnswers.toString()} من ${category.totalQuestions.toString()} إجابات صحيحة`;
   return (
     <li className={styles.list}>
       <ProgressBar label={category.name} value={category.percentage} max={100} showLabel />

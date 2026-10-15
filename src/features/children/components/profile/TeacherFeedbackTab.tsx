@@ -28,19 +28,20 @@ export function TeacherFeedbackTab({ childId }: { childId: string }) {
   }
   return (
     <ul className={styles.list} aria-label="ملاحظات المعلم">
-      {query.data.map((note, index) => {
-        const date = note.updatedAt ?? note.createdAt;
-        return (
-          <Card as="li" key={note.id ?? index} className={styles.card}>
-            <p>{note.content}</p>
-            {date ? (
-              <time className={styles.muted} dateTime={date}>
-                {formatDisplayDate(date.slice(0, 10))}
+      {query.data.map((note) => (
+        <Card as="li" key={note.id} className={styles.card}>
+          <p>{note.content}</p>
+          <p className={styles.muted}>
+            {note.teacherName}
+            {note.teacherName && note.createdAt ? ' · ' : null}
+            {note.createdAt ? (
+              <time dateTime={note.createdAt}>
+                {formatDisplayDate(note.createdAt.slice(0, 10))}
               </time>
             ) : null}
-          </Card>
-        );
-      })}
+          </p>
+        </Card>
+      ))}
     </ul>
   );
 }

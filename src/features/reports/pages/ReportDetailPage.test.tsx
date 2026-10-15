@@ -7,7 +7,7 @@ import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
 
 import { ReportDetailPage } from './ReportDetailPage';
-import { renderReportsPage, REPORT_YOUSEF } from './reportsTestUtils';
+import { renderReportsPage, REPORT_YOUSEF } from '@/test/reportsTestUtils';
 
 function renderDetail(role: AreaRole, reportId: string) {
   const paths = getAreaPaths(role);

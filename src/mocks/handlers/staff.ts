@@ -292,10 +292,21 @@ export const staffHandlers: HttpHandler[] = [
     if (!child || !isOwn) {
       return notFound('الطفل غير موجود أو ليس لديك صلاحية لعرض ملاحظاته.');
     }
+    // Live item shape (2026-10-15): { id, childId, childName, teacherId, teacherName, content, createdAt }.
+    const teacher = MOCK_USERS.find((item) => item.id === child.teacherId);
     return HttpResponse.json(
       mockNotes
         .filter((note) => note.childId === child.id)
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map((note) => ({
+          id: note.id,
+          childId: child.id,
+          childName: child.fullName,
+          teacherId: child.teacherId,
+          teacherName: teacher?.fullName ?? null,
+          content: note.content,
+          createdAt: note.createdAt,
+        })),
     );
   }),
   http.post(apiUrl('Teacher/children/:childId/notes'), async ({ request, params }) => {

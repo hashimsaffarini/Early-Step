@@ -69,6 +69,8 @@ function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const deleteMutation = useDeleteChild();
   const isParent = role === 'Parent';
+  // Live: the result is for the assigned Specialist and Admin (Parent 403; Teacher not documented).
+  const canReadResult = role === 'Specialist' || role === 'Admin';
   // Product rule (2026-10-14): a child with saved activity results is not deleted.
   const plan = useChildPlanActivities(isParent ? child.id : undefined);
   const hasResults = plan.data?.some((activity) => activity.isCompleted) ?? false;
@@ -116,6 +118,7 @@ function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }
             childId={child.id}
             childName={child.fullName}
             canStartAssessment={isParent}
+            canReadAssessmentResult={canReadResult}
             onShowActivities={() => {
               setTab('activities');
             }}
@@ -125,7 +128,12 @@ function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }
           />
         ) : null}
         {tab === 'assessments' ? (
-          <AssessmentsTab childId={child.id} childName={child.fullName} canStart={isParent} />
+          <AssessmentsTab
+            childId={child.id}
+            childName={child.fullName}
+            canStart={isParent}
+            canReadResult={canReadResult}
+          />
         ) : null}
         {tab === 'activities' ? <ActivitiesTab childId={child.id} role={role} /> : null}
         {tab === 'reports' ? <ReportsTab childId={child.id} /> : null}
