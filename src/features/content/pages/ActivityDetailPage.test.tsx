@@ -113,3 +113,92 @@ describe('ActivityDetailPage', () => {
     expect(await screen.findByText('لم يتم العثور على النشاط')).toBeInTheDocument();
   });
 });
+
+describe('ActivityDetailPage — correct answers (client revision 2026-10)', () => {
+  function capturePuts() {
+    const puts: {
+      id: string;
+      isCorrect: string | null;
+      correctOrder: string | null;
+      order: string | null;
+    }[] = [];
+    server.events.on('request:start', ({ request }) => {
+      if (request.method !== 'PUT' || !request.url.includes('question-options')) return;
+      void request
+        .clone()
+        .formData()
+        .then((form) => {
+          puts.push({
+            id: request.url.split('/').pop() ?? '',
+            isCorrect: form.get('IsCorrect') as string | null,
+            correctOrder: form.get('CorrectOrder') as string | null,
+            order: form.get('Order') as string | null,
+          });
+        });
+    });
+    return puts;
+  }
+
+  afterEach(() => {
+    server.events.removeAllListeners();
+  });
+
+  it('SingleChoice: picks another answer — clears the old one first, then re-fetches', async () => {
+    const puts = capturePuts();
+    renderContent(DETAIL);
+    await screen.findByRole('heading', { name: 'الأسئلة (2)' });
+
+    const [first] = screen.getAllByRole('button', { name: 'الإجابة الصحيحة' });
+    if (!first) throw new Error('button not found');
+    await userEvent.click(first);
+    const dialog = screen.getByRole('dialog', { name: 'الإجابة الصحيحة — السؤال 1' });
+    expect(within(dialog).getByRole('radio', { name: 'بطة' })).toBeChecked();
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'تفاحة' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ الإجابة الصحيحة' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(puts.map((put) => [put.isCorrect, put.order])).toEqual([
+      ['false', '1'],
+      ['true', '2'],
+    ]);
+    // Re-fetched from the server: the new answer is marked.
+    const options = screen.getByRole('list', { name: 'خيارات السؤال 1' });
+    await waitFor(() => {
+      expect(within(options).getByText('تفاحة').parentElement).toHaveTextContent('إجابة صحيحة');
+    });
+    expect(within(options).getByText('بطة').parentElement).not.toHaveTextContent('إجابة صحيحة');
+  });
+
+  it('Sequence: moves an option and saves the new CorrectOrder values', async () => {
+    const puts = capturePuts();
+    renderContent(DETAIL);
+    await screen.findByRole('heading', { name: 'الأسئلة (2)' });
+
+    const buttons = screen.getAllByRole('button', { name: 'الإجابة الصحيحة' });
+    await userEvent.click(buttons[1] as HTMLElement);
+    const dialog = screen.getByRole('dialog', { name: 'الإجابة الصحيحة — السؤال 2' });
+    const order = within(dialog).getByRole('list', { name: 'الترتيب الصحيح' });
+    expect(
+      within(order)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      expect.stringContaining('ق'),
+      expect.stringContaining('م'),
+      expect.stringContaining('ر'),
+    ]);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'تأخير ق' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ الإجابة الصحيحة' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    // ق: 1 → 2, م: 2 → 1 (ر unchanged, not sent).
+    expect(puts.map((put) => put.correctOrder).sort()).toEqual(['1', '2']);
+    await waitFor(() => {
+      expect(screen.getByText('الترتيب الصحيح: 2').parentElement).toHaveTextContent('ق');
+    });
+  });
+});

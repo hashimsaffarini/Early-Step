@@ -68,6 +68,7 @@ export const ADMIN_SEGMENTS = {
   content: 'content',
   users: 'users',
   userDetail: 'users/:userId',
+  specialists: 'specialists',
   categories: 'content/categories',
   activities: 'content/activities',
   activityDetail: 'content/activities/:activityType/:activityId',
@@ -77,6 +78,7 @@ export const ADMIN_SEGMENTS = {
 export const ADMIN_PATHS = {
   content: `/admin/${ADMIN_SEGMENTS.content}`,
   users: `/admin/${ADMIN_SEGMENTS.users}`,
+  specialists: `/admin/${ADMIN_SEGMENTS.specialists}`,
   categories: `/admin/${ADMIN_SEGMENTS.categories}`,
   activities: `/admin/${ADMIN_SEGMENTS.activities}`,
   initialAssessment: `/admin/${ADMIN_SEGMENTS.initialAssessment}`,

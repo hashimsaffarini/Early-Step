@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { QUESTION_TYPES, type QuestionType } from '../types';
+import { QUESTION_TYPES } from '../types';
 
 /** Frontend upload safeguard (backend limits are undocumented). SVG excluded (script risk). */
 export const IMAGE_MAX_BYTES = 2 * 1024 * 1024;
@@ -105,11 +105,5 @@ export const optionEditSchema = z.object({
   text: z.string().trim().max(MAX_TEXT),
   image: imageFileSchema,
   order: z.string().regex(/^\d+$/, 'أدخل رقماً صحيحاً'),
-  isCorrect: z.boolean(),
-  correctOrder: z.string(),
 });
 export type OptionEditFormValues = z.infer<typeof optionEditSchema>;
-
-export function usesCorrectFlag(type: QuestionType | null): boolean {
-  return type === 'SingleChoice' || type === 'MultiSelect' || type === null;
-}

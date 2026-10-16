@@ -1,4 +1,4 @@
-import { Check, Pencil, Trash2 } from 'lucide-react';
+import { Check, CheckCheck, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
@@ -12,9 +12,10 @@ import { useDeleteAllOptions, useDeleteOption, useDeleteQuestion } from '../api/
 import { QUESTION_TYPE_LABELS, type Question, type QuestionOption } from '../types';
 
 import styles from './content.module.css';
+import { CorrectAnswersDialog } from './CorrectAnswersDialog';
 import { OptionEditDialog } from './OptionEditDialog';
 import { QuestionInfoDialog } from './QuestionInfoDialog';
-import { ServerImage } from '@/components/shared/ServerImage';
+import { IMAGE_NOT_SERVED, ServerImage } from '@/components/shared/ServerImage';
 
 type PendingDelete =
   { kind: 'question' } | { kind: 'allOptions' } | { kind: 'option'; option: QuestionOption };
@@ -36,6 +37,7 @@ export interface QuestionCardProps {
 /** One question with its options and edit/delete actions (all deletes confirmed). */
 export function QuestionCard({ question, index }: QuestionCardProps) {
   const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [isEditingAnswers, setIsEditingAnswers] = useState(false);
   const [editingOption, setEditingOption] = useState<QuestionOption | null>(null);
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const deleteQuestion = useDeleteQuestion();
@@ -100,6 +102,17 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
             تعديل السؤال
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            iconStart={<CheckCheck aria-hidden="true" />}
+            disabled={question.options.length === 0}
+            onClick={() => {
+              setIsEditingAnswers(true);
+            }}
+          >
+            الإجابة الصحيحة
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
             disabled={question.options.length === 0}
@@ -126,6 +139,7 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
         path={question.imageUrl}
         alt={`صورة السؤال ${number}`}
         className={styles.questionImage}
+        fallback={question.imageUrl ? <p className={styles.muted}>{IMAGE_NOT_SERVED}</p> : null}
       />
       <ApiErrorAlert error={error} />
 
@@ -139,7 +153,16 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
             return (
               <li key={option.id} className={styles.option}>
                 <span className={styles.optionMain}>
-                  <ServerImage path={option.imageUrl} alt={label} className={styles.optionImage} />
+                  <ServerImage
+                    path={option.imageUrl}
+                    alt={label}
+                    className={styles.optionImage}
+                    fallback={
+                      option.imageUrl ? (
+                        <span className={styles.muted}>(صورة غير متاحة من الخادم)</span>
+                      ) : null
+                    }
+                  />
                   <span>{label}</span>
                   {answer ? (
                     <Badge tone="success">
@@ -171,6 +194,15 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
         </ul>
       )}
 
+      {isEditingAnswers ? (
+        <CorrectAnswersDialog
+          question={question}
+          number={number}
+          onClose={() => {
+            setIsEditingAnswers(false);
+          }}
+        />
+      ) : null}
       {isEditingInfo ? (
         <QuestionInfoDialog
           question={question}
@@ -182,7 +214,7 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
       {editingOption ? (
         <OptionEditDialog
           option={editingOption}
-          questionType={question.type}
+          position={question.options.indexOf(editingOption) + 1}
           onClose={() => {
             setEditingOption(null);
           }}

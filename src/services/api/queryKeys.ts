@@ -58,6 +58,7 @@ export const queryKeys = {
       ['users', 'admin', role ?? '', search ?? ''] as const,
     adminDetail: (userId: string) => ['users', 'admin', 'detail', userId] as const,
     specialists: () => ['users', 'specialists'] as const,
+    assignableChildren: () => ['users', 'admin', 'assignableChildren'] as const,
     superAdmin: (role?: string, search?: string) =>
       ['users', 'superAdmin', role ?? '', search ?? ''] as const,
   },

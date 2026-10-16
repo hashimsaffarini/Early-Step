@@ -1,5 +1,6 @@
 import {
   BrainCircuit,
+  BriefcaseMedical,
   FolderCog,
   Crown,
   FileText,
@@ -40,6 +41,7 @@ function buildAreaNav(role: AreaRole, unreadMessages: number): NavLinkItem[] {
     ...(role === 'Admin'
       ? [
           { to: ADMIN_PATHS.users, label: 'المستخدمون', icon: UserCog },
+          { to: ADMIN_PATHS.specialists, label: 'إسناد الأخصائيين', icon: BriefcaseMedical },
           { to: ADMIN_PATHS.content, label: 'إدارة المحتوى', icon: FolderCog },
         ]
       : []),

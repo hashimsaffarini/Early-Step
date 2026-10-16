@@ -6,6 +6,7 @@ import {
   assignChildrenToSpecialist,
   fetchAdminUser,
   fetchAdminUsers,
+  fetchAssignableChildren,
   fetchSpecialists,
   type AssignSpecialistInput,
 } from './usersApi';
@@ -20,6 +21,15 @@ export function useAdminUsers(role = '', search = '') {
 /** Specialists for the assignment picker (`GET Admin/specialists`). */
 export function useAdminSpecialists() {
   return useQuery({ queryKey: queryKeys.users.specialists(), queryFn: fetchSpecialists });
+}
+
+/** All children the Admin can assign, with their current specialist (see `fetchAssignableChildren`). */
+export function useAssignableChildren(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.users.assignableChildren(),
+    queryFn: fetchAssignableChildren,
+    enabled,
+  });
 }
 
 export function useAdminUser(userId: string | undefined) {

@@ -29,8 +29,11 @@ const STAFF_ROLE_BY_WIRE: Record<string, MockUser['role']> = {
   'أخصائي/ة': 'Specialist',
 };
 
+/** Live (2026-10-16): a parent's detail lists their children; a specialist's, the assigned ones. */
 function childrenOf(user: MockUser) {
-  return mockChildren.filter((child) => child.parentId === user.id);
+  return user.role === 'Specialist'
+    ? mockChildren.filter((child) => child.specialistId === user.id)
+    : mockChildren.filter((child) => child.parentId === user.id);
 }
 
 function userItem(user: MockUser) {
@@ -135,7 +138,6 @@ export const staffHandlers: HttpHandler[] = [
     if (!user) return notFound('المستخدم غير موجود.');
     return HttpResponse.json({
       ...userItem(user),
-      phoneNumber: null,
       children: childrenOf(user).map((child) => ({
         id: child.id,
         fullName: child.fullName,

@@ -47,6 +47,10 @@ const adminOnlyPages: RouteObject[] = [
     lazy: async () => ({ Component: (await loadUsers()).AdminUserDetailPage }),
   },
   {
+    path: ADMIN_SEGMENTS.specialists,
+    lazy: async () => ({ Component: (await loadUsers()).AdminSpecialistsPage }),
+  },
+  {
     path: ADMIN_SEGMENTS.content,
     element: <Navigate to={ADMIN_PATHS.categories} replace />,
   },

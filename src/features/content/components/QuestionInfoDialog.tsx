@@ -51,7 +51,7 @@ export function QuestionInfoDialog({ question, onClose }: QuestionInfoDialogProp
         <FormField
           label="نوع السؤال"
           error={errors.type?.message}
-          hint="تغيير النوع لا يعدّل الخيارات الحالية؛ راجعها بعد الحفظ."
+          hint="يقبل الخادم تغيير النوع فقط إذا ناسبته الإجابات الحالية (إجابة صحيحة واحدة للاختيار الفردي، وترتيب صحيح لكل خيار في الترتيب). عدّل «الإجابة الصحيحة» أولاً عند الحاجة."
         >
           {(field) => (
             <Select {...field} {...register('type')}>

@@ -30,6 +30,8 @@ import {
   type QuestionInput,
   fetchAssessmentCategoryIds,
 } from './contentApi';
+import { planCorrectAnswerUpdates, type CorrectAnswerChoice } from './correctAnswers';
+import type { Question } from '../types';
 
 export function useCategories() {
   return useQuery({ queryKey: queryKeys.content.categories(), queryFn: fetchCategories });
@@ -116,3 +118,26 @@ export const useToggleAssessmentQuestion = () =>
   useContentMutation(({ id, include }: { id: string; include: boolean }) =>
     include ? addQuestionsToAssessment([id]) : removeQuestionFromAssessment(id),
   );
+
+/**
+ * Saves the correct answers of one question: the planned option updates run one after another
+ * (the backend needs the old SingleChoice answer cleared first). The content cache is refreshed
+ * afterwards even when a step fails, so the list always shows what the server stored.
+ */
+export function useSaveCorrectAnswers() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      question,
+      choice,
+    }: {
+      question: Question;
+      choice: CorrectAnswerChoice;
+    }) => {
+      for (const step of planCorrectAnswerUpdates(question, choice)) {
+        await updateOption(step.optionId, step.input);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.content.all }),
+  });
+}

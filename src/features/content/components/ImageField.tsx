@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { IMAGE_ACCEPT } from '../schemas/contentForms';
 
 import styles from './content.module.css';
-import { ServerImage } from '@/components/shared/ServerImage';
+import { IMAGE_NOT_SERVED, ServerImage } from '@/components/shared/ServerImage';
 
 export interface ImageFieldProps {
   label: string;
@@ -45,6 +45,7 @@ export function ImageField({ label, value, onChange, existingPath, error, hint }
             path={existingPath ?? null}
             alt="الصورة الحالية"
             className={styles.preview}
+            fallback={existingPath ? <p className={styles.muted}>{IMAGE_NOT_SERVED}</p> : null}
           />
         )}
         <input

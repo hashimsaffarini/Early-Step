@@ -224,7 +224,19 @@ export const contentHandlers: HttpHandler[] = [
     const found = findOption(String(params.optionId));
     if (!found) return notFound('الخيار غير موجود.');
     const form = await request.formData();
-    const { option } = found;
+    const { option, question } = found;
+    // Live rule (2026-10-16): a SingleChoice question keeps one correct option — the old one must
+    // be cleared first.
+    const wantsCorrect = text(form, 'IsCorrect') === 'true';
+    if (
+      question.type === 'SingleChoice' &&
+      wantsCorrect &&
+      question.options.some((other) => other !== option && other.isCorrect)
+    ) {
+      return badRequest(
+        'سؤال SingleChoice يسمح بإجابة صحيحة واحدة فقط. قم بإلغاء الإجابة الصحيحة القديمة أولاً.',
+      );
+    }
     option.optionText = text(form, 'OptionText') || null;
     option.order = Number(text(form, 'Order')) || option.order;
     option.isCorrect = text(form, 'IsCorrect') === 'true';
