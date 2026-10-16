@@ -240,7 +240,27 @@ API functions (live suites) and a read-only walkthrough of every endpoint those 
 | SuperAdmin | `Auth/me`, dashboard (`usersByRole`), users (`isActive` on all 40), children; deactivate / re-activate of the test teacher                                                                                               |
 | Teacher    | **Blocked** — SuperAdmin-created accounts cannot log in (empty 500). Not faked.                                                                                                                                          |
 
-## 15. Verification still blocked
+## 15. Client revisions 2026-10 — data sources of the new UI
+
+| New element                                          | Source                                                                                    | Kind                                       |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Child card counts (tests, games, reports)            | `GET Parent/{childId}` `testsCount`, `gamesCount`, `reportsCount`                         | LIVE API (hidden until sent)               |
+| «ملخص الأنشطة» total / completed / remaining         | plan rows (`isCompleted`)                                                                 | DERIVED FROM LIVE API                      |
+| «نسبة الإنجاز»                                       | plan `progress` (Specialist) or completed × 100 / total                                   | LIVE API / DERIVED                         |
+| Correct / wrong totals, mean score                   | completed rows' `correctAnswers`, `wrongAnswers`, `score` — only when the rows carry them | DERIVED FROM LIVE API (hidden otherwise)   |
+| Activity result line (score, correct, wrong, dates)  | plan row fields                                                                           | LIVE API (null → not shown)                |
+| Specialist list + active state                       | `GET Admin/specialists`                                                                   | LIVE API                                   |
+| Assigned children / current specialist of each child | `GET Admin/users/{id}` `children[].specialistName`                                        | LIVE API                                   |
+| Assessment category membership                       | `GET initial-assessment/categories`                                                       | LIVE API                                   |
+| Category → questions                                 | `GET Admin/activities/{type}?categoryId=` + activity details                              | LIVE API                                   |
+| Question membership state                            | this session's add / remove actions only (no list endpoint)                               | LIVE API actions, labelled as session-only |
+| Images                                               | server paths through `resolveMediaUrl`; neutral icon only for null / failed               | LIVE API                                   |
+| Teacher notes in the plan                            | `GET Teacher/children/{id}/feedbacks`                                                     | LIVE API                                   |
+| Games                                                | plan rows of type `ألعاب` (none exist live)                                               | LIVE API — empty state, no demo games      |
+
+No new value is static, placeholder or invented; a value the server does not send is hidden.
+
+## 16. Verification still blocked
 
 The Teacher area (dashboard, children, profile, plan, feedback, chat) is wired to the real
 endpoints but cannot be verified live: accounts created with `POST SuperAdmin/users` still answer

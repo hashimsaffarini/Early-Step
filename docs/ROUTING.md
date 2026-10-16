@@ -44,22 +44,22 @@ Built by `buildAreaRoute(role)` in `src/app/router/areaRoutes.tsx` (ADR-019). Pa
 `getAreaPaths(role)` (`src/constants/routes.ts`); pages read the current role with
 `useRoleArea()`. All pages are lazy.
 
-| Segment (under `/{role}`) | Screen                                                            | Feature        | Roles                  |
-| ------------------------- | ----------------------------------------------------------------- | -------------- | ---------------------- |
-| _(index)_                 | redirect → `dashboard`                                            | —              | all four               |
-| `dashboard`               | Parent / Teacher / Specialist / Admin dashboard                   | dashboards     | all four               |
-| `children`                | ChildrenListPage (parent: add child; staff: parent names, no add) | children       | all four               |
-| `children/:childId`       | ChildProfilePage (staff: assign activity)                         | children       | all four               |
-| `children/:childId/plans` | ChildPlansPage — education plans (Specialist/Admin: new plan)     | training-plans | all four               |
-| `tests`                   | TestsCatalogPage — **development mock mode only** (ADR-023)       | activities     | all four               |
-| `games`                   | GamesCatalogPage — **development mock mode only** (ADR-023)       | activities     | all four               |
-| `reports`                 | ReportsListPage                                                   | reports        | all four               |
-| `reports/new`             | CreateReportPage                                                  | reports        | Specialist, Admin only |
-| `reports/:reportId`       | ReportDetailPage                                                  | reports        | all four               |
-| `messages`                | MessagesPage                                                      | chat           | all four               |
-| `tests/:testId/play`      | TestPlayerPage — full screen; **mock mode only**                  | activities     | all four               |
-| `games/:gameId/play`      | GamePlayerPage — full screen; **mock mode only**                  | activities     | all four               |
-| `assessment/:childId`     | AssessmentPage (initial assessment) — **full screen**, no sidebar | assessments    | all four               |
+| Segment (under `/{role}`) | Screen                                                                                              | Feature        | Roles                  |
+| ------------------------- | --------------------------------------------------------------------------------------------------- | -------------- | ---------------------- |
+| _(index)_                 | redirect → `dashboard`                                                                              | —              | all four               |
+| `dashboard`               | Parent / Teacher / Specialist / Admin dashboard                                                     | dashboards     | all four               |
+| `children`                | ChildrenListPage (parent: add child; staff: parent names, no add)                                   | children       | all four               |
+| `children/:childId`       | ChildProfilePage; **Teacher: TeacherChildPage** (plan + notes, no tabs — client 2026-10)            | children / app | all four               |
+| `children/:childId/plans` | ChildPlansPage — education plans (Specialist/Admin: new plan); Teacher: redirects to the child page | training-plans | all four               |
+| `tests`                   | TestsCatalogPage — **development mock mode only** (ADR-023)                                         | activities     | all four               |
+| `games`                   | GamesCatalogPage — **development mock mode only** (ADR-023)                                         | activities     | all four               |
+| `reports`                 | ReportsListPage                                                                                     | reports        | all four               |
+| `reports/new`             | CreateReportPage                                                                                    | reports        | Specialist, Admin only |
+| `reports/:reportId`       | ReportDetailPage                                                                                    | reports        | all four               |
+| `messages`                | MessagesPage                                                                                        | chat           | all four               |
+| `tests/:testId/play`      | TestPlayerPage — full screen; **mock mode only**                                                    | activities     | all four               |
+| `games/:gameId/play`      | GamePlayerPage — full screen; **mock mode only**                                                    | activities     | all four               |
+| `assessment/:childId`     | AssessmentPage (initial assessment) — **full screen**, no sidebar                                   | assessments    | all four               |
 
 Shell pages render inside `RoleAreaLayout` (DashboardLayout + role navigation + notifications
 menu + mock session user). Full-screen pages render inside `RoleAreaRoot` only, so they still
@@ -216,3 +216,10 @@ RootLayout
 - Route `handle` metadata: `{ title: string (Arabic), roles?: UserRole[] }` for document titles
   and breadcrumbs.
 - Session restoration on refresh depends on the auth response (TBD).
+
+### Client revisions (2026-10)
+
+- Admin: `specialists` → AdminSpecialistsPage («إسناد الأخصائيين», sidebar item).
+- Teacher: `children/:childId` → TeacherChildPage (app-level page composing the plan panel and the
+  notes section); `children/:childId/notes` and `children/:childId/plans` redirect to it.
+- Forgot password uses the centred `AuthLayout` (no side panel).

@@ -116,13 +116,13 @@ Assigned child → Review → Training plan → Add activities → Assign teache
 Assigned child → View plan → Follow child → Submit feedback
 ```
 
-| Step                 | API                                                                                                  | Replit                       | Notes                                                                                                                                    |
-| -------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Dashboard            | `GET /Teacher/dashboard`                                                                             | Teacher dashboard            |                                                                                                                                          |
-| Assigned children    | `GET /Teacher/children`                                                                              | student cards                |                                                                                                                                          |
-| View plan            | `GET /TrainingPlan/children/{childId}/activities` (_role TBD_)                                       | child profile activities tab |                                                                                                                                          |
-| Follow progress      | plan counts (`correctAnswers`, `wrongAnswers`, `isCompleted`, `completedAt`) after the child submits | charts                       | Teacher unverified (no usable account). The assessment result is staff-only: the Teacher sees a neutral note, the endpoint is not called |
-| Feedback list + CRUD | `GET /Teacher/children/{childId}/feedbacks`, `POST …/notes`, `PUT/DELETE /Teacher/notes/{id}`        | none                         | Mock- and browser-tested (mock mode); live Teacher blocked                                                                               |
+| Step                 | API                                                                                                              | Replit                       | Notes                                                                                                                                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dashboard            | `GET /Teacher/dashboard`                                                                                         | Teacher dashboard            |                                                                                                                                               |
+| Assigned children    | `GET /Teacher/children`                                                                                          | student cards                |                                                                                                                                               |
+| View plan            | `GET /TrainingPlan/children/{childId}/activities`                                                                | child profile activities tab | Client revision 2026-10: Teacher → child opens one plan-focused page (no overview / assessment / reports tabs); «ابدأ» plays an open activity |
+| Follow progress      | plan summary + per-activity status, score, correct / wrong, assigned / completed dates — fields the server sends | charts                       | Teacher unverified (login bug); the page shows only fields present in the Teacher's response                                                  |
+| Feedback list + CRUD | `GET /Teacher/children/{childId}/feedbacks`, `POST …/notes`, `PUT/DELETE /Teacher/notes/{id}`                    | none                         | «ملاحظات المعلم» inside the plan page (old notes link redirects); mock-tested; live Teacher blocked                                           |
 
 ## 6. Reporting
 
@@ -159,3 +159,16 @@ Conversation list → Search/open conversation → Messages → Send → Unread 
 | Users                   | `GET /SuperAdmin/users?Search&Role` (`isActive` → "موقوف"); create staff `POST`, deactivate `DELETE`, re-activate `PUT …/{id}` | list + change role + delete                         |
 | Children                | `GET /SuperAdmin/children?Name`                                                                                                | read-only cards                                     |
 | Differentiator vs Admin | **TBD** — API shows SuperAdmin as read-only oversight; Admin owns content & assignment                                         | SuperAdmin is the only role with a management panel |
+
+## Client revisions (2026-10)
+
+- **Admin → assign children to a specialist:** «إسناد الأخصائيين» → a specialist → «إدارة الأطفال»
+  → assigned children + every other child with its current specialist → pick → «إسناد المحددين»
+  (`POST Admin/assign-children-to-specialist`, several children in one call) → lists refresh.
+- **Admin → correct answers:** activity → question → «الإجابة الصحيحة» → radio / checkboxes /
+  order → save (`PUT Admin/question-options/{id}` per changed option) → re-fetched.
+- **Admin → initial assessment:** «التقييم المبدئي» shows category → questions; «كل التصنيفات»
+  adds / removes any category (membership from `initial-assessment/categories`).
+- **Parent → dashboard:** each child card is the link to the profile (no «عرض الملف»); the plan
+  page and profile show «ملخص الأنشطة» + «نسبة الإنجاز».
+- Details and live status: `CLIENT_REVISIONS_2026-10.md`.

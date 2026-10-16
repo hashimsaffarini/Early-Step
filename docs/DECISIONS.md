@@ -583,3 +583,27 @@ GitHub Pages serves static files from a sub-path and has no SPA rewrites, so a r
 Every URL works on refresh and as a direct link without a 404 fallback page. URLs carry `#/`,
 which is acceptable for the project. Moving to a host with rewrites later only needs the browser
 router and `BASE_PATH=/`.
+
+## ADR-025 — Client revisions 2026-10: plan summary, teacher plan page, admin editors
+
+### Status
+
+Accepted (2026-10-16, `CLIENT_REVISIONS_2026-10.md`)
+
+### Decision
+
+- One shared plan summary (`components/shared/PlanSummary`, `services/api/planSummary.ts`) for
+  every plan view: counts and completion % derived from the real rows, the server `progress` when
+  sent, answer totals and mean score only when the rows carry them.
+- The teacher's child page is an app-level page (`app/pages/TeacherChildPage`) composing the
+  training-plans panel and the feedback notes section, so features keep not importing each other.
+  Old teacher notes / plan URLs redirect to it.
+- Correct answers are edited per question and saved option by option in a fixed order (clear the
+  old SingleChoice answer first; send display positions as `Order`), as the live API requires.
+- The initial-assessment admin reads membership from `initial-assessment/categories` and lists every
+  category from `Admin/categories`.
+
+### Consequences
+
+Several backend gaps stay visible instead of being hidden: unserved uploads, unstored option
+order, no list of assessment questions (`BACKEND_REQUESTS.md`).

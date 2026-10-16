@@ -94,6 +94,24 @@ Base URL `https://earlystep22.runasp.net/api/`; paths below are relative to it.
 | `GET Chats?…`, `messages/old`, `messages/new`                                                                    | oldest → newest; outsider → 404                                                                                                                                                                                                    |
 | `POST Chats/mark-conversation-seen`                                                                              | `true`; status → `Seen`; unread → 0                                                                                                                                                                                                |
 
+## Changes found on 2026-10-16 (client revisions; supersede the rows below)
+
+Swagger unchanged (84 operations). All writes on disposable `E2E Test …` records, deleted afterwards.
+
+| Request                                                         | Result                                                                                                                                                                                                                    |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET Parent/{childId}`                                          | `{ id, fullName, age, gender, gamesCount, testsCount, reportsCount }`                                                                                                                                                     |
+| `GET Admin/users/{specialistId}`                                | user + `children` = the children assigned to that specialist (`specialistId`, `specialistName` per child)                                                                                                                 |
+| `POST/PUT Admin/activities/{type}[/{id}]` with `Icon`           | 201 / 200; `iconUrl` = new `/uploads/activities/….png`; PUT without `Icon` keeps it                                                                                                                                       |
+| `GET https://earlystep22.runasp.net/uploads/…`                  | **404** for every activity / question / option image, old and new (also `/api/uploads/…`)                                                                                                                                 |
+| `POST Admin/activities/{id}/questions` (`Options[i].Order` 1…n) | options read back with `order: 0`                                                                                                                                                                                         |
+| `PUT Admin/question-options/{id}`                               | `Order` required and unique in the question (else 400 "لا يمكن تكرار ترتيب الخيار (Order)…"), never stored; SingleChoice: a second correct option → 400 "…قم بإلغاء الإجابة الصحيحة القديمة أولاً"; no image → image kept |
+| `PUT Admin/questions/{id}/info` type switch                     | 400 when the answers do not fit the new type ("لا يمكن تغيير النوع إلى SingleChoice…")                                                                                                                                    |
+| `POST / DELETE initial-assessment/categories/{id}`              | add → listed immediately; duplicate add → 400; remove → gone (other categories kept); second remove → 404. `Admin/categories.isInInitialAssessment` follows                                                               |
+| `GET initial-assessment/categories`                             | `{ categories: [] }` (shared assessment empty); `POST …/start` → error `{ message: "لا يوجد تقييم أولي متاح حالياً." }`                                                                                                   |
+| `GET Admin/activities/game`                                     | `[]` (no game activities)                                                                                                                                                                                                 |
+| `POST Auth/login` (SuperAdmin-created teacher)                  | still empty **500** with a wrong password; unknown email 401                                                                                                                                                              |
+
 ## Changes found on 2026-10-15 (supersede the rows below)
 
 Swagger unchanged (84 operations, no schema changes).

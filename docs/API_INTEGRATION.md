@@ -166,3 +166,17 @@ roles }` (`features/auth/api/currentUser.ts`, role normalized, unknown → refus
 
 Teacher-feedback item fields (no data yet) · API versioning. SignalR is out of scope. Current backend
 list: `BACKEND_REQUESTS.md`.
+
+## Client revisions 2026-10
+
+- `fetchParentChildDetail` (`services/api/childrenLists.ts`, key `children.detail`) — the parent's
+  child with server counts; shared by the dashboard cards and the children feature.
+- `summarizePlan` (`services/api/planSummary.ts`) — plan summary math; `PlanSummary` renders it.
+- `fetchAssignableChildren` (`features/users`, key `users.assignableChildren`) — every child the
+  Admin can assign, from the parents' details (no Admin children list exists).
+- `fetchCategoryQuestions` (`features/content`, key `content.categoryQuestions`) — questions of a
+  category, grouped by activity.
+- `useSaveCorrectAnswers` + `planCorrectAnswerUpdates` (`features/content`) — sequential option
+  updates; the content cache refreshes even after a partial failure.
+- `ChildPlanPanel` / `PlanSection` (training-plans) and `TeacherNotesSection` (feedback) are
+  exported for the app-level `TeacherChildPage`.
