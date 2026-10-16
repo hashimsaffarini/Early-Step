@@ -64,13 +64,12 @@ describe('ChildProfilePage — resolving the child', () => {
     expect(await screen.findByText('تعذّر تحميل ملف الطفل')).toBeInTheDocument();
   });
 
-  it('finds a teacher child in the teacher list, and not-found outside it', async () => {
+  it('opens the teacher plan-focused page for an assigned child, and not-found outside it', async () => {
     const { unmount } = renderProfile('Teacher', YOUSEF);
     expect(await heading('يوسف')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ملاحظات المعلم/ })).toHaveAttribute(
-      'href',
-      getAreaPaths('Teacher').childNotes(YOUSEF),
-    );
+    // Client revision 2026-10: the teacher's child page holds the plan and the notes, no tabs.
+    expect(await screen.findByRole('region', { name: 'ملاحظات المعلم' })).toBeInTheDocument();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     unmount();
 
     renderProfile('Teacher', REEM);
@@ -284,7 +283,7 @@ describe('ChildProfilePage — tabs from the API', () => {
   });
 
   it('does not offer to start an assessment to staff', async () => {
-    renderProfile('Teacher', YOUSEF);
+    renderProfile('Specialist', YOUSEF);
     await heading('يوسف');
 
     await userEvent.click(tab(/التقييمات/));
@@ -300,9 +299,9 @@ describe('ChildProfilePage — tabs from the API', () => {
     renderProfile('Teacher', YOUSEF);
     await heading('يوسف');
 
-    await userEvent.click(tab(/التقييمات/));
-
-    expect(await screen.findByText('يراجع الأخصائي نتيجة التقييم المبدئي')).toBeInTheDocument();
+    // The teacher page has no assessment section at all.
+    expect(await screen.findByRole('region', { name: 'ملاحظات المعلم' })).toBeInTheDocument();
+    expect(screen.queryByText('التقييم المبدئي')).not.toBeInTheDocument();
     expect(resultCalls).toBe(0);
     server.events.removeAllListeners();
   });
