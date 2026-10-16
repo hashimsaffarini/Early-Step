@@ -176,8 +176,9 @@ describe('ActivityDetailPage — correct answers (client revision 2026-10)', () 
     renderContent(DETAIL);
     await screen.findByRole('heading', { name: 'الأسئلة (2)' });
 
-    const buttons = screen.getAllByRole('button', { name: 'الإجابة الصحيحة' });
-    await userEvent.click(buttons[1] as HTMLElement);
+    const [, second] = screen.getAllByRole('button', { name: 'الإجابة الصحيحة' });
+    if (!second) throw new Error('button not found');
+    await userEvent.click(second);
     const dialog = screen.getByRole('dialog', { name: 'الإجابة الصحيحة — السؤال 2' });
     const order = within(dialog).getByRole('list', { name: 'الترتيب الصحيح' });
     expect(
