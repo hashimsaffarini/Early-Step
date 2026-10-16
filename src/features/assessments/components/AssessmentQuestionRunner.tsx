@@ -1,4 +1,4 @@
-import { ArrowLeft, Flag, RotateCcw, SkipForward } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Flag, RotateCcw, SkipForward } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import {
@@ -24,11 +24,21 @@ import styles from './AssessmentQuestionRunner.module.css';
 
 const ANSWER_CHOSEN = 'رائع! تم اختيار إجابتك';
 
+/** The questions a run went through: all of them (answered or skipped) and the answered ones. */
+export interface RunProgress {
+  processed: readonly string[];
+  answered: readonly string[];
+}
+
 export interface AssessmentQuestionRunnerProps {
   assessmentId: string;
   questions: readonly AssessmentQuestion[];
-  /** After the last question, with the number of answers the server accepted. */
-  onFinished: (answered: number) => void;
+  /** After the last question. */
+  onFinished: (run: RunProgress) => void;
+  /** Back to the category picker; the questions done so far stay done (answers are final). */
+  onExit?: (run: RunProgress) => void;
+  /** Label of the last question's button. */
+  finishLabel?: string;
 }
 
 function tileState(optionId: string, selection: readonly string[]): AnswerTileState {
@@ -44,10 +54,12 @@ export function AssessmentQuestionRunner({
   assessmentId,
   questions,
   onFinished,
+  onExit,
+  finishLabel = 'إنهاء التقييم',
 }: AssessmentQuestionRunnerProps) {
   const [index, setIndex] = useState(0);
   const [selection, setSelection] = useState<string[]>([]);
-  const [answered, setAnswered] = useState(0);
+  const [answered, setAnswered] = useState<readonly string[]>([]);
   const promptRef = useRef<HTMLParagraphElement>(null);
   const submit = useSubmitAnswer();
 
@@ -65,9 +77,11 @@ export function AssessmentQuestionRunner({
   const answer =
     type === null ? null : toChoiceAnswer(question.id, type, question.options.length, selection);
 
-  const advance = (answeredCount: number) => {
+  const processedUpTo = (count: number) => questions.slice(0, count).map((item) => item.id);
+
+  const advance = (answeredIds: readonly string[]) => {
     if (isLast) {
-      onFinished(answeredCount);
+      onFinished({ processed: processedUpTo(total), answered: answeredIds });
       return;
     }
     submit.reset();
@@ -85,13 +99,16 @@ export function AssessmentQuestionRunner({
       { assessmentId, answer },
       {
         onSuccess: () => {
-          const next = answered + 1;
+          const next = [...answered, question.id];
           setAnswered(next);
           advance(next);
         },
       },
     );
   };
+
+  let actionLabel = 'تخطّي السؤال';
+  if (supported) actionLabel = isLast ? finishLabel : 'التالي';
 
   return (
     <section className={styles.runner} aria-labelledby="assessment-section-title">
@@ -101,6 +118,19 @@ export function AssessmentQuestionRunner({
             {question.sectionTitle ?? 'أسئلة التقييم'}
           </h2>
         </div>
+        {onExit ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            iconStart={<ArrowRight aria-hidden="true" />}
+            disabled={submit.isPending}
+            onClick={() => {
+              onExit({ processed: processedUpTo(index), answered });
+            }}
+          >
+            العودة إلى التصنيفات
+          </Button>
+        ) : null}
       </div>
 
       <Card className={styles.card}>
@@ -165,7 +195,7 @@ export function AssessmentQuestionRunner({
             iconEnd={isLast ? <Flag aria-hidden="true" /> : <ArrowLeft aria-hidden="true" />}
             onClick={sendAndAdvance}
           >
-            {supported ? (isLast ? 'إنهاء التقييم' : 'التالي') : 'تخطّي السؤال'}
+            {actionLabel}
           </Button>
         </div>
       </Card>

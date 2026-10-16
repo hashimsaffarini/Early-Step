@@ -4,12 +4,13 @@ import { mockId, registerMockTable } from '../db';
 import {
   isMockAnswerCorrect,
   MOCK_ACTIVITY_QUESTIONS,
-  MOCK_ASSESSMENT_CATEGORIES,
+  MOCK_ASSESSMENT_QUESTIONS,
   mockAssessmentSessions,
   type MockAssessmentSession,
   type MockQuestion,
 } from '../fixtures/assessmentQuestions';
 import { findMockChild } from '../fixtures/children';
+import { mockCategories } from '../fixtures/content';
 import { mockPlanActivities } from '../fixtures/planActivities';
 import {
   apiUrl,
@@ -45,7 +46,7 @@ function chosenIds(answer: MockAnswerBody): string[] {
   );
 }
 
-function hideAnswers(question: (typeof MOCK_ASSESSMENT_CATEGORIES)[number]['questions'][number]) {
+function hideAnswers(question: MockQuestion) {
   return {
     ...question,
     options: question.options.map(({ id, optionText, optionImageUrl }) => ({
@@ -63,18 +64,30 @@ export const assessmentsHandlers: HttpHandler[] = [
     const child = findMockChild(String(params.childId));
     if (child?.parentId !== user.id) return HttpResponse.json({ message: NOT_AVAILABLE });
     const assessmentId = mockId();
+    // The categories in the assessment (admin membership), with their questions.
+    const sections = mockCategories
+      .filter((category) => category.isInInitialAssessment && !category.isDeleted)
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        questions: MOCK_ASSESSMENT_QUESTIONS[category.id] ?? [],
+      }));
     mockAssessmentSessions.set(assessmentId, {
       id: assessmentId,
       childId: child.id,
-      questions: MOCK_ASSESSMENT_CATEGORIES.flatMap((category) => category.questions),
+      sections,
+      questions: sections.flatMap((section) => section.questions),
       answers: new Map(),
       completed: false,
     });
+    // Live shape (verified 2026-10-14): `categories: [{ id, name, order, questions }]`.
     return HttpResponse.json({
       assessmentId,
-      categories: MOCK_ASSESSMENT_CATEGORIES.map((category) => ({
-        name: category.name,
-        questions: category.questions.map(hideAnswers),
+      categories: sections.map((section, index) => ({
+        id: section.id,
+        name: section.name,
+        order: index + 1,
+        questions: section.questions.map(hideAnswers),
       })),
     });
   }),
@@ -151,10 +164,10 @@ function mockResult(session: MockAssessmentSession, withDetails: boolean) {
     parentId: 'u-parent',
     parentName: 'محمد أحمد',
     overallScore: percent(all.filter((question) => verdict(question.id)).length, all.length),
-    categories: MOCK_ASSESSMENT_CATEGORIES.map((category, index) => {
+    categories: session.sections.map((category) => {
       const correct = category.questions.filter((question) => verdict(question.id)).length;
       return {
-        categoryId: `cat-${index.toString()}`,
+        categoryId: category.id,
         categoryName: category.name,
         percentage: Math.round(percent(correct, category.questions.length)),
         totalQuestions: withDetails ? category.questions.length : 0,

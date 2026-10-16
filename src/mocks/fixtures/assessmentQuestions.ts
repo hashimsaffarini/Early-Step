@@ -5,6 +5,8 @@
  */
 import { registerMockTable } from '../db';
 
+import { MOCK_CATEGORY_IDS } from './content';
+
 export interface MockOption {
   id: string;
   optionText: string;
@@ -76,32 +78,29 @@ function sequence(id: string, text: string, options: readonly [string, number][]
   };
 }
 
-/** Initial assessment: two categories (sections) with every question type. */
-export const MOCK_ASSESSMENT_CATEGORIES: readonly { name: string; questions: MockQuestion[] }[] = [
-  {
-    name: 'القراءة',
-    questions: [
-      single('q-read-1', 'أي صورة تبدأ بحرف الباء؟', ['بطة', 'تفاحة', 'سمكة', 'قطة'], 0),
-      single('q-read-2', 'ما الحرف الأول في كلمة «قمر»؟', ['ق', 'م', 'ر', 'ب'], 0),
-    ],
-  },
-  {
-    name: 'الرياضيات',
-    questions: [
-      single('q-math-1', 'كم تفاحة إذا كان لديك تفاحتان وأضفت واحدة؟', ['2', '3', '4', '5'], 1),
-      multi('q-math-2', 'اختر الأعداد الزوجية', [
-        ['2', true],
-        ['3', false],
-        ['4', true],
-      ]),
-      sequence('q-math-3', 'رتّب الأعداد من الأصغر إلى الأكبر', [
-        ['5', 3],
-        ['1', 1],
-        ['3', 2],
-      ]),
-    ],
-  },
-];
+/**
+ * Initial-assessment questions per admin category id (`content.ts`). `start` sends the categories
+ * that are in the assessment (admin membership), each with these questions — every question type.
+ */
+export const MOCK_ASSESSMENT_QUESTIONS: Readonly<Record<string, readonly MockQuestion[]>> = {
+  [MOCK_CATEGORY_IDS.reading]: [
+    single('q-read-1', 'أي صورة تبدأ بحرف الباء؟', ['بطة', 'تفاحة', 'سمكة', 'قطة'], 0),
+    single('q-read-2', 'ما الحرف الأول في كلمة «قمر»؟', ['ق', 'م', 'ر', 'ب'], 0),
+  ],
+  [MOCK_CATEGORY_IDS.math]: [
+    single('q-math-1', 'كم تفاحة إذا كان لديك تفاحتان وأضفت واحدة؟', ['2', '3', '4', '5'], 1),
+    multi('q-math-2', 'اختر الأعداد الزوجية', [
+      ['2', true],
+      ['3', false],
+      ['4', true],
+    ]),
+    sequence('q-math-3', 'رتّب الأعداد من الأصغر إلى الأكبر', [
+      ['5', 3],
+      ['1', 1],
+      ['3', 2],
+    ]),
+  ],
+};
 
 /** Questions inside training-plan activities, keyed by `activityId`. */
 export const MOCK_ACTIVITY_QUESTIONS: Readonly<Record<string, readonly MockQuestion[]>> = {
@@ -111,9 +110,16 @@ export const MOCK_ACTIVITY_QUESTIONS: Readonly<Record<string, readonly MockQuest
   ],
 };
 
+export interface MockAssessmentSection {
+  id: string;
+  name: string;
+  questions: readonly MockQuestion[];
+}
+
 export interface MockAssessmentSession {
   id: string;
   childId: string;
+  sections: readonly MockAssessmentSection[];
   questions: MockQuestion[];
   /** questionId → the option ids the child chose (in order) and the server's verdict. */
   answers: Map<string, { optionIds: string[]; isCorrect: boolean }>;

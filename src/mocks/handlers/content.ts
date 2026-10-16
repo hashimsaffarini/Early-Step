@@ -323,8 +323,9 @@ export const contentHandlers: HttpHandler[] = [
   }),
 
   /* Initial-assessment composition */
+  // Live (2026-10-16): readable by the Admin and by the Parent (the child's category picker).
   http.get(apiUrl('initial-assessment/categories'), ({ request }) => {
-    const user = requireRole(request, ADMIN);
+    const user = requireRole(request, ['Admin', 'Parent']);
     if (user instanceof Response) return user;
     return HttpResponse.json({
       categories: mockCategories

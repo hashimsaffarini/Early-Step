@@ -33,6 +33,7 @@ export const queryKeys = {
   },
   assessments: {
     all: ['assessments'] as const,
+    categories: () => ['assessments', 'categories'] as const,
     result: (childId: string) => ['assessments', 'result', childId] as const,
   },
   content: {

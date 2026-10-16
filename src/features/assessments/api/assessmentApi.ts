@@ -4,7 +4,7 @@ import { toChoiceQuestionType, type ChoiceAnswer } from '@/components/players';
 import { AppError } from '@/services/http/apiError';
 import { httpClient } from '@/services/http/httpClient';
 
-import type { AssessmentQuestion, StartedAssessment } from '../types';
+import type { AssessmentCategory, AssessmentQuestion, StartedAssessment } from '../types';
 
 /**
  * Initial assessment endpoints (Swagger `/api/initial-assessment/*`), live contracts:
@@ -14,6 +14,7 @@ import type { AssessmentQuestion, StartedAssessment } from '../types';
  * - answer / complete: failures are 400 with `{ message }` (no 200-with-message failures).
  */
 export const ASSESSMENT_PATHS = {
+  categories: 'initial-assessment/categories',
   start: (childId: string) => `initial-assessment/${encodeURIComponent(childId)}/start`,
   answer: (assessmentId: string) => `initial-assessment/${encodeURIComponent(assessmentId)}/answer`,
   complete: (assessmentId: string) =>
@@ -38,6 +39,7 @@ const startSchema = z.looseObject({
   assessmentId: z.string(),
   categories: z.array(
     z.looseObject({
+      id: z.string().nullish(),
       name: z.string().nullish(),
       questions: z.array(questionSchema).nullish(),
     }),
@@ -46,7 +48,7 @@ const startSchema = z.looseObject({
 
 function mapQuestion(
   dto: z.infer<typeof questionSchema>,
-  sectionTitle: string | null,
+  section: { id: string | null; title: string | null },
 ): AssessmentQuestion {
   return {
     id: dto.id,
@@ -58,7 +60,8 @@ function mapQuestion(
       text: option.optionText ?? '',
       imageUrl: option.optionImageUrl ?? null,
     })),
-    sectionTitle,
+    sectionTitle: section.title,
+    categoryId: section.id,
   };
 }
 
@@ -71,9 +74,49 @@ export function parseStartResponse(data: unknown): StartedAssessment {
   }
   const { assessmentId, categories } = parsed.data;
   const questions = categories.flatMap((category) =>
-    (category.questions ?? []).map((question) => mapQuestion(question, category.name ?? null)),
+    (category.questions ?? []).map((question) =>
+      mapQuestion(question, { id: category.id ?? null, title: category.name ?? null }),
+    ),
   );
   return { assessmentId, questions };
+}
+
+/**
+ * `GET initial-assessment/categories` — verified live 2026-10-16 for the Parent (read-only, creates
+ * nothing): `{ categories: [{ id, name, order }] }`. `description` / `iconUrl` are read only if the
+ * server ever sends them; nothing is invented when it does not.
+ */
+const categoriesSchema = z.looseObject({
+  categories: z.array(
+    z.looseObject({
+      id: z.string(),
+      name: z.string().nullish(),
+      order: z.number().nullish(),
+      description: z.string().nullish(),
+      iconUrl: z.string().nullish(),
+    }),
+  ),
+});
+
+function nonBlank(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+export function parseCategoriesResponse(data: unknown): AssessmentCategory[] {
+  return [...categoriesSchema.parse(data).categories]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((dto) => ({
+      id: dto.id,
+      name: nonBlank(dto.name) ?? 'تصنيف',
+      description: nonBlank(dto.description),
+      iconUrl: dto.iconUrl ?? null,
+    }));
+}
+
+export async function fetchAssessmentCategories(): Promise<AssessmentCategory[]> {
+  const { data } = await httpClient.get<unknown>(ASSESSMENT_PATHS.categories);
+  return parseCategoriesResponse(data);
 }
 
 export async function startAssessment(childId: string): Promise<StartedAssessment> {
