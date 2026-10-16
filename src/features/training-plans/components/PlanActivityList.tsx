@@ -29,7 +29,8 @@ export interface PlanActivityListProps {
 function resultLine(activity: PlanActivity): string | null {
   const parts: string[] = [];
   if (activity.score !== null) parts.push(`النتيجة: ${activity.score.toString()}%`);
-  if (activity.correctAnswers !== null) parts.push(`الصحيحة: ${activity.correctAnswers.toString()}`);
+  if (activity.correctAnswers !== null)
+    parts.push(`الصحيحة: ${activity.correctAnswers.toString()}`);
   if (activity.wrongAnswers !== null) parts.push(`الخاطئة: ${activity.wrongAnswers.toString()}`);
   return parts.length > 0 ? parts.join(' · ') : null;
 }

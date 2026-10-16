@@ -110,6 +110,12 @@ export function ActivitiesPage() {
         error={activitiesQuery.error}
         isEmpty={activities.length === 0}
         emptyTitle={`لا توجد ${ACTIVITY_TYPE_LABELS[type]} هنا بعد`}
+        {...(type === 'game'
+          ? {
+              emptyDescription:
+                'الألعاب التي تُضاف هنا يختارها الأخصائي للأطفال في الخطط التدريبية.',
+            }
+          : {})}
         onRetry={() => void activitiesQuery.refetch()}
       />
       {activities.length > 0 ? (

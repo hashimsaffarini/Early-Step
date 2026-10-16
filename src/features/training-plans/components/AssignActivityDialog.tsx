@@ -58,6 +58,9 @@ export function AssignActivityDialog({
       <EmptyState
         isBoxed={false}
         title={trimmed ? 'لا توجد نتائج' : 'لا توجد أنشطة متاحة من هذا النوع'}
+        {...(!trimmed && type === 'game'
+          ? { description: 'لا توجد ألعاب في المحتوى بعد؛ يضيفها المدير من «إدارة المحتوى».' }
+          : {})}
       />
     );
   } else {

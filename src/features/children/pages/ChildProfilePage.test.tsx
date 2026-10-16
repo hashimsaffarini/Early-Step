@@ -117,6 +117,51 @@ describe('ChildProfilePage — tabs from the API', () => {
     expect(screen.queryByText(/إجابات صحيحة/)).not.toBeInTheDocument();
   });
 
+  it('shows a real game from the plan with its play link (games come from the backend only)', async () => {
+    server.use(
+      http.get(apiUrl('TrainingPlan/children/:childId/activities'), ({ request }) =>
+        HttpResponse.json(
+          new URL(request.url).searchParams.get('type') === 'game'
+            ? [
+                {
+                  planActivityId: 'pa-game',
+                  activityId: 'g-real',
+                  title: 'لعبة الذاكرة',
+                  iconUrl: null,
+                  type: 'ألعاب',
+                  isCompleted: false,
+                },
+              ]
+            : [],
+        ),
+      ),
+    );
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/الأنشطة/));
+
+    const games = await screen.findByRole('region', { name: 'الألعاب المُعيَّنة' });
+    expect(within(games).getByText('لعبة الذاكرة')).toBeInTheDocument();
+    expect(within(games).getByRole('link', { name: 'ابدأ: لعبة الذاكرة' })).toHaveAttribute(
+      'href',
+      getAreaPaths('Parent').planActivityPlay(YOUSEF, 'g-real'),
+    );
+  });
+
+  it('shows an honest empty games state when the plan has no game (no demo games)', async () => {
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    await userEvent.click(tab(/الأنشطة/));
+
+    const games = await screen.findByRole('region', { name: 'الألعاب المُعيَّنة' });
+    expect(within(games).getByText('لا توجد ألعاب مُعيَّنة بعد')).toBeInTheDocument();
+    expect(
+      within(games).getByText('تظهر الألعاب هنا عندما يضيف الأخصائي لعبة إلى الخطة التدريبية.'),
+    ).toBeInTheDocument();
+  });
+
   it('gives the specialist a plan-management link instead of play links', async () => {
     renderProfile('Specialist', YOUSEF);
     await heading('يوسف');

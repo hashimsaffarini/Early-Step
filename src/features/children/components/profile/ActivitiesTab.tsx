@@ -22,6 +22,7 @@ const GROUPS: readonly {
   type: ActivityType;
   title: string;
   empty: string;
+  emptyHint?: string;
   emoji: string;
 }[] = [
   {
@@ -30,7 +31,15 @@ const GROUPS: readonly {
     empty: 'لا توجد اختبارات مُعيَّنة بعد',
     emoji: '📝',
   },
-  { type: 'game', title: 'الألعاب المُعيَّنة', empty: 'لا توجد ألعاب مُعيَّنة بعد', emoji: '🎮' },
+  {
+    type: 'game',
+    title: 'الألعاب المُعيَّنة',
+    empty: 'لا توجد ألعاب مُعيَّنة بعد',
+    // Live 2026-10-16: the backend has no game activities yet; games reach a child only through
+    // the training plan (no demo games are shown).
+    emptyHint: 'تظهر الألعاب هنا عندما يضيف الأخصائي لعبة إلى الخطة التدريبية.',
+    emoji: '🎮',
+  },
 ];
 
 /** Children play plan activities with the parent at home or the teacher in class. */
@@ -163,7 +172,11 @@ export function ActivitiesTab({ childId, role }: ActivitiesTabProps) {
                   ))}
                 </ul>
               ) : (
-                <EmptyState isBoxed={false} title={group.empty} />
+                <EmptyState
+                  isBoxed={false}
+                  title={group.empty}
+                  {...(group.emptyHint ? { description: group.emptyHint } : {})}
+                />
               )}
             </Card>
           );

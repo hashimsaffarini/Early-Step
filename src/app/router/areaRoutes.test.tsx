@@ -194,3 +194,14 @@ describe('teacher child view (client revision 2026-10)', () => {
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });
 });
+
+describe('no demo games outside mock mode', () => {
+  it('has no practice games route or nav item (games come only from the training plan)', async () => {
+    const router = renderAt(getAreaPaths('Parent').games);
+
+    expect(await screen.findByText(/الصفحة غير موجودة|غير موجودة/)).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(getAreaPaths('Parent').games);
+    const [nav] = screen.queryAllByRole('navigation', { name: 'القائمة الرئيسية' });
+    if (nav) expect(within(nav).queryByRole('link', { name: 'الألعاب' })).not.toBeInTheDocument();
+  });
+});
