@@ -98,3 +98,22 @@ offered: the API has no field for it.
 At 390 px (mock mode, same-origin iframes): parent dashboard, child profile, plan page, forgot
 password, admin specialists page and its dialog, initial-assessment page, activity detail and the
 correct-answers dialog, teacher child page — no sideways scroll; dialogs 327 px wide.
+
+## Frontend polish pass (2026-10-16)
+
+- Account: forgot password, its confirmation and the reset-code page all use the same centred card
+  as login (the split layout with the blue panel is gone everywhere).
+- Parent cards: age / gender lines plus the server counts as a compact row of numbers; the whole
+  card is the profile link (visible focus ring, hover border).
+- Plan summary: completion % shown large beside «نسبة الإنجاز», the bar reads «X من Y أنشطة
+  منجزة»; activity results as labelled chips (النتيجة / الصحيحة / الخاطئة), dates on their own
+  line; status always as icon + text.
+- Images: Arabic picker (preview box, «اختيار صورة» / «استبدال الصورة», file name, «إلغاء الصورة
+  المختارة»), a neutral placeholder instead of a broken image everywhere (players included).
+- Games: «لا توجد ألعاب مضافة حالياً» + «يمكن للإدارة إضافة ألعاب ليتم إسنادها لاحقاً ضمن الخطة
+  التدريبية.» on the admin games list and the specialist's picker.
+- Specialist dialog: assigned children marked «مُسند»; selectable rows highlight when checked;
+  counts in the headings and on the assign button.
+- Initial assessment: category → activity → numbered questions, with icons, indentation and
+  counts; an intro line for «كل التصنيفات».
+- Teacher child page: the child's facts in the banner, then the plan, then «ملاحظات المعلم».
