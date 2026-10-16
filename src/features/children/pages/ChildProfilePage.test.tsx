@@ -98,7 +98,7 @@ describe('ChildProfilePage — tabs from the API', () => {
     expect(within(summary).queryByText('متوسط النتيجة')).not.toBeInTheDocument();
     expect(within(plan).getByRole('progressbar')).toHaveAttribute(
       'aria-valuetext',
-      '50% · 1 من 2 أنشطة',
+      '1 من 2 أنشطة منجزة',
     );
   });
 

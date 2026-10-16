@@ -10,7 +10,7 @@ import { FormField, Input, PasswordInput } from '@/components/ui/Field';
 import { ROUTE_PATHS } from '@/constants/routes';
 
 import { useResetPasswordMutation } from '../api/authMutations';
-import { AuthSplitShell } from '../components/AuthSplitShell';
+import { AuthCard } from '../components/AuthCard';
 import { PasswordStrengthMeter } from '../components/PasswordStrengthMeter';
 import { resetPasswordSchema, type ResetPasswordFormValues } from '../schemas/passwordRecovery';
 
@@ -22,14 +22,6 @@ export interface ResetPasswordLocationState {
 }
 
 const COPY = {
-  panelTitle: 'اختر كلمة مرور',
-  panelHighlight: 'قوية وآمنة',
-  panelText: 'استخدم كلمة مرور يصعب تخمينها ولا تشاركها مع أحد.',
-  panelPoints: [
-    '8 أحرف على الأقل',
-    'مزيج من الحروف والأرقام والرموز',
-    'تجنّب استخدام كلمة مرور قديمة',
-  ],
   requestNewCode: 'طلب رمز جديد',
   title: 'كلمة مرور جديدة',
   subtitleWithEmail: 'أدخل الرمز المرسل إلى',
@@ -82,23 +74,25 @@ export function ResetPasswordPage() {
     });
   });
 
-  const panel = {
-    panelTitle: COPY.panelTitle,
-    panelHighlight: COPY.panelHighlight,
-    panelText: COPY.panelText,
-    panelPoints: COPY.panelPoints,
-    backLink: { to: ROUTE_PATHS.forgotPassword, label: COPY.requestNewCode },
-  };
+  const footer = (
+    <>
+      <Link to={ROUTE_PATHS.forgotPassword} className={styles.inlineLink}>
+        {COPY.requestNewCode}
+      </Link>
+      {' · '}
+      <Link to={ROUTE_PATHS.login} className={styles.inlineLink}>
+        {COPY.backToLogin}
+      </Link>
+    </>
+  );
 
   if (resetMutation.isSuccess) {
     return (
-      <AuthSplitShell {...panel}>
+      <AuthCard title={COPY.successTitle} subtitle={COPY.successText}>
         <div className={styles.success} role="status">
           <span className={styles.successIcon} aria-hidden="true">
             <CircleCheck />
           </span>
-          <h1 className={styles.successTitle}>{COPY.successTitle}</h1>
-          <p className={styles.successText}>{COPY.successText}</p>
           <Link
             to={ROUTE_PATHS.login}
             className={getButtonClassName({ size: 'lg', fullWidth: true })}
@@ -106,22 +100,24 @@ export function ResetPasswordPage() {
             {COPY.login}
           </Link>
         </div>
-      </AuthSplitShell>
+      </AuthCard>
     );
   }
 
   return (
-    <AuthSplitShell {...panel}>
-      <h1 className={styles.pageTitle}>{COPY.title}</h1>
-      <p className={styles.pageSubtitle}>
-        {email ? (
+    <AuthCard
+      title={COPY.title}
+      subtitle={
+        email ? (
           <>
             {COPY.subtitleWithEmail} <bdi>{email}</bdi>
           </>
         ) : (
           COPY.subtitle
-        )}
-      </p>
+        )
+      }
+      footer={footer}
+    >
       <form className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
         <ApiErrorAlert error={resetMutation.error} />
         <FormField label={COPY.email} error={errors.email?.message}>
@@ -180,11 +176,6 @@ export function ResetPasswordPage() {
           {COPY.submit}
         </Button>
       </form>
-      <p className={styles.footerLink}>
-        <Link to={ROUTE_PATHS.login} className={styles.inlineLink}>
-          {COPY.backToLogin}
-        </Link>
-      </p>
-    </AuthSplitShell>
+    </AuthCard>
   );
 }

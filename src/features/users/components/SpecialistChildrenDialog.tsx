@@ -1,8 +1,9 @@
-import { UserPlus } from 'lucide-react';
+import { CircleCheck, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
 import { Checkbox } from '@/components/ui/Field';
@@ -58,13 +59,17 @@ export function SpecialistChildrenDialog({ specialist, onClose }: SpecialistChil
     assignedSection = <p className={styles.muted}>لا يوجد أطفال مسندون إلى هذا الأخصائي بعد.</p>;
   } else {
     assignedSection = (
-      <ul className={styles.plainList} aria-label="الأطفال المسندون">
+      <ul className={styles.assignedList} aria-label="الأطفال المسندون">
         {detail.data.children.map((child) => (
-          <li key={child.id}>
-            <span className={styles.name}>{child.fullName}</span>
-            {child.parentName ? (
-              <span className={styles.muted}>{` · ولي الأمر: ${child.parentName}`}</span>
-            ) : null}
+          <li key={child.id} className={styles.assignedItem}>
+            <CircleCheck aria-hidden="true" className={styles.assignedIcon} />
+            <span className={styles.childText}>
+              <span className={styles.name}>{child.fullName}</span>
+              {child.parentName ? (
+                <span className={styles.muted}>{`ولي الأمر: ${child.parentName}`}</span>
+              ) : null}
+            </span>
+            <Badge tone="success">مُسند</Badge>
           </li>
         ))}
       </ul>
@@ -82,20 +87,22 @@ export function SpecialistChildrenDialog({ specialist, onClose }: SpecialistChil
     candidatesSection = <p className={styles.muted}>لا يوجد أطفال آخرون لإسنادهم.</p>;
   } else {
     candidatesSection = (
-      <fieldset className={styles.checkList} disabled={!specialist.isActive || assign.isPending}>
-        <legend className={styles.legend}>اختر الأطفال لإسنادهم</legend>
+      <fieldset
+        className={styles.candidateList}
+        disabled={!specialist.isActive || assign.isPending}
+      >
+        <legend className="visually-hidden">اختر الأطفال لإسنادهم</legend>
         {candidates.map((child) => (
           <Checkbox
             key={child.id}
+            className={styles.candidate}
             label={
-              <>
-                {child.fullName}
+              <span className={styles.childText}>
+                <span className={styles.name}>{child.fullName}</span>
                 <span className={styles.muted}>
-                  {child.specialistName
-                    ? ` — الأخصائي الحالي: ${child.specialistName}`
-                    : ' — بلا أخصائي'}
+                  {child.specialistName ? `الأخصائي الحالي: ${child.specialistName}` : 'بلا أخصائي'}
                 </span>
-              </>
+              </span>
             }
             checked={selected.includes(child.id)}
             onChange={(event) => {
@@ -121,13 +128,15 @@ export function SpecialistChildrenDialog({ specialist, onClose }: SpecialistChil
         <ApiErrorAlert error={assign.error} />
         <section aria-labelledby="assigned-children-title">
           <h3 id="assigned-children-title" className={styles.legend}>
-            الأطفال المسندون حالياً
+            {detail.data
+              ? `الأطفال المسندون حالياً (${detail.data.children.length.toString()})`
+              : 'الأطفال المسندون حالياً'}
           </h3>
           {assignedSection}
         </section>
         <section aria-labelledby="assign-children-title">
           <h3 id="assign-children-title" className={styles.legend}>
-            إسناد أطفال
+            اختر أطفالاً لإسنادهم
           </h3>
           {candidatesSection}
         </section>

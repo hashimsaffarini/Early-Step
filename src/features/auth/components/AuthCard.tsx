@@ -15,7 +15,7 @@ const LABELS = {
 
 export interface AuthCardProps {
   title: string;
-  subtitle: string;
+  subtitle: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
   size?: 'default' | 'wide';

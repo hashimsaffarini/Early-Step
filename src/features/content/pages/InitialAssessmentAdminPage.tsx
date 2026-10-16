@@ -1,4 +1,11 @@
-import { CircleMinus, CirclePlus, FolderTree } from 'lucide-react';
+import {
+  CircleMinus,
+  CirclePlus,
+  ClipboardList,
+  FolderTree,
+  Gamepad2,
+  ListPlus,
+} from 'lucide-react';
 import { useState } from 'react';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
@@ -49,8 +56,20 @@ function CategoryQuestions({
         onRetry={() => void query.refetch()}
       />
       {groups.map((group) => (
-        <section key={group.activity.id} aria-label={group.activity.title}>
-          <h4 className={styles.groupTitle}>{group.activity.title}</h4>
+        <section
+          key={group.activity.id}
+          aria-label={group.activity.title}
+          className={styles.activityGroup}
+        >
+          <h4 className={styles.groupTitle}>
+            {group.activity.type === 'game' ? (
+              <Gamepad2 aria-hidden="true" />
+            ) : (
+              <ClipboardList aria-hidden="true" />
+            )}
+            {group.activity.title}
+            <span className={styles.muted}>{`(${group.questions.length.toString()} أسئلة)`}</span>
+          </h4>
           <ol className={styles.questionList}>
             {group.questions.map((question, index) => {
               const label = question.text || `السؤال ${(index + 1).toString()}`;
@@ -58,7 +77,10 @@ function CategoryQuestions({
               return (
                 <li key={question.id} className={styles.questionRow}>
                   <div className={styles.rowMain}>
-                    <span>{label}</span>
+                    <span>
+                      <span className={styles.questionNumber}>{`${(index + 1).toString()}.`}</span>
+                      {label}
+                    </span>
                     {action ? (
                       <p className={styles.muted} role="status">
                         {action === 'added'
@@ -166,7 +188,8 @@ export function InitialAssessmentAdminPage() {
       subtitle="التصنيفات التي يتكوّن منها التقييم المبدئي، والأسئلة التابعة لكل تصنيف."
     >
       <section className={styles.page} aria-labelledby="assessment-structure">
-        <SectionHeader id="assessment-structure" title="التقييم المبدئي" icon={FolderTree} />
+        <SectionHeader id="assessment-structure" title="محتوى التقييم المبدئي" icon={FolderTree} />
+        <p className={styles.muted}>التصنيف ← النشاط ← الأسئلة التابعة له.</p>
         <ApiErrorAlert error={toggleCategory.error} />
         <ApiErrorAlert error={toggleQuestion.error} />
         <QueryStatus
@@ -187,7 +210,10 @@ export function InitialAssessmentAdminPage() {
               {inAssessment.map((category) => (
                 <li key={category.id} className={styles.categoryBlock}>
                   <div className={styles.toolbar}>
-                    <h3 className={styles.rowTitle}>{`التصنيف: ${category.name}`}</h3>
+                    <h3 className={styles.categoryTitle}>
+                      <FolderTree aria-hidden="true" />
+                      {`التصنيف: ${category.name}`}
+                    </h3>
                     {categoryButton(category)}
                   </div>
                   <CategoryQuestions
@@ -203,7 +229,10 @@ export function InitialAssessmentAdminPage() {
       </section>
 
       <section className={styles.page} aria-labelledby="all-categories">
-        <SectionHeader id="all-categories" title="كل التصنيفات" />
+        <SectionHeader id="all-categories" title="كل التصنيفات" icon={ListPlus} />
+        <p className={styles.muted}>
+          أضف تصنيفاً إلى التقييم أو أزله منه؛ التصنيفات المضافة تظهر مع أسئلتها في الأعلى.
+        </p>
         <QueryStatus
           isLoading={isLoading}
           error={loadError}

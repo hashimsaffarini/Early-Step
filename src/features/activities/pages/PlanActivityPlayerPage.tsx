@@ -19,7 +19,7 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useRoleArea } from '@/hooks/useRoleArea';
-import { resolveMediaUrl } from '@/services/api/mediaUrl';
+import { ServerImage } from '@/components/shared/ServerImage';
 import type { AppError } from '@/services/http/apiError';
 import { HTTP_STATUS } from '@/services/http/httpStatus';
 
@@ -113,7 +113,6 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
   const { type } = question;
   if (type === null) return null;
   const answer = toChoiceAnswer(question.id, type, question.options.length, selection);
-  const imageUrl = resolveMediaUrl(question.imageUrl);
   const isLast = index === questions.length - 1;
 
   const next = () => {
@@ -136,7 +135,7 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
         <h2 className={styles.question} ref={questionRef} tabIndex={-1}>
           {question.text}
         </h2>
-        {imageUrl ? <img src={imageUrl} alt="" className={styles.questionImage} /> : null}
+        <ServerImage path={question.imageUrl} alt="" className={styles.questionImage} />
         <p>{CHOICE_HINTS[type]}</p>
       </Card>
       <ul className={styles.answers} aria-label="الإجابات">
@@ -150,7 +149,7 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
             <li key={option.id}>
               <AnswerTile
                 label={option.text}
-                imageUrl={resolveMediaUrl(option.imageUrl)}
+                imagePath={option.imageUrl}
                 badge={badge}
                 state={tileState(selection, option.id)}
                 onClick={() => {

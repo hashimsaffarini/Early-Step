@@ -102,7 +102,7 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
             تعديل السؤال
           </Button>
           <Button
-            variant="outline"
+            variant="soft"
             size="sm"
             iconStart={<CheckCheck aria-hidden="true" />}
             disabled={question.options.length === 0}

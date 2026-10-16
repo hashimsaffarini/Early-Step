@@ -14,7 +14,7 @@ import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
 import { Card } from '@/components/ui/Card';
-import { resolveMediaUrl } from '@/services/api/mediaUrl';
+import { ServerImage } from '@/components/shared/ServerImage';
 
 import { useSubmitAnswer } from '../api/assessmentMutations';
 import { isAnswerable } from '../state/assessmentRun';
@@ -64,7 +64,6 @@ export function AssessmentQuestionRunner({
   const { type } = question;
   const answer =
     type === null ? null : toChoiceAnswer(question.id, type, question.options.length, selection);
-  const imageUrl = resolveMediaUrl(question.imageUrl);
 
   const advance = (answeredCount: number) => {
     if (isLast) {
@@ -109,7 +108,7 @@ export function AssessmentQuestionRunner({
         <p ref={promptRef} tabIndex={-1} className={styles.prompt}>
           {question.text}
         </p>
-        {imageUrl ? <img className={styles.image} src={imageUrl} alt="" /> : null}
+        <ServerImage path={question.imageUrl} alt="" className={styles.image} />
 
         {supported && type !== null ? (
           <>
@@ -121,7 +120,7 @@ export function AssessmentQuestionRunner({
                   <AnswerTile
                     key={option.id}
                     label={option.text}
-                    imageUrl={resolveMediaUrl(option.imageUrl)}
+                    imagePath={option.imageUrl}
                     badge={
                       type === 'Sequence' && position >= 0 ? (position + 1).toString() : undefined
                     }

@@ -53,16 +53,21 @@ export function PlanSummary({ activities, serverProgress = null }: PlanSummaryPr
       </section>
       {summary.progress !== null ? (
         <section aria-labelledby="plan-progress-title">
-          <h3 id="plan-progress-title" className={styles.title}>
-            نسبة الإنجاز
-          </h3>
+          <div className={styles.progressHead}>
+            <h3 id="plan-progress-title" className={styles.title}>
+              نسبة الإنجاز
+            </h3>
+            <span className={styles.percent} aria-hidden="true">
+              <bdi>{`${summary.progress.toString()}%`}</bdi>
+            </span>
+          </div>
           <ProgressBar
             label="نسبة إنجاز الخطة"
             value={summary.progress}
             max={100}
             showLabel
             tone="success"
-            valueText={`${summary.progress.toString()}% · ${summary.completed.toString()} من ${summary.total.toString()} أنشطة`}
+            valueText={`${summary.completed.toString()} من ${summary.total.toString()} أنشطة منجزة`}
           />
         </section>
       ) : null}

@@ -55,13 +55,6 @@
   gap: var(--space-3);
 }
 
-.toolbarGroup {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-3);
-}
-
 .filter {
   min-inline-size: 14rem;
 }
@@ -215,25 +208,98 @@
   font-weight: var(--font-weight-bold);
 }
 
+.imageFieldWrap {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.fieldLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
 .imageField {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
+  align-items: flex-start;
+  gap: var(--space-4);
 }
 
-.preview {
-  inline-size: 4rem;
-  block-size: 4rem;
+.previewBox {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 5.5rem;
+  block-size: 5.5rem;
+  overflow: hidden;
+  border: 1px dashed var(--color-border);
   border-radius: var(--radius-sm);
-  object-fit: cover;
-  border: 1px solid var(--color-border);
   background: var(--color-surface-muted);
 }
 
-.fileInput {
-  max-inline-size: 100%;
+.preview {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.previewEmpty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+.previewEmpty svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.imageActions {
+  display: grid;
+  flex: 1;
+  justify-items: start;
+  gap: var(--space-2);
+  min-inline-size: 12rem;
+}
+
+.fileButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--tap-target-min);
+  padding-inline: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-primary-strong);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.fileButton svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+/* The native input stays in the page (keyboard, screen readers) but is drawn by the label. */
+.fileInput {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fileInput:focus-visible + .fileButton,
+.imageActions:has(.fileInput:focus-visible) .fileButton {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .questionCard {
@@ -356,17 +422,53 @@
   gap: var(--space-4);
 }
 
+.categoryTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.categoryTitle svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  color: var(--color-primary-strong);
+}
+
+/* Activity level: indented under its category with an accent rule. */
+.activityGroup {
+  padding-inline-start: var(--space-4);
+  border-inline-start: 3px solid var(--color-primary-soft);
+}
+
 .groupTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0 0 var(--space-2);
+  font-size: var(--font-size-md);
+}
+
+.groupTitle svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
 }
 
 .questionList {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-1);
   margin: 0;
-  padding-inline-start: var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+
+.questionNumber {
+  margin-inline-end: var(--space-2);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
 }
 
 .questionRow {

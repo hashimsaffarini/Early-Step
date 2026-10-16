@@ -44,3 +44,17 @@
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-black);
 }
+
+.progressHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.percent {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+  color: var(--color-success-strong);
+}

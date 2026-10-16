@@ -26,13 +26,17 @@ export interface PlanActivityListProps {
 }
 
 /** The saved result, only with the fields the server sent (never a placeholder 0). */
-function resultLine(activity: PlanActivity): string | null {
-  const parts: string[] = [];
-  if (activity.score !== null) parts.push(`النتيجة: ${activity.score.toString()}%`);
-  if (activity.correctAnswers !== null)
-    parts.push(`الصحيحة: ${activity.correctAnswers.toString()}`);
-  if (activity.wrongAnswers !== null) parts.push(`الخاطئة: ${activity.wrongAnswers.toString()}`);
-  return parts.length > 0 ? parts.join(' · ') : null;
+function resultFigures(activity: PlanActivity): { label: string; value: string }[] {
+  const figures: { label: string; value: string }[] = [];
+  if (activity.score !== null)
+    figures.push({ label: 'النتيجة', value: `${activity.score.toString()}%` });
+  if (activity.correctAnswers !== null) {
+    figures.push({ label: 'الصحيحة', value: activity.correctAnswers.toString() });
+  }
+  if (activity.wrongAnswers !== null) {
+    figures.push({ label: 'الخاطئة', value: activity.wrongAnswers.toString() });
+  }
+  return figures;
 }
 
 function datesLine(activity: PlanActivity): string | null {
@@ -52,7 +56,7 @@ export function PlanActivityList({
   return (
     <ul className={styles.list} aria-label="أنشطة الخطة التدريبية">
       {activities.map((activity) => {
-        const result = resultLine(activity);
+        const result = resultFigures(activity);
         const dates = datesLine(activity);
         const title = activity.title || 'نشاط';
         return (
@@ -84,7 +88,16 @@ export function PlanActivityList({
                   </Badge>
                 )}
               </div>
-              {result ? <p className={styles.meta}>{result}</p> : null}
+              {result.length > 0 ? (
+                <ul className={styles.resultChips} aria-label={`نتيجة «${title}»`}>
+                  {result.map((figure) => (
+                    <li key={figure.label} className={styles.resultChip}>
+                      {figure.label}
+                      <bdi className={styles.resultValue}>{figure.value}</bdi>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               {dates ? <p className={styles.meta}>{dates}</p> : null}
             </div>
             {playTo && !activity.isCompleted ? (

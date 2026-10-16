@@ -69,37 +69,42 @@ export function CorrectAnswersDialog({ question, number, onClose }: CorrectAnswe
     );
   } else if (isSequence) {
     editor = (
-      <ol className={styles.sequenceList} aria-label="الترتيب الصحيح">
-        {orderedIds.map((id, index) => {
-          const entry = byId.get(id);
-          if (!entry) return null;
-          const label = optionLabel(entry.option, entry.index);
-          return (
-            <li key={id} className={styles.sequenceItem}>
-              <span className={styles.sequenceNumber}>{(index + 1).toString()}</span>
-              <span className={styles.sequenceLabel}>{label}</span>
-              <IconButton
-                label={`تقديم ${label}`}
-                icon={ArrowUp}
-                variant="muted"
-                disabled={index === 0}
-                onClick={() => {
-                  setOrderedIds((ids) => move(ids, index, -1));
-                }}
-              />
-              <IconButton
-                label={`تأخير ${label}`}
-                icon={ArrowDown}
-                variant="muted"
-                disabled={index === orderedIds.length - 1}
-                onClick={() => {
-                  setOrderedIds((ids) => move(ids, index, 1));
-                }}
-              />
-            </li>
-          );
-        })}
-      </ol>
+      <>
+        <p className={styles.muted}>
+          رتّب الخيارات بالترتيب الصحيح باستخدام سهمَي التقديم والتأخير.
+        </p>
+        <ol className={styles.sequenceList} aria-label="الترتيب الصحيح">
+          {orderedIds.map((id, index) => {
+            const entry = byId.get(id);
+            if (!entry) return null;
+            const label = optionLabel(entry.option, entry.index);
+            return (
+              <li key={id} className={styles.sequenceItem}>
+                <span className={styles.sequenceNumber}>{(index + 1).toString()}</span>
+                <span className={styles.sequenceLabel}>{label}</span>
+                <IconButton
+                  label={`تقديم ${label}`}
+                  icon={ArrowUp}
+                  variant="muted"
+                  disabled={index === 0}
+                  onClick={() => {
+                    setOrderedIds((ids) => move(ids, index, -1));
+                  }}
+                />
+                <IconButton
+                  label={`تأخير ${label}`}
+                  icon={ArrowDown}
+                  variant="muted"
+                  disabled={index === orderedIds.length - 1}
+                  onClick={() => {
+                    setOrderedIds((ids) => move(ids, index, 1));
+                  }}
+                />
+              </li>
+            );
+          })}
+        </ol>
+      </>
     );
   } else {
     editor = (

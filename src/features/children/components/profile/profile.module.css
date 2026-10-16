@@ -113,21 +113,6 @@
   color: var(--color-violet-strong);
 }
 
-.toneSuccess {
-  background: var(--color-success-soft);
-  color: var(--color-success-strong);
-}
-
-.tonePrimary {
-  background: var(--color-primary-soft);
-  color: var(--color-primary-strong);
-}
-
-.toneWarning {
-  background: var(--color-warning-soft);
-  color: var(--color-warning-strong);
-}
-
 .stack {
   display: grid;
   gap: var(--space-6);
@@ -145,15 +130,6 @@
   }
 }
 
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .tile {
   display: flex;
   align-items: center;
@@ -162,26 +138,10 @@
   border-radius: var(--radius-card);
 }
 
-.tileValue {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-black);
-  line-height: 1;
-}
-
-.tileLabel {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-}
-
 .cardHeader {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-}
-
-.fullSpan {
-  grid-column: 1 / -1;
 }
 
 .rowLink {

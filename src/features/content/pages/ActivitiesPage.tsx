@@ -109,11 +109,14 @@ export function ActivitiesPage() {
         isLoading={activitiesQuery.isPending}
         error={activitiesQuery.error}
         isEmpty={activities.length === 0}
-        emptyTitle={`لا توجد ${ACTIVITY_TYPE_LABELS[type]} هنا بعد`}
+        emptyTitle={
+          type === 'game'
+            ? 'لا توجد ألعاب مضافة حالياً'
+            : `لا توجد ${ACTIVITY_TYPE_LABELS[type]} هنا بعد`
+        }
         {...(type === 'game'
           ? {
-              emptyDescription:
-                'الألعاب التي تُضاف هنا يختارها الأخصائي للأطفال في الخطط التدريبية.',
+              emptyDescription: 'يمكن للإدارة إضافة ألعاب ليتم إسنادها لاحقاً ضمن الخطة التدريبية.',
             }
           : {})}
         onRetry={() => void activitiesQuery.refetch()}

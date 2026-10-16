@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Cake, Smile, UserRound, UserX } from 'lucide-react';
+import { ArrowRight, BookOpen, UserX } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -16,11 +16,11 @@ import { formatAge } from '@/utils/age';
 import styles from './TeacherChildPage.module.css';
 
 /** The child's facts the teacher list sends (`GET Teacher/children`) — nothing invented. */
-function childFacts(child: ChildSummary) {
-  const facts: { icon: typeof Cake; label: string }[] = [];
-  if (child.age !== null) facts.push({ icon: Cake, label: `العمر: ${formatAge(child.age)}` });
-  if (child.gender) facts.push({ icon: Smile, label: `الجنس: ${child.gender}` });
-  if (child.parentName) facts.push({ icon: UserRound, label: `ولي الأمر: ${child.parentName}` });
+function childFacts(child: ChildSummary): string[] {
+  const facts: string[] = [];
+  if (child.age !== null) facts.push(`العمر: ${formatAge(child.age)}`);
+  if (child.gender) facts.push(`الجنس: ${child.gender}`);
+  if (child.parentName) facts.push(`ولي الأمر: ${child.parentName}`);
   return facts;
 }
 
@@ -78,23 +78,13 @@ export function TeacherChildPage() {
         <PageBanner
           tone="violet"
           title={child.fullName}
-          subtitle="الخطة التدريبية وملاحظات المعلم"
+          subtitle={facts.length > 0 ? facts.join(' · ') : 'الخطة التدريبية وملاحظات المعلم'}
           aside={
             <span className={styles.bannerIcon} aria-hidden="true">
               <BookOpen />
             </span>
           }
         />
-        {facts.length > 0 ? (
-          <ul className={styles.facts} aria-label="بيانات الطفل">
-            {facts.map((fact) => (
-              <li key={fact.label} className={styles.fact}>
-                <fact.icon aria-hidden="true" />
-                {fact.label}
-              </li>
-            ))}
-          </ul>
-        ) : null}
         <ChildPlanPanel
           childId={child.id}
           playTo={(activity) => paths.planActivityPlay(child.id, activity.activityId)}

@@ -48,9 +48,12 @@ describe('ParentDashboardPage', () => {
     const card = within(section).getByRole('link', { name: 'ملف يوسف' });
     expect(card).toHaveAttribute('href', '/parent/children/c0000000-0000-4000-8000-000000000001');
     // Real counts from GET Parent/{childId} (mock plan: 2 tests, 0 games; 1 report).
-    expect(await within(card).findByText('الاختبارات: 2')).toBeInTheDocument();
-    expect(within(card).getByText('الألعاب: 0')).toBeInTheDocument();
-    expect(within(card).getByText('التقارير: 1')).toBeInTheDocument();
+    const count = (label: string) => within(card).getByText(label).nextElementSibling?.textContent;
+    await within(card).findByText('الاختبارات');
+    expect(count('الاختبارات')).toBe('2');
+    expect(count('الألعاب')).toBe('0');
+    expect(count('التقارير')).toBe('1');
+    expect(within(card).getByText('العمر: 7 سنوات')).toBeInTheDocument();
     // Client revision 2026-10: no "عرض الملف" button and no progress on the card.
     expect(within(section).queryByText('عرض الملف')).not.toBeInTheDocument();
     expect(within(section).queryByRole('progressbar')).not.toBeInTheDocument();

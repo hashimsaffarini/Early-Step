@@ -98,10 +98,20 @@ describe('ActivitiesPage', () => {
     expect(screen.queryByRole('link', { name: 'اختبار الأعداد' })).not.toBeInTheDocument();
   });
 
-  it('shows an empty state for a type without activities', async () => {
+  it('explains that no games exist yet (no demo games)', async () => {
     server.use(http.get(apiUrl('Admin/activities/:type'), () => HttpResponse.json([])));
     renderContent(`${ADMIN_PATHS.activities}?type=game`);
 
-    expect(await screen.findByText('لا توجد الألعاب هنا بعد')).toBeInTheDocument();
+    expect(await screen.findByText('لا توجد ألعاب مضافة حالياً')).toBeInTheDocument();
+    expect(
+      screen.getByText('يمكن للإدارة إضافة ألعاب ليتم إسنادها لاحقاً ضمن الخطة التدريبية.'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows an empty state for tests too', async () => {
+    server.use(http.get(apiUrl('Admin/activities/:type'), () => HttpResponse.json([])));
+    renderContent(`${ADMIN_PATHS.activities}?type=test`);
+
+    expect(await screen.findByText('لا توجد الاختبارات هنا بعد')).toBeInTheDocument();
   });
 });

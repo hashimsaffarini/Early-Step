@@ -29,6 +29,12 @@ export interface AssignActivityDialogProps {
   onClose: () => void;
 }
 
+/** Empty-list title: a search with no match, no games yet, or no activities of this type. */
+function emptyTitle(search: string, type: ActivityType): string {
+  if (search) return 'لا توجد نتائج';
+  return type === 'game' ? 'لا توجد ألعاب مضافة حالياً' : 'لا توجد أنشطة متاحة من هذا النوع';
+}
+
 /** Specialist picker over `available-activities` → `POST …/activities { activityId }`. */
 export function AssignActivityDialog({
   isOpen,
@@ -57,9 +63,9 @@ export function AssignActivityDialog({
     list = (
       <EmptyState
         isBoxed={false}
-        title={trimmed ? 'لا توجد نتائج' : 'لا توجد أنشطة متاحة من هذا النوع'}
+        title={emptyTitle(trimmed, type)}
         {...(!trimmed && type === 'game'
-          ? { description: 'لا توجد ألعاب في المحتوى بعد؛ يضيفها المدير من «إدارة المحتوى».' }
+          ? { description: 'يمكن للإدارة إضافة ألعاب ليتم إسنادها لاحقاً ضمن الخطة التدريبية.' }
           : {})}
       />
     );

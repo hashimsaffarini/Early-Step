@@ -49,7 +49,7 @@ describe('ChildPlansPage — read-only roles', () => {
     const list = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
     expect(screen.getByRole('heading', { level: 1, name: 'الخطة التدريبية' })).toBeInTheDocument();
     expect(screen.getByText('للطفل: يوسف')).toBeInTheDocument();
-    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(list.querySelectorAll(':scope > li')).toHaveLength(2);
     expect(within(list).getByText('مكتمل')).toBeInTheDocument();
     expect(within(list).getByText('لم يكتمل بعد')).toBeInTheDocument();
     // The live child-facing list has no answer counts (verified) — none are shown.
@@ -60,7 +60,7 @@ describe('ChildPlansPage — read-only roles', () => {
     expect(within(summary).getByText('المنجزة').nextElementSibling).toHaveTextContent('1');
     expect(within(summary).getByText('المتبقية').nextElementSibling).toHaveTextContent('1');
     expect(within(summary).queryByText('متوسط النتيجة')).not.toBeInTheDocument();
-    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '50% · 1 من 2 أنشطة');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 من 2 أنشطة منجزة');
     expect(screen.queryByRole('button', { name: 'إضافة نشاط' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /إزالة/ })).not.toBeInTheDocument();
   });
@@ -131,7 +131,8 @@ describe('ChildPlansPage — specialist', () => {
     expect(body).toEqual({ activityId: 'a0000000-0000-4000-8000-000000000003' });
     const list = screen.getByRole('list', { name: 'أنشطة الخطة التدريبية' });
     await waitFor(() => {
-      expect(within(list).getAllByRole('listitem')).toHaveLength(3);
+      // Direct items only (each completed activity also lists its result figures).
+      expect(list.querySelectorAll(':scope > li')).toHaveLength(3);
     });
     server.events.removeAllListeners();
   });
@@ -211,7 +212,12 @@ describe('ChildPlansPage — results (specialist)', () => {
     renderPlans('Specialist', YOUSEF);
 
     const list = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
-    expect(within(list).getByText(/النتيجة: 75%/)).toBeInTheDocument();
+    const result = within(list).getByRole('list', { name: 'نتيجة «اختبار الحروف»' });
+    expect(
+      within(result)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['النتيجة75%', 'الصحيحة3', 'الخاطئة1']);
     expect(screen.getByRole('progressbar', { name: 'نسبة إنجاز الخطة' })).toHaveAttribute(
       'aria-valuenow',
       '50',

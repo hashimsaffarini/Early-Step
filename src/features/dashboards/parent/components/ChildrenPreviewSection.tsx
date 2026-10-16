@@ -13,39 +13,53 @@ import styles from './ChildrenPreviewSection.module.css';
 
 const HEADING_ID = 'parent-children-title';
 
-/**
- * Real profile facts for one child: age and gender from the children list, and the counts the
- * server sends for the child (`GET Parent/{childId}`: tests, games, reports). A count is shown
- * only once the server has sent it — never a placeholder 0.
- */
-function childDetails(child: ChildSummary, counts: ReturnType<typeof useParentChildDetail>) {
+/** Age and gender from the children list (`GET Parent/GetMyChildren`). */
+function childDetails(child: ChildSummary): ChildCardDetail[] {
   const details: ChildCardDetail[] = [];
   if (child.age !== null) details.push({ icon: Cake, label: `العمر: ${formatAge(child.age)}` });
   if (child.gender) details.push({ icon: Smile, label: `الجنس: ${child.gender}` });
-  const detail = counts.data;
-  if (!detail) return details;
-  if (detail.testsCount !== null) {
-    details.push({ icon: ClipboardList, label: `الاختبارات: ${detail.testsCount.toString()}` });
-  }
-  if (detail.gamesCount !== null) {
-    details.push({ icon: Gamepad2, label: `الألعاب: ${detail.gamesCount.toString()}` });
-  }
-  if (detail.reportsCount !== null) {
-    details.push({ icon: FileText, label: `التقارير: ${detail.reportsCount.toString()}` });
-  }
   return details;
+}
+
+/**
+ * The counts the server sends for the child (`GET Parent/{childId}`: tests, games, reports), as a
+ * compact row of numbers. A count is shown only once the server has sent it — never a placeholder.
+ */
+function ChildCounts({ childId }: { childId: string }) {
+  const { data } = useParentChildDetail(childId);
+  if (!data) return null;
+  const counts = [
+    { label: 'الاختبارات', value: data.testsCount, icon: ClipboardList },
+    { label: 'الألعاب', value: data.gamesCount, icon: Gamepad2 },
+    { label: 'التقارير', value: data.reportsCount, icon: FileText },
+  ].filter((count) => count.value !== null);
+  if (counts.length === 0) return null;
+  return (
+    <dl className={styles.counts}>
+      {counts.map((count) => (
+        <div key={count.label} className={styles.count}>
+          <dt className={styles.countLabel}>
+            <count.icon aria-hidden="true" />
+            {count.label}
+          </dt>
+          <dd className={styles.countValue}>{count.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
 /** The whole card opens the child's profile (client revision 2026-10: no separate button). */
 function ChildPreviewCard({ child }: { child: ChildSummary }) {
-  const counts = useParentChildDetail(child.id);
   return (
     <Link
       to={buildParentChildProfilePath(child.id)}
       className={styles.cardLink}
       aria-label={`ملف ${child.fullName}`}
     >
-      <ChildCard name={child.fullName} details={childDetails(child, counts)} />
+      <ChildCard name={child.fullName} details={childDetails(child)}>
+        <ChildCounts childId={child.id} />
+      </ChildCard>
     </Link>
   );
 }

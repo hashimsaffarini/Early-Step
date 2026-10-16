@@ -39,6 +39,10 @@ describe('TeacherChildPage — plan-focused view (client revision 2026-10)', () 
     renderNotes();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'يوسف' })).toBeInTheDocument();
+    // 1. Child information from GET Teacher/children (in the page banner).
+    expect(
+      screen.getByText(/العمر: 7 سنوات · الجنس: ولد · ولي الأمر: محمد أحمد/),
+    ).toBeInTheDocument();
     // Plan: summary + progress derived from the real rows, and play links for open activities.
     const summary = await screen.findByRole('region', { name: 'ملخص الأنشطة' });
     expect(within(summary).getByText('إجمالي الأنشطة').nextElementSibling).toHaveTextContent('2');
