@@ -1,5 +1,5 @@
 import { ArrowRight, BookOpen, Plus, UserX } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
@@ -7,12 +7,9 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { PageBanner } from '@/components/shared/PageBanner';
-import { SectionHeader } from '@/components/shared/SectionHeader';
-import { PlanSummary } from '@/components/shared/PlanSummary';
 import { Button, getButtonClassName } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/Modal';
-import { useChildPlanActivities, useChildrenForRole } from '@/hooks/api/childResources';
+import { useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import type { PlanActivity } from '@/services/api/childPlan';
 import type { AppError } from '@/services/http/apiError';
@@ -20,8 +17,8 @@ import type { AppError } from '@/services/http/apiError';
 import { useRemoveActivityMutation, useSpecialistPlan } from '../api/trainingPlansQueries';
 import { AssignActivityDialog } from '../components/AssignActivityDialog';
 import { AssignTeacherCard } from '../components/AssignTeacherCard';
-import { PlanActivityList } from '../components/PlanActivityList';
-import cardStyles from '../components/plans.module.css';
+import { ChildPlanPanel } from '../components/ChildPlanPanel';
+import { PlanSection } from '../components/PlanSection';
 
 import styles from './ChildPlansPage.module.css';
 
@@ -48,75 +45,6 @@ function LoadError({
           إعادة المحاولة
         </Button>
       }
-    />
-  );
-}
-
-function PlanSection({
-  activities,
-  action,
-  emptyText,
-  onRemove,
-  progress,
-  resultChildId,
-}: {
-  activities: readonly PlanActivity[];
-  action?: ReactNode;
-  emptyText: string;
-  onRemove?: (activity: PlanActivity) => void;
-  progress?: number | null;
-  resultChildId?: string;
-}) {
-  return (
-    <Card as="section" className={cardStyles.card} aria-labelledby="plan-activities-title">
-      <div className={cardStyles.toolbar}>
-        <SectionHeader
-          id="plan-activities-title"
-          title="أنشطة الخطة التدريبية"
-          icon={BookOpen}
-          iconTone="violet"
-        />
-        {action}
-      </div>
-      {activities.length === 0 ? (
-        <EmptyState
-          isBoxed={false}
-          icon={<BookOpen />}
-          title="لا توجد أنشطة في الخطة بعد"
-          description={emptyText}
-        />
-      ) : (
-        <>
-          <PlanSummary activities={activities} serverProgress={progress} />
-          <PlanActivityList
-            activities={activities}
-            onRemove={onRemove}
-            resultChildId={resultChildId}
-          />
-        </>
-      )}
-    </Card>
-  );
-}
-
-/** Parent / Teacher: read-only plan from `TrainingPlan/children/{id}/activities`. */
-function ReadOnlyPlan({ child }: { child: PlanChild }) {
-  const plan = useChildPlanActivities(child.id);
-  if (plan.isPending) return <LoadingState label="جارٍ تحميل الخطة…" />;
-  if (plan.error) {
-    return (
-      <LoadError
-        error={plan.error}
-        onRetry={() => {
-          void plan.refetch();
-        }}
-      />
-    );
-  }
-  return (
-    <PlanSection
-      activities={plan.data}
-      emptyText="يُضيف الأخصائي الأنشطة إلى الخطة بعد مراجعة التقييم المبدئي."
     />
   );
 }
@@ -284,7 +212,7 @@ export function ChildPlansPage() {
       {role === 'Specialist' ? (
         <SpecialistPlanEditor child={child} />
       ) : (
-        <ReadOnlyPlan child={child} />
+        <ChildPlanPanel childId={child.id} />
       )}
     </div>
   );

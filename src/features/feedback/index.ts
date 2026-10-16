@@ -1,1 +1,1 @@
-export { ChildNotesPage } from './pages/ChildNotesPage';
+export { TeacherNotesSection } from './components/TeacherNotesSection';

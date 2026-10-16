@@ -1,4 +1,4 @@
-import { BookOpen, Cake, NotebookPen, Pencil, Smile, Trash2 } from 'lucide-react';
+import { BookOpen, Cake, Pencil, Smile, Trash2 } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { Avatar } from '@/components/ui/Avatar';
@@ -76,15 +76,6 @@ export function ChildProfileHeader({
             <BookOpen aria-hidden="true" />
             {PLANS_LABEL[role]}
           </Link>
-          {role === 'Teacher' ? (
-            <Link
-              to={paths.childNotes(child.id)}
-              className={getButtonClassName({ variant: 'outline' })}
-            >
-              <NotebookPen aria-hidden="true" />
-              ملاحظات المعلم
-            </Link>
-          ) : null}
           {onEdit ? (
             <Button variant="outline" iconStart={<Pencil aria-hidden="true" />} onClick={onEdit}>
               تعديل البيانات

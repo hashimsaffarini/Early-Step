@@ -1,8 +1,9 @@
-import { CircleCheck, Clock, Gamepad2, ListChecks, Trash2 } from 'lucide-react';
+import { ChevronLeft, CircleCheck, Clock, Gamepad2, ListChecks, Trash2 } from 'lucide-react';
+import { Link } from 'react-router';
 
 import { ServerImage } from '@/components/shared/ServerImage';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Button, getButtonClassName } from '@/components/ui/Button';
 import type { PlanActivity } from '@/services/api/childPlan';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
@@ -20,23 +21,38 @@ export interface PlanActivityListProps {
   onRemove?: ((activity: PlanActivity) => void) | undefined;
   /** Specialist only: lets completed activities open the child's answers. */
   resultChildId?: string | undefined;
+  /** Parent / Teacher: link to play an activity that is not completed yet. */
+  playTo?: ((activity: PlanActivity) => string) | undefined;
 }
 
+/** The saved result, only with the fields the server sent (never a placeholder 0). */
 function resultLine(activity: PlanActivity): string | null {
   const parts: string[] = [];
   if (activity.score !== null) parts.push(`النتيجة: ${activity.score.toString()}%`);
-  if (activity.correctAnswers !== null) parts.push(`إجابات صحيحة: ${activity.correctAnswers}`);
-  if (activity.wrongAnswers !== null) parts.push(`إجابات غير صحيحة: ${activity.wrongAnswers}`);
+  if (activity.correctAnswers !== null) parts.push(`الصحيحة: ${activity.correctAnswers.toString()}`);
+  if (activity.wrongAnswers !== null) parts.push(`الخاطئة: ${activity.wrongAnswers.toString()}`);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+function datesLine(activity: PlanActivity): string | null {
+  const parts: string[] = [];
+  if (activity.assignedAt) parts.push(`أُسند في ${formatDisplayDate(activity.assignedAt)}`);
   if (activity.completedAt) parts.push(`أُكمل في ${formatDisplayDate(activity.completedAt)}`);
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 /** Activities of a child's training plan — only the server's fields, status in words + icon. */
-export function PlanActivityList({ activities, onRemove, resultChildId }: PlanActivityListProps) {
+export function PlanActivityList({
+  activities,
+  onRemove,
+  resultChildId,
+  playTo,
+}: PlanActivityListProps) {
   return (
     <ul className={styles.list} aria-label="أنشطة الخطة التدريبية">
       {activities.map((activity) => {
         const result = resultLine(activity);
+        const dates = datesLine(activity);
         const title = activity.title || 'نشاط';
         return (
           <li key={activity.id} className={styles.item}>
@@ -68,7 +84,18 @@ export function PlanActivityList({ activities, onRemove, resultChildId }: PlanAc
                 )}
               </div>
               {result ? <p className={styles.meta}>{result}</p> : null}
+              {dates ? <p className={styles.meta}>{dates}</p> : null}
             </div>
+            {playTo && !activity.isCompleted ? (
+              <Link
+                to={playTo(activity)}
+                className={getButtonClassName({ size: 'sm' })}
+                aria-label={`ابدأ: ${title}`}
+              >
+                ابدأ
+                <ChevronLeft aria-hidden="true" />
+              </Link>
+            ) : null}
             {onRemove && !activity.isCompleted ? (
               <Button
                 variant="ghost"

@@ -3,6 +3,7 @@ import { Navigate, type RouteObject } from 'react-router';
 import { RoleAreaLayout } from '@/app/layouts/RoleAreaLayout';
 import { RoleAreaRoot } from '@/app/layouts/RoleAreaRoot';
 import { RequireRole } from '@/app/router/guards';
+import { RedirectToChildProfile } from '@/app/router/RedirectToChildProfile';
 import { showPracticeCatalogs } from '@/config/env';
 import {
   ADMIN_PATHS,
@@ -85,16 +86,26 @@ function buildAreaRoute(role: AreaRole): RouteObject {
       path: AREA_SEGMENTS.children,
       lazy: async () => ({ Component: (await loadChildren()).ChildrenListPage }),
     },
-    {
-      path: AREA_SEGMENTS.childProfile,
-      lazy: async () => ({ Component: (await loadChildren()).ChildProfilePage }),
-    },
-    {
-      path: AREA_SEGMENTS.childPlans,
-      lazy: async () => ({
-        Component: (await import('@/features/training-plans')).ChildPlansPage,
-      }),
-    },
+    // Teacher: one plan-focused page per child (plan + notes); no profile tabs (client 2026-10).
+    role === 'Teacher'
+      ? {
+          path: AREA_SEGMENTS.childProfile,
+          lazy: async () => ({
+            Component: (await import('@/app/pages/TeacherChildPage')).TeacherChildPage,
+          }),
+        }
+      : {
+          path: AREA_SEGMENTS.childProfile,
+          lazy: async () => ({ Component: (await loadChildren()).ChildProfilePage }),
+        },
+    role === 'Teacher'
+      ? { path: AREA_SEGMENTS.childPlans, element: <RedirectToChildProfile /> }
+      : {
+          path: AREA_SEGMENTS.childPlans,
+          lazy: async () => ({
+            Component: (await import('@/features/training-plans')).ChildPlansPage,
+          }),
+        },
     ...(showPracticeCatalogs
       ? [
           {
@@ -133,14 +144,7 @@ function buildAreaRoute(role: AreaRole): RouteObject {
       : []),
     ...(role === 'Admin' ? adminOnlyPages : []),
     ...(role === 'Teacher'
-      ? [
-          {
-            path: AREA_SEGMENTS.childNotes,
-            lazy: async () => ({
-              Component: (await import('@/features/feedback')).ChildNotesPage,
-            }),
-          },
-        ]
+      ? [{ path: AREA_SEGMENTS.childNotes, element: <RedirectToChildProfile /> }]
       : []),
     {
       path: AREA_SEGMENTS.messages,

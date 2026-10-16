@@ -179,3 +179,18 @@ describe('role area routing', () => {
     expect(within(desktopNav).getAllByRole('link')).toHaveLength(1);
   });
 });
+
+describe('teacher child view (client revision 2026-10)', () => {
+  const YOUSEF = 'c0000000-0000-4000-8000-000000000001';
+
+  it.each([
+    ['notes', getAreaPaths('Teacher').childNotes(YOUSEF)],
+    ['plan', getAreaPaths('Teacher').childPlans(YOUSEF)],
+  ])('redirects the old teacher %s link to the plan-focused child page', async (_name, path) => {
+    const router = renderAt(path);
+
+    expect(await screen.findByRole('region', { name: 'ملاحظات المعلم' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(getAreaPaths('Teacher').childProfile(YOUSEF));
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+  });
+});
