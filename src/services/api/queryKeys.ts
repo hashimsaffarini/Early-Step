@@ -38,13 +38,14 @@ export const queryKeys = {
   content: {
     all: ['content'] as const,
     categories: () => ['content', 'categories'] as const,
-    categoriesWithCounts: (type: string) => ['content', 'categoriesActivity', type] as const,
     activities: (type: string, categoryId?: string) =>
       ['content', 'activities', type, categoryId ?? 'all'] as const,
     activity: (type: string, activityId: string) =>
       ['content', 'activity', type, activityId] as const,
     question: (questionId: string) => ['content', 'question', questionId] as const,
     initialAssessmentCategories: () => ['content', 'initialAssessment', 'categories'] as const,
+    categoryQuestions: (categoryId: string) =>
+      ['content', 'categoryQuestions', categoryId] as const,
   },
   dashboards: {
     admin: () => ['dashboards', 'admin'] as const,

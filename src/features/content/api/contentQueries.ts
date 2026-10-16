@@ -17,7 +17,6 @@ import {
   fetchActivities,
   fetchActivity,
   fetchCategories,
-  fetchCategoriesWithCounts,
   removeCategoryFromAssessment,
   removeQuestionFromAssessment,
   updateActivity,
@@ -29,6 +28,7 @@ import {
   type QuestionInfoInput,
   type QuestionInput,
   fetchAssessmentCategoryIds,
+  fetchCategoryQuestions,
 } from './contentApi';
 import { planCorrectAnswerUpdates, type CorrectAnswerChoice } from './correctAnswers';
 import type { Question } from '../types';
@@ -37,18 +37,19 @@ export function useCategories() {
   return useQuery({ queryKey: queryKeys.content.categories(), queryFn: fetchCategories });
 }
 
-export function useCategoriesWithCounts(type: ActivityType) {
-  return useQuery({
-    queryKey: queryKeys.content.categoriesWithCounts(type),
-    queryFn: () => fetchCategoriesWithCounts(type),
-  });
-}
-
 /** Ids of the categories in the initial assessment (authoritative membership). */
 export function useAssessmentCategoryIds() {
   return useQuery({
     queryKey: queryKeys.content.initialAssessmentCategories(),
     queryFn: fetchAssessmentCategoryIds,
+  });
+}
+
+/** Questions of a category, grouped by activity (see `fetchCategoryQuestions`). */
+export function useCategoryQuestions(categoryId: string) {
+  return useQuery({
+    queryKey: queryKeys.content.categoryQuestions(categoryId),
+    queryFn: () => fetchCategoryQuestions(categoryId),
   });
 }
 

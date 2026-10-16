@@ -1,196 +1,64 @@
-import { CircleMinus, CirclePlus } from 'lucide-react';
+import { CircleMinus, CirclePlus, FolderTree } from 'lucide-react';
 import { useState } from 'react';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { SectionHeader } from '@/components/shared/SectionHeader';
-import { Alert } from '@/components/ui/Feedback';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { FormField, Select } from '@/components/ui/Field';
+import { Alert } from '@/components/ui/Feedback';
 
 import {
-  useActivities,
-  useActivity,
   useAssessmentCategoryIds,
-  useCategoriesWithCounts,
+  useCategories,
+  useCategoryQuestions,
   useToggleAssessmentCategory,
   useToggleAssessmentQuestion,
 } from '../api/contentQueries';
 import styles from '../components/content.module.css';
 import { ContentPage } from '../components/ContentPage';
 import { QueryStatus } from '../components/QueryStatus';
-
-/** The initial assessment is built from test categories and test questions (assumption). */
-const ASSESSMENT_ACTIVITY_TYPE = 'test' as const;
+import type { Category } from '../types';
 
 type QuestionAction = 'added' | 'removed';
+type QuestionActions = Record<string, QuestionAction>;
+
+interface QuestionActionsProps {
+  actions: QuestionActions;
+  onToggle: (questionId: string, include: boolean) => void;
+}
 
 /**
- * Initial-assessment composition. Category membership comes from `initial-assessment/categories`
- * (re-verified live 2026-10-14: Admin 200 again; the `isInInitialAssessment` flag of
- * `categoriesActivity` is still always false, so it is not used). The API has **no endpoint listing the questions already in the
- * assessment** (BLOCKED BY BACKEND), so question actions only show what was done in this session.
+ * The questions that belong to one category of the assessment, grouped by activity, with
+ * add / remove actions (`POST initial-assessment/questions`, `DELETE …/questions/{id}`).
  */
-export function InitialAssessmentAdminPage() {
-  const categoriesQuery = useCategoriesWithCounts(ASSESSMENT_ACTIVITY_TYPE);
-  const toggleCategory = useToggleAssessmentCategory();
-  const toggleQuestion = useToggleAssessmentQuestion();
-  const activitiesQuery = useActivities(ASSESSMENT_ACTIVITY_TYPE);
-  const [activityId, setActivityId] = useState('');
-  const activityQuery = useActivity(activityId ? ASSESSMENT_ACTIVITY_TYPE : null, activityId);
-  const [questionActions, setQuestionActions] = useState<Record<string, QuestionAction>>({});
-  const memberIds = useAssessmentCategoryIds();
-  const memberSet = new Set(memberIds.data ?? []);
-  // Rows need both lists: without membership the badges would be wrong.
-  const categories = memberIds.data
-    ? (categoriesQuery.data ?? []).map((category) => ({
-        ...category,
-        isInInitialAssessment: memberSet.has(category.id),
-      }))
-    : [];
-
-  const runQuestion = (questionId: string, include: boolean) => {
-    toggleQuestion.mutate(
-      { id: questionId, include },
-      {
-        onSuccess: () => {
-          setQuestionActions((current) => ({
-            ...current,
-            [questionId]: include ? 'added' : 'removed',
-          }));
-        },
-      },
-    );
-  };
-
+function CategoryQuestions({
+  category,
+  actions,
+  onToggle,
+}: { category: Category } & QuestionActionsProps) {
+  const query = useCategoryQuestions(category.id);
+  const groups = query.data ?? [];
   return (
-    <ContentPage
-      title="التقييم المبدئي"
-      subtitle="اختر التصنيفات والأسئلة التي يتكوّن منها التقييم المبدئي للأطفال."
-    >
-      <section className={styles.page} aria-labelledby="assessment-categories">
-        <SectionHeader id="assessment-categories" title="التصنيفات في التقييم" />
-        <ApiErrorAlert error={toggleCategory.error} />
-        <QueryStatus
-          isLoading={categoriesQuery.isPending || memberIds.isPending}
-          error={categoriesQuery.error ?? memberIds.error}
-          isEmpty={categories.length === 0}
-          emptyTitle="لا توجد تصنيفات"
-          onRetry={() => {
-            void categoriesQuery.refetch();
-            void memberIds.refetch();
-          }}
-        />
-        {categories.length > 0 ? (
-          <ul className={styles.list} aria-label="تصنيفات الاختبارات">
-            {categories.map((category) => (
-              <li key={category.id} className={styles.row}>
-                <span />
-                <div className={styles.rowMain}>
-                  <h3 className={styles.rowTitle}>{category.name}</h3>
-                  <ul className={styles.meta}>
-                    <li>
-                      <Badge tone={category.isInInitialAssessment ? 'success' : 'neutral'} hasDot>
-                        {category.isInInitialAssessment ? 'ضمن التقييم' : 'غير مضاف'}
-                      </Badge>
-                    </li>
-                    {category.count !== null ? (
-                      <li>
-                        <Badge>{`${category.count.toString()} أنشطة`}</Badge>
-                      </li>
-                    ) : null}
-                  </ul>
-                </div>
-                <div className={styles.actions}>
-                  <Button
-                    variant={category.isInInitialAssessment ? 'outline' : 'soft'}
-                    size="sm"
-                    isLoading={
-                      toggleCategory.isPending && toggleCategory.variables.id === category.id
-                    }
-                    iconStart={
-                      category.isInInitialAssessment ? (
-                        <CircleMinus aria-hidden="true" />
-                      ) : (
-                        <CirclePlus aria-hidden="true" />
-                      )
-                    }
-                    onClick={() => {
-                      toggleCategory.mutate({
-                        id: category.id,
-                        include: !category.isInInitialAssessment,
-                      });
-                    }}
-                  >
-                    {category.isInInitialAssessment
-                      ? `إزالة ${category.name} من التقييم`
-                      : `إضافة ${category.name} إلى التقييم`}
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </section>
-
-      <section className={styles.page} aria-labelledby="assessment-questions">
-        <SectionHeader id="assessment-questions" title="أسئلة التقييم" />
-        <Alert tone="info">
-          لا توفّر الواجهة البرمجية قائمة بالأسئلة المضافة حالياً إلى التقييم، لذا تظهر هنا فقط
-          الإجراءات التي نفّذتها في هذه الجلسة.
-        </Alert>
-        <ApiErrorAlert
-          error={activitiesQuery.error}
-          message="تعذّر تحميل قائمة الاختبارات."
-          onRetry={() => void activitiesQuery.refetch()}
-        />
-        <Card className={styles.filter}>
-          <FormField label="اختر اختباراً لعرض أسئلته">
-            {(field) => (
-              <Select
-                {...field}
-                value={activityId}
-                onChange={(event) => {
-                  setActivityId(event.target.value);
-                }}
-              >
-                <option value="">
-                  {activitiesQuery.isPending
-                    ? 'جارٍ تحميل الاختبارات…'
-                    : activitiesQuery.data?.length === 0
-                      ? 'لا توجد اختبارات بعد'
-                      : 'اختر…'}
-                </option>
-                {(activitiesQuery.data ?? []).map((activity) => (
-                  <option key={activity.id} value={activity.id}>
-                    {activity.title}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </FormField>
-        </Card>
-        <ApiErrorAlert error={toggleQuestion.error} />
-        {activityId ? (
-          <QueryStatus
-            isLoading={activityQuery.isPending}
-            error={activityQuery.error}
-            isEmpty={(activityQuery.data?.questions.length ?? 0) === 0}
-            emptyTitle="لا توجد أسئلة في هذا الاختبار"
-            onRetry={() => void activityQuery.refetch()}
-          />
-        ) : null}
-        {activityQuery.data && activityQuery.data.questions.length > 0 ? (
-          <ul className={styles.list} aria-label="أسئلة الاختبار">
-            {activityQuery.data.questions.map((question, index) => {
-              const action = questionActions[question.id];
+    <div className={styles.categoryQuestions}>
+      <QueryStatus
+        isLoading={query.isPending}
+        error={query.error}
+        isEmpty={groups.length === 0}
+        emptyTitle="لا توجد أسئلة في هذا التصنيف"
+        emptyDescription="أضف اختبارات أو ألعاباً بأسئلة إلى هذا التصنيف من صفحة الأنشطة."
+        onRetry={() => void query.refetch()}
+      />
+      {groups.map((group) => (
+        <section key={group.activity.id} aria-label={group.activity.title}>
+          <h4 className={styles.groupTitle}>{group.activity.title}</h4>
+          <ol className={styles.questionList}>
+            {group.questions.map((question, index) => {
               const label = question.text || `السؤال ${(index + 1).toString()}`;
+              const action = actions[question.id];
               return (
-                <li key={question.id} className={styles.row}>
-                  <span />
+                <li key={question.id} className={styles.questionRow}>
                   <div className={styles.rowMain}>
-                    <h3 className={styles.rowTitle}>{label}</h3>
+                    <span>{label}</span>
                     {action ? (
                       <p className={styles.muted} role="status">
                         {action === 'added'
@@ -206,7 +74,7 @@ export function InitialAssessmentAdminPage() {
                       iconStart={<CirclePlus aria-hidden="true" />}
                       aria-label={`إضافة «${label}» إلى التقييم`}
                       onClick={() => {
-                        runQuestion(question.id, true);
+                        onToggle(question.id, true);
                       }}
                     >
                       إضافة
@@ -217,12 +85,151 @@ export function InitialAssessmentAdminPage() {
                       iconStart={<CircleMinus aria-hidden="true" />}
                       aria-label={`إزالة «${label}» من التقييم`}
                       onClick={() => {
-                        runQuestion(question.id, false);
+                        onToggle(question.id, false);
                       }}
                     >
                       إزالة
                     </Button>
                   </div>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Initial-assessment composition (client revision 2026-10), shown as a hierarchy:
+ * التقييم المبدئي → its categories → the questions that belong to each category.
+ * - Membership source of truth: `GET initial-assessment/categories` (re-verified live 2026-10-16:
+ *   add / remove are immediate). Every category of `Admin/categories` can be added — not only the
+ *   ones that already have test activities (the cause of "a new category does not appear").
+ * - The API has no list of the questions already in the assessment (BACKEND_REQUESTS), so a
+ *   question's membership is shown only for actions done in this session.
+ */
+export function InitialAssessmentAdminPage() {
+  const categoriesQuery = useCategories();
+  const memberIds = useAssessmentCategoryIds();
+  const toggleCategory = useToggleAssessmentCategory();
+  const toggleQuestion = useToggleAssessmentQuestion();
+  const [questionActions, setQuestionActions] = useState<QuestionActions>({});
+
+  const memberSet = new Set(memberIds.data ?? []);
+  const categories = categoriesQuery.data ?? [];
+  const inAssessment = categories.filter((category) => memberSet.has(category.id));
+  const isLoading = categoriesQuery.isPending || memberIds.isPending;
+  const loadError = categoriesQuery.error ?? memberIds.error;
+  const retry = () => {
+    void categoriesQuery.refetch();
+    void memberIds.refetch();
+  };
+
+  const runQuestion = (questionId: string, include: boolean) => {
+    toggleQuestion.mutate(
+      { id: questionId, include },
+      {
+        onSuccess: () => {
+          setQuestionActions((current) => ({
+            ...current,
+            [questionId]: include ? 'added' : 'removed',
+          }));
+        },
+      },
+    );
+  };
+
+  const categoryButton = (category: Category) => {
+    const isMember = memberSet.has(category.id);
+    return (
+      <Button
+        variant={isMember ? 'outline' : 'soft'}
+        size="sm"
+        isLoading={toggleCategory.isPending && toggleCategory.variables.id === category.id}
+        iconStart={
+          isMember ? <CircleMinus aria-hidden="true" /> : <CirclePlus aria-hidden="true" />
+        }
+        onClick={() => {
+          toggleCategory.mutate({ id: category.id, include: !isMember });
+        }}
+      >
+        {isMember ? `إزالة ${category.name} من التقييم` : `إضافة ${category.name} إلى التقييم`}
+      </Button>
+    );
+  };
+
+  return (
+    <ContentPage
+      title="التقييم المبدئي"
+      subtitle="التصنيفات التي يتكوّن منها التقييم المبدئي، والأسئلة التابعة لكل تصنيف."
+    >
+      <section className={styles.page} aria-labelledby="assessment-structure">
+        <SectionHeader id="assessment-structure" title="التقييم المبدئي" icon={FolderTree} />
+        <ApiErrorAlert error={toggleCategory.error} />
+        <ApiErrorAlert error={toggleQuestion.error} />
+        <QueryStatus
+          isLoading={isLoading}
+          error={loadError}
+          isEmpty={inAssessment.length === 0}
+          emptyTitle="لا توجد تصنيفات في التقييم المبدئي بعد"
+          emptyDescription="أضف تصنيفاً من «كل التصنيفات» أدناه."
+          onRetry={retry}
+        />
+        {inAssessment.length > 0 ? (
+          <>
+            <Alert tone="info">
+              لا توفّر الواجهة البرمجية قائمة بالأسئلة المضافة حالياً إلى التقييم، لذا تظهر حالة
+              السؤال فقط للإجراءات التي نفّذتها في هذه الجلسة.
+            </Alert>
+            <ul className={styles.list} aria-label="تصنيفات التقييم المبدئي">
+              {inAssessment.map((category) => (
+                <li key={category.id} className={styles.categoryBlock}>
+                  <div className={styles.toolbar}>
+                    <h3 className={styles.rowTitle}>{`التصنيف: ${category.name}`}</h3>
+                    {categoryButton(category)}
+                  </div>
+                  <CategoryQuestions
+                    category={category}
+                    actions={questionActions}
+                    onToggle={runQuestion}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+      </section>
+
+      <section className={styles.page} aria-labelledby="all-categories">
+        <SectionHeader id="all-categories" title="كل التصنيفات" />
+        <QueryStatus
+          isLoading={isLoading}
+          error={loadError}
+          isEmpty={categories.length === 0}
+          emptyTitle="لا توجد تصنيفات"
+          emptyDescription="أنشئ تصنيفاً من صفحة التصنيفات أولاً."
+          onRetry={retry}
+        />
+        {!isLoading && !loadError && categories.length > 0 ? (
+          <ul className={styles.list} aria-label="كل التصنيفات">
+            {categories.map((category) => {
+              const isMember = memberSet.has(category.id);
+              return (
+                <li key={category.id} className={styles.row}>
+                  <span />
+                  <div className={styles.rowMain}>
+                    <h3 className={styles.rowTitle}>{category.name}</h3>
+                    <ul className={styles.meta}>
+                      <li>
+                        <Badge tone={isMember ? 'success' : 'neutral'} hasDot>
+                          {isMember ? 'ضمن التقييم' : 'غير مضاف'}
+                        </Badge>
+                      </li>
+                    </ul>
+                  </div>
+                  <div className={styles.actions}>{categoryButton(category)}</div>
                 </li>
               );
             })}

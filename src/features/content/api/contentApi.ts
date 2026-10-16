@@ -341,6 +341,29 @@ export async function deleteAllOptions(questionId: string): Promise<void> {
 
 /* ── Initial-assessment composition ────────────────────────────────── */
 
+export interface CategoryQuestionGroup {
+  activity: ActivitySummary;
+  questions: Question[];
+}
+
+/**
+ * The questions that belong to a category (client revision 2026-10): its activities of both types
+ * (`GET Admin/activities/{type}?categoryId=`) and each activity's questions
+ * (`GET Admin/activities/{type}/{id}`). Activities without questions are left out.
+ */
+export async function fetchCategoryQuestions(categoryId: string): Promise<CategoryQuestionGroup[]> {
+  const types = ['test', 'game'] as const;
+  const lists = await Promise.all(
+    types.map(async (type) =>
+      (await fetchActivities(type, categoryId)).map((activity) => ({ type, id: activity.id })),
+    ),
+  );
+  const details = await Promise.all(lists.flat().map(({ type, id }) => fetchActivity(type, id)));
+  return details.flatMap((detail) =>
+    detail.questions.length > 0 ? [{ activity: detail, questions: detail.questions }] : [],
+  );
+}
+
 export async function addCategoryToAssessment(categoryId: string): Promise<void> {
   await httpClient.post(CONTENT_PATHS.assessmentCategory(categoryId));
 }
