@@ -39,7 +39,7 @@ export function ReportsSummaryCard({ childId, onShowReports }: ReportsSummaryCar
       <>
         <ul className={styles.list}>
           {[query.data].map((report) => (
-            <li key={report.id} className={styles.row}>
+            <li key={report.id} className={styles.flatRow}>
               <span className={`${styles.iconTile} ${styles.toneViolet}`} aria-hidden="true">
                 <FileText />
               </span>

@@ -10,12 +10,31 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  /* Fits the column it sits in: 3 cards full width, 2 in the main column of a split page. */
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
 }
 
-.planError {
-  margin: 0;
-  color: var(--color-danger-strong);
-  font-size: var(--font-size-sm);
+/* Same columns as the stats and tips rows, so every section lines up. */
+@media (min-width: 40rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 80rem) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* The card is the link to the child's profile. */
+.cardLink {
+  display: block;
+  block-size: 100%;
+  border-radius: var(--radius-xl);
+  color: inherit;
+  text-decoration: none;
+}
+
+.cardLink:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
 }

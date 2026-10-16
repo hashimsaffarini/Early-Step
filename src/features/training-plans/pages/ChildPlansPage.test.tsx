@@ -54,7 +54,13 @@ describe('ChildPlansPage — read-only roles', () => {
     expect(within(list).getByText('لم يكتمل بعد')).toBeInTheDocument();
     // The live child-facing list has no answer counts (verified) — none are shown.
     expect(within(list).queryByText(/إجابات صحيحة/)).not.toBeInTheDocument();
-    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 من 2 أنشطة');
+    // Activity summary + completion %, derived from the real plan rows (1 of 2 → 50 %).
+    const summary = screen.getByRole('region', { name: 'ملخص الأنشطة' });
+    expect(within(summary).getByText('إجمالي الأنشطة').nextElementSibling).toHaveTextContent('2');
+    expect(within(summary).getByText('المنجزة').nextElementSibling).toHaveTextContent('1');
+    expect(within(summary).getByText('المتبقية').nextElementSibling).toHaveTextContent('1');
+    expect(within(summary).queryByText('متوسط النتيجة')).not.toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '50% · 1 من 2 أنشطة');
     expect(screen.queryByRole('button', { name: 'إضافة نشاط' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /إزالة/ })).not.toBeInTheDocument();
   });
@@ -206,10 +212,15 @@ describe('ChildPlansPage — results (specialist)', () => {
 
     const list = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
     expect(within(list).getByText(/النتيجة: 75%/)).toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'الأنشطة المنجزة' })).toHaveAttribute(
+    expect(screen.getByRole('progressbar', { name: 'نسبة إنجاز الخطة' })).toHaveAttribute(
       'aria-valuenow',
       '50',
     );
+    // The specialist's rows carry the results: totals and the mean score of completed activities.
+    const summary = screen.getByRole('region', { name: 'ملخص الأنشطة' });
+    expect(within(summary).getByText('الإجابات الصحيحة').nextElementSibling).toHaveTextContent('3');
+    expect(within(summary).getByText('الإجابات الخاطئة').nextElementSibling).toHaveTextContent('1');
+    expect(within(summary).getByText('متوسط النتيجة').nextElementSibling).toHaveTextContent('75%');
     // Loaded only when opened, and only for completed activities.
     expect(within(list).getAllByText('عرض إجابات الطفل')).toHaveLength(1);
     expect(resultCalls).toBe(0);

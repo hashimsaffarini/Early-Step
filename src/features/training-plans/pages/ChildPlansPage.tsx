@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { PageBanner } from '@/components/shared/PageBanner';
 import { SectionHeader } from '@/components/shared/SectionHeader';
+import { PlanSummary } from '@/components/shared/PlanSummary';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/Modal';
@@ -20,7 +21,6 @@ import { useRemoveActivityMutation, useSpecialistPlan } from '../api/trainingPla
 import { AssignActivityDialog } from '../components/AssignActivityDialog';
 import { AssignTeacherCard } from '../components/AssignTeacherCard';
 import { PlanActivityList } from '../components/PlanActivityList';
-import { PlanProgress } from '../components/PlanProgress';
 import cardStyles from '../components/plans.module.css';
 
 import styles from './ChildPlansPage.module.css';
@@ -87,7 +87,7 @@ function PlanSection({
         />
       ) : (
         <>
-          <PlanProgress activities={activities} progress={progress} />
+          <PlanSummary activities={activities} serverProgress={progress} />
           <PlanActivityList
             activities={activities}
             onRemove={onRemove}

@@ -1,11 +1,3 @@
-export function countCompleted(items: readonly { isCompleted: boolean }[]): number {
-  return items.filter((item) => item.isCompleted).length;
-}
-
-export function formatActivityProgress(completed: number, total: number): string {
-  return `${completed.toString()} من ${total.toString()} أنشطة`;
-}
-
 const FEW_MIN = 3;
 const FEW_MAX = 10;
 

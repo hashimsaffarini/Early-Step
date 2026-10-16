@@ -38,21 +38,22 @@ describe('ParentDashboardPage', () => {
     expect(within(summary).queryByText('التقييمات المكتملة')).not.toBeInTheDocument();
   });
 
-  it('renders a card per child from the API with profile links and plan progress', async () => {
+  it('renders each child card as the profile link with real info, no button or progress', async () => {
     renderDashboard();
     const section = await screen.findByRole('region', { name: 'أطفالي' });
 
     for (const name of ['يوسف', 'نور', 'ريم']) {
       expect(within(section).getByRole('heading', { name })).toBeInTheDocument();
     }
-    expect(screen.getByRole('link', { name: 'عرض ملف يوسف' })).toHaveAttribute(
-      'href',
-      '/parent/children/c0000000-0000-4000-8000-000000000001',
-    );
-    expect(await within(section).findByRole('progressbar')).toHaveAttribute(
-      'aria-valuetext',
-      '1 من 2 أنشطة',
-    );
+    const card = within(section).getByRole('link', { name: 'ملف يوسف' });
+    expect(card).toHaveAttribute('href', '/parent/children/c0000000-0000-4000-8000-000000000001');
+    // Real counts from GET Parent/{childId} (mock plan: 2 tests, 0 games; 1 report).
+    expect(await within(card).findByText('الاختبارات: 2')).toBeInTheDocument();
+    expect(within(card).getByText('الألعاب: 0')).toBeInTheDocument();
+    expect(within(card).getByText('التقارير: 1')).toBeInTheDocument();
+    // Client revision 2026-10: no "عرض الملف" button and no progress on the card.
+    expect(within(section).queryByText('عرض الملف')).not.toBeInTheDocument();
+    expect(within(section).queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /عرض الكل/ })).toHaveAttribute(
       'href',
       '/parent/children',

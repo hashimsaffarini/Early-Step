@@ -42,8 +42,14 @@ export const routes: RouteObject[] = [
         ],
       },
       {
-        path: ROUTE_PATHS.forgotPassword,
-        lazy: async () => ({ Component: (await loadAuth()).ForgotPasswordPage }),
+        // Centred like login (client revision 2026-10): same layout, no signed-in redirect.
+        element: <AuthLayout />,
+        children: [
+          {
+            path: ROUTE_PATHS.forgotPassword,
+            lazy: async () => ({ Component: (await loadAuth()).ForgotPasswordPage }),
+          },
+        ],
       },
       {
         path: ROUTE_PATHS.resetPassword,

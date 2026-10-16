@@ -31,6 +31,11 @@ function optionsAfter(container: HTMLElement, label: string): string[] {
     .map((item) => item.textContent);
 }
 
+/** The value shown for a summary figure (`<dt>` label → `<dd>` value). */
+function figure(container: HTMLElement, label: string): string | null {
+  return within(container).getByText(label).nextElementSibling?.textContent ?? null;
+}
+
 describe('ChildProfilePage — resolving the child', () => {
   it('loads the parent child from GET Parent/{id} with API fields only', async () => {
     renderProfile('Parent', YOUSEF);
@@ -80,16 +85,21 @@ describe('ChildProfilePage — resolving the child', () => {
 });
 
 describe('ChildProfilePage — tabs from the API', () => {
-  it('shows plan summary counts and plan progress on the overview', async () => {
+  it('shows the real activity summary and completion % in the plan section', async () => {
     renderProfile('Parent', YOUSEF);
     await heading('يوسف');
 
-    const summary = await screen.findByRole('region', { name: 'ملخص الأنشطة' });
-    expect(await within(summary).findByText('أنشطة الخطة')).toBeInTheDocument();
     const plan = screen.getByRole('region', { name: 'الخطة التدريبية' });
-    expect(await within(plan).findByRole('progressbar')).toHaveAttribute(
+    const summary = await within(plan).findByRole('region', { name: 'ملخص الأنشطة' });
+    expect(figure(summary, 'إجمالي الأنشطة')).toBe('2');
+    expect(figure(summary, 'المنجزة')).toBe('1');
+    expect(figure(summary, 'المتبقية')).toBe('1');
+    // The parent's plan rows carry no answer counts or scores, so none are invented.
+    expect(within(summary).queryByText('الإجابات الصحيحة')).not.toBeInTheDocument();
+    expect(within(summary).queryByText('متوسط النتيجة')).not.toBeInTheDocument();
+    expect(within(plan).getByRole('progressbar')).toHaveAttribute(
       'aria-valuetext',
-      '1 من 2 أنشطة',
+      '50% · 1 من 2 أنشطة',
     );
   });
 

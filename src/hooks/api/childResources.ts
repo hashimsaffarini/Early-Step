@@ -5,7 +5,11 @@ import type { AreaRole } from '@/constants/routes';
 import { fetchAssessmentResult } from '@/services/api/assessmentResult';
 import { fetchChildPlanActivities, fetchChildPlanSummary } from '@/services/api/childPlan';
 import { fetchChildReport } from '@/services/api/childReports';
-import { CHILDREN_LIST_PATH, fetchChildrenForRole } from '@/services/api/childrenLists';
+import {
+  CHILDREN_LIST_PATH,
+  fetchChildrenForRole,
+  fetchParentChildDetail,
+} from '@/services/api/childrenLists';
 import { queryKeys } from '@/services/api/queryKeys';
 import { fetchChildFeedbacks } from '@/services/api/teacherFeedback';
 
@@ -57,6 +61,15 @@ export function useChildFeedbacks(childId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.notes.byChild(childId ?? ''),
     queryFn: () => fetchChildFeedbacks(childId ?? ''),
+    enabled: Boolean(childId),
+  });
+}
+
+/** The parent's own child with its server counts (`GET Parent/{childId}`, `children.detail`). */
+export function useParentChildDetail(childId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.children.detail(childId ?? ''),
+    queryFn: () => fetchParentChildDetail(childId ?? ''),
     enabled: Boolean(childId),
   });
 }

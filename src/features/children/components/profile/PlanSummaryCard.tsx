@@ -1,13 +1,12 @@
 import { Target } from 'lucide-react';
 
 import { EmptyState } from '@/components/shared/EmptyState';
+import { PlanSummary } from '@/components/shared/PlanSummary';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { ProgressBar } from '@/components/ui/Feedback';
 import { useChildPlanActivities } from '@/hooks/api/childResources';
 
-import { countCompleted, formatActivityProgress } from './labels';
 import styles from './profile.module.css';
 import { QueryStatus } from './TabStatus';
 
@@ -19,8 +18,9 @@ export interface PlanSummaryCardProps {
 }
 
 /**
- * Training plan progress from the plan activities (completed / total). The API has no plan
- * title, start date or specialist name on this endpoint, so none are shown.
+ * Training plan: activity summary and completion %, derived from the plan activities
+ * (`TrainingPlan/children/{id}/activities`). The API has no plan title or start date on this
+ * endpoint, so none are shown.
  */
 export function PlanSummaryCard({ childId, onShowActivities }: PlanSummaryCardProps) {
   const query = useChildPlanActivities(childId);
@@ -37,16 +37,9 @@ export function PlanSummaryCard({ childId, onShowActivities }: PlanSummaryCardPr
       />
     );
   } else {
-    const completed = countCompleted(query.data);
     body = (
       <>
-        <ProgressBar
-          label="أنشطة الخطة المنجزة"
-          value={completed}
-          max={query.data.length}
-          valueText={formatActivityProgress(completed, query.data.length)}
-          showLabel
-        />
+        <PlanSummary activities={query.data} />
         <div className={styles.footer}>
           <Button variant="soft" onClick={onShowActivities}>
             عرض الأنشطة
