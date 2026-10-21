@@ -1,15 +1,20 @@
 import {
+  CircleCheck,
+  CircleDashed,
   CircleMinus,
   CirclePlus,
+  ClipboardCheck,
   ClipboardList,
   FolderTree,
   Gamepad2,
+  ImageIcon,
   ListPlus,
 } from 'lucide-react';
 import { useState } from 'react';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { SectionHeader } from '@/components/shared/SectionHeader';
+import { ServerImage } from '@/components/shared/ServerImage';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
@@ -24,7 +29,7 @@ import {
 import styles from '../components/content.module.css';
 import { ContentPage } from '../components/ContentPage';
 import { QueryStatus } from '../components/QueryStatus';
-import type { Category } from '../types';
+import { ACTIVITY_TYPE_SINGULAR, QUESTION_TYPE_LABELS, type Category } from '../types';
 
 type QuestionAction = 'added' | 'removed';
 type QuestionActions = Record<string, QuestionAction>;
@@ -62,12 +67,19 @@ function CategoryQuestions({
           className={styles.activityGroup}
         >
           <h4 className={styles.groupTitle}>
-            {group.activity.type === 'game' ? (
-              <Gamepad2 aria-hidden="true" />
-            ) : (
-              <ClipboardList aria-hidden="true" />
-            )}
-            {group.activity.title}
+            <span className={styles.treeIcon} aria-hidden="true">
+              <ServerImage
+                path={group.activity.iconUrl}
+                alt=""
+                fallback={group.activity.type === 'game' ? <Gamepad2 /> : <ClipboardList />}
+              />
+            </span>
+            <span className={styles.levelText}>
+              <span className={styles.levelLabel}>
+                {group.activity.type ? ACTIVITY_TYPE_SINGULAR[group.activity.type] : 'نشاط'}
+              </span>
+              {group.activity.title}
+            </span>
             <span className={styles.muted}>{`(${group.questions.length.toString()} أسئلة)`}</span>
           </h4>
           <ol className={styles.questionList}>
@@ -76,11 +88,23 @@ function CategoryQuestions({
               const action = actions[question.id];
               return (
                 <li key={question.id} className={styles.questionRow}>
-                  <div className={styles.rowMain}>
-                    <span>
-                      <span className={styles.questionNumber}>{`${(index + 1).toString()}.`}</span>
-                      {label}
+                  <span className={styles.questionNumber} aria-hidden="true">
+                    {(index + 1).toString()}
+                  </span>
+                  {question.imageUrl ? (
+                    <span className={styles.questionThumb}>
+                      <ServerImage
+                        path={question.imageUrl}
+                        alt={`صورة السؤال ${(index + 1).toString()}`}
+                        fallback={<ImageIcon aria-hidden="true" />}
+                      />
                     </span>
+                  ) : null}
+                  <div className={styles.rowMain}>
+                    <span className={styles.questionText}>{label}</span>
+                    {question.type ? (
+                      <span className={styles.muted}>{QUESTION_TYPE_LABELS[question.type]}</span>
+                    ) : null}
                     {action ? (
                       <p className={styles.muted} role="status">
                         {action === 'added'
@@ -189,9 +213,20 @@ export function InitialAssessmentAdminPage() {
     >
       <section className={styles.page} aria-labelledby="assessment-structure">
         <SectionHeader id="assessment-structure" title="محتوى التقييم المبدئي" icon={FolderTree} />
-        <p className={styles.muted}>التصنيف ← النشاط ← الأسئلة التابعة له.</p>
         <ApiErrorAlert error={toggleCategory.error} />
         <ApiErrorAlert error={toggleQuestion.error} />
+        <div className={styles.assessmentRoot}>
+          <span className={styles.rootIcon} aria-hidden="true">
+            <ClipboardCheck />
+          </span>
+          <div className={styles.rowMain}>
+            <p className={styles.rootTitle}>التقييم الأولي</p>
+            <p className={styles.muted}>التصنيف ← النشاط (اختبار أو لعبة) ← الأسئلة التابعة له.</p>
+          </div>
+          {!isLoading && !loadError ? (
+            <Badge tone="primary">{`التصنيفات: ${inAssessment.length.toString()}`}</Badge>
+          ) : null}
+        </div>
         <QueryStatus
           isLoading={isLoading}
           error={loadError}
@@ -206,13 +241,16 @@ export function InitialAssessmentAdminPage() {
               لا توفّر الواجهة البرمجية قائمة بالأسئلة المضافة حالياً إلى التقييم، لذا تظهر حالة
               السؤال فقط للإجراءات التي نفّذتها في هذه الجلسة.
             </Alert>
-            <ul className={styles.list} aria-label="تصنيفات التقييم المبدئي">
-              {inAssessment.map((category) => (
+            <ol className={styles.tree} aria-label="تصنيفات التقييم المبدئي">
+              {inAssessment.map((category, index) => (
                 <li key={category.id} className={styles.categoryBlock}>
-                  <div className={styles.toolbar}>
+                  <div className={styles.categoryHead}>
+                    <span className={styles.categoryIndex} aria-hidden="true">
+                      {(index + 1).toString()}
+                    </span>
                     <h3 className={styles.categoryTitle}>
-                      <FolderTree aria-hidden="true" />
-                      {`التصنيف: ${category.name}`}
+                      <span className={styles.levelLabel}>التصنيف:</span>{' '}
+                      <span>{category.name}</span>
                     </h3>
                     {categoryButton(category)}
                   </div>
@@ -223,7 +261,7 @@ export function InitialAssessmentAdminPage() {
                   />
                 </li>
               ))}
-            </ul>
+            </ol>
           </>
         ) : null}
       </section>
@@ -247,12 +285,19 @@ export function InitialAssessmentAdminPage() {
               const isMember = memberSet.has(category.id);
               return (
                 <li key={category.id} className={styles.row}>
-                  <span />
+                  <span className={styles.rowIcon} aria-hidden="true">
+                    <FolderTree />
+                  </span>
                   <div className={styles.rowMain}>
                     <h3 className={styles.rowTitle}>{category.name}</h3>
                     <ul className={styles.meta}>
                       <li>
-                        <Badge tone={isMember ? 'success' : 'neutral'} hasDot>
+                        <Badge tone={isMember ? 'success' : 'neutral'}>
+                          {isMember ? (
+                            <CircleCheck aria-hidden="true" size={14} />
+                          ) : (
+                            <CircleDashed aria-hidden="true" size={14} />
+                          )}
                           {isMember ? 'ضمن التقييم' : 'غير مضاف'}
                         </Badge>
                       </li>

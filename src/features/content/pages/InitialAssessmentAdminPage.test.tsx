@@ -25,6 +25,34 @@ describe('InitialAssessmentAdminPage (category → questions, client revision 20
     expect(within(list).queryByText('التصنيف: الأرقام والحساب')).not.toBeInTheDocument();
   });
 
+  it('reads as a tree: assessment → category → activity (with its type) → numbered questions', async () => {
+    renderContent(ADMIN_PATHS.initialAssessment);
+
+    const list = await hierarchy();
+    expect(screen.getByText('التقييم الأولي')).toBeInTheDocument();
+    expect(screen.getByText('التصنيفات: 1')).toBeInTheDocument();
+    const reading = within(list).getByRole('heading', { name: 'التصنيف: الحروف والقراءة' });
+    const block = reading.closest('li');
+    if (!block) throw new Error('category block not found');
+    const group = await within(block).findByRole('region', { name: 'اختبار الحروف' });
+    // Activity level names its type; questions are numbered with their question type.
+    expect(within(group).getByRole('heading', { level: 4 })).toHaveTextContent(/^اختبار/);
+    const questions = within(group).getAllByRole('listitem');
+    expect(questions[0]).toHaveTextContent(/^1/);
+    expect(
+      within(group).getAllByText(/^(اختيار إجابة واحدة|اختيار عدة إجابات|ترتيب)$/).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('marks membership with an icon and text, not a colour dot', async () => {
+    renderContent(ADMIN_PATHS.initialAssessment);
+    const all = await screen.findByRole('list', { name: 'كل التصنيفات' });
+
+    const member = within(all).getByText('ضمن التقييم');
+    expect(member.querySelector('svg')).not.toBeNull();
+    expect(all.querySelector('[class*="dot"]')).toBeNull();
+  });
+
   it('adds a category — it appears at once — and removes it again', async () => {
     renderContent(ADMIN_PATHS.initialAssessment);
     await hierarchy();
