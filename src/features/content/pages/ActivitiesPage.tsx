@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/Button';
 import { FormField, Select } from '@/components/ui/Field';
 import { ConfirmDialog } from '@/components/ui/Modal';
 import { ADMIN_PATHS } from '@/constants/routes';
+import type { GameSlug } from '@/components/games';
 import { normalizeActivityType, type ActivityType } from '@/services/api/activityType';
 
 import { useActivities, useCategories, useDeleteActivity } from '../api/contentQueries';
 import { ActivityFormDialog } from '../components/ActivityFormDialog';
+import { GameTemplatesSection } from '../components/GameTemplatesSection';
 import styles from '../components/content.module.css';
 import { ContentPage } from '../components/ContentPage';
 import { QueryStatus } from '../components/QueryStatus';
@@ -26,7 +28,10 @@ import {
 
 const TYPES: readonly ActivityType[] = ['test', 'game'];
 
-type Editing = { mode: 'create' } | { mode: 'edit'; activity: ActivitySummary } | null;
+type Editing =
+  | { mode: 'create'; template?: GameSlug | undefined }
+  | { mode: 'edit'; activity: ActivitySummary }
+  | null;
 
 interface CategoryGroup {
   id: string;
@@ -176,6 +181,13 @@ export function ActivitiesPage() {
           : {})}
         onRetry={() => void activitiesQuery.refetch()}
       />
+      {type === 'game' && canCreate ? (
+        <GameTemplatesSection
+          onCreate={(template) => {
+            setEditing({ mode: 'create', template });
+          }}
+        />
+      ) : null}
       {groups.length > 0 ? (
         <div className={styles.categoryGroups}>
           {groups.map((group) => {
@@ -267,6 +279,7 @@ export function ActivitiesPage() {
           type={type}
           activity={editing.mode === 'edit' ? editing.activity : null}
           categories={categories}
+          initialTemplate={editing.mode === 'create' ? editing.template : undefined}
           onClose={() => {
             setEditing(null);
           }}

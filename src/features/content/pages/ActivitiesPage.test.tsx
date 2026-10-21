@@ -179,4 +179,88 @@ describe('ActivitiesPage', () => {
 
     expect(await screen.findByText('لا توجد الاختبارات هنا بعد')).toBeInTheDocument();
   });
+
+  describe('game templates (client revision 2026-10)', () => {
+    it('lists the four templates and creates a game whose Slug carries the template', async () => {
+      let received: FormData | undefined;
+      server.use(
+        http.post(apiUrl('Admin/activities/:type'), async ({ request, params }) => {
+          expect(params.type).toBe('game');
+          received = await request.formData();
+          return HttpResponse.json({ id: 'new-game' });
+        }),
+      );
+      renderContent(`${ADMIN_PATHS.activities}?type=game`);
+
+      const templates = await screen.findByRole('list', { name: 'قوالب الألعاب' });
+      expect(within(templates).getAllByRole('listitem')).toHaveLength(4);
+      await userEvent.click(
+        within(templates).getByRole('button', { name: 'إنشاء لعبة من قالب صيد الحروف' }),
+      );
+
+      const dialog = screen.getByRole('dialog', { name: 'إضافة لعبة' });
+      expect(within(dialog).getByLabelText('نوع اللعبة')).toHaveValue('letter-hunt');
+      expect(
+        within(dialog).getByText(/أنواع الأسئلة المناسبة: اختيار إجابة واحدة/),
+      ).toBeInTheDocument();
+      expect(within(dialog).getByLabelText(/المعرّف المختصر/)).toHaveValue('letter-hunt');
+      await userEvent.type(within(dialog).getByLabelText(/عنوان النشاط/), 'صيد حروف الحيوانات');
+      await userEvent.selectOptions(within(dialog).getByLabelText(/^التصنيف/), 'الحروف والقراءة');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ' }));
+
+      await waitFor(() => {
+        expect(received?.get('Slug')).toBe('letter-hunt');
+      });
+      expect(received?.get('Title')).toBe('صيد حروف الحيوانات');
+    });
+
+    it('keeps a suffix when switching template and shows each template’s question types', async () => {
+      renderContent(`${ADMIN_PATHS.activities}?type=game`);
+      await screen.findByRole('list', { name: 'قوالب الألعاب' });
+      await userEvent.click(
+        screen.getAllByRole('button', { name: 'إضافة لعبة' })[0] ?? document.body,
+      );
+      const dialog = screen.getByRole('dialog', { name: 'إضافة لعبة' });
+      const template = within(dialog).getByLabelText('نوع اللعبة');
+      expect(template).toHaveValue('');
+
+      await userEvent.selectOptions(template, 'memory-sequence');
+      expect(within(dialog).getByText(/أنواع الأسئلة المناسبة: ترتيب/)).toBeInTheDocument();
+      const slug = within(dialog).getByLabelText(/المعرّف المختصر/);
+      await userEvent.clear(slug);
+      await userEvent.type(slug, 'memory-sequence-2');
+      await userEvent.selectOptions(template, 'focus-challenge');
+
+      expect(slug).toHaveValue('focus-challenge-2');
+      expect(
+        within(dialog).getByText(/أنواع الأسئلة المناسبة: اختيار عدة إجابات/),
+      ).toBeInTheDocument();
+    });
+
+    it('rejects a slug that does not belong to the chosen template', async () => {
+      renderContent(`${ADMIN_PATHS.activities}?type=game`);
+      await screen.findByRole('list', { name: 'قوالب الألعاب' });
+      await userEvent.click(screen.getByRole('button', { name: 'إنشاء لعبة من قالب طابق الرقم' }));
+      const dialog = screen.getByRole('dialog', { name: 'إضافة لعبة' });
+      await userEvent.type(within(dialog).getByLabelText(/عنوان النشاط/), 'لعبة');
+      await userEvent.selectOptions(within(dialog).getByLabelText(/^التصنيف/), 'الأرقام والحساب');
+      const slug = within(dialog).getByLabelText(/المعرّف المختصر/);
+      await userEvent.clear(slug);
+      await userEvent.type(slug, 'numbers');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ' }));
+
+      expect(
+        await within(dialog).findByText(
+          'يجب أن يبدأ المعرّف بـ number-match ليفتح الطفل لعبة «طابق الرقم».',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('shows no template section on the tests tab', async () => {
+      renderContent(`${ADMIN_PATHS.activities}?type=test`);
+      await screen.findByRole('link', { name: 'اختبار الحروف' });
+
+      expect(screen.queryByRole('list', { name: 'قوالب الألعاب' })).not.toBeInTheDocument();
+    });
+  });
 });

@@ -1,6 +1,7 @@
 import { Gamepad2, ListChecks, Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { resolveGameTemplate } from '@/components/games';
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
@@ -86,6 +87,9 @@ export function AssignActivityDialog({
               <h3 className={styles.itemTitle}>{item.title || 'نشاط'}</h3>
               <div className={styles.badges}>
                 {item.categoryName ? <Badge>{item.categoryName}</Badge> : null}
+                {type === 'game' && resolveGameTemplate(item.slug) ? (
+                  <Badge tone="accent">{resolveGameTemplate(item.slug)?.name}</Badge>
+                ) : null}
                 {item.questionCount !== null ? (
                   <Badge>{`${item.questionCount} أسئلة`}</Badge>
                 ) : null}

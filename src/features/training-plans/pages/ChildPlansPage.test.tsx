@@ -66,7 +66,7 @@ describe('ChildPlansPage — read-only roles', () => {
   });
 
   it('shows an empty state when the plan has no activities', async () => {
-    renderPlans('Teacher', NOUR);
+    renderPlans('Teacher', SALMA);
 
     expect(await screen.findByText('لا توجد أنشطة في الخطة بعد')).toBeInTheDocument();
   });
@@ -98,7 +98,7 @@ describe('ChildPlansPage — read-only roles', () => {
 
 describe('ChildPlansPage — specialist', () => {
   it('explains when the child has no plan yet', async () => {
-    renderPlans('Specialist', NOUR);
+    renderPlans('Specialist', SALMA);
 
     expect(await screen.findByText(/لا توجد خطة تدريبية لهذا الطفل بعد/)).toBeInTheDocument();
   });
@@ -135,6 +135,56 @@ describe('ChildPlansPage — specialist', () => {
       expect(list.querySelectorAll(':scope > li')).toHaveLength(3);
     });
     server.events.removeAllListeners();
+  });
+
+  it('shows the game template and assigns the real game activity (no duplicate)', async () => {
+    let body: unknown;
+    server.use(
+      http.get(
+        apiUrl('TrainingPlan/specialist/children/:childId/available-activities'),
+        ({ request }) =>
+          HttpResponse.json(
+            new URL(request.url).searchParams.get('type') === 'game'
+              ? [
+                  {
+                    id: 'g-real',
+                    title: 'صيد حروف الحيوانات',
+                    type: 'ألعاب',
+                    categoryName: 'الحروف والقراءة',
+                    isAssigned: false,
+                    questionCount: 4,
+                    slug: 'letter-hunt',
+                  },
+                ]
+              : [],
+          ),
+      ),
+      http.post(
+        apiUrl('TrainingPlan/specialist/children/:childId/activities'),
+        async ({ request }) => {
+          body = await request.json();
+          return HttpResponse.json({
+            message: 'ok',
+            activity: { trainingPlanActivityId: 'pa-new' },
+          });
+        },
+      ),
+    );
+    renderPlans('Specialist', YOUSEF);
+    await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'إضافة نشاط' }));
+    const dialog = await screen.findByRole('dialog', { name: 'إضافة نشاط إلى الخطة' });
+    await userEvent.click(within(dialog).getByRole('tab', { name: /ألعاب/ }));
+    expect(await within(dialog).findByText('صيد الحروف')).toBeInTheDocument();
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'إضافة «صيد حروف الحيوانات» إلى الخطة' }),
+    );
+
+    expect(
+      await within(dialog).findByText('تمت إضافة «صيد حروف الحيوانات» إلى الخطة.'),
+    ).toBeInTheDocument();
+    expect(body).toEqual({ activityId: 'g-real' });
   });
 
   it('lists games in the second tab', async () => {

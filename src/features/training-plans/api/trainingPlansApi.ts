@@ -99,6 +99,8 @@ const availableActivitySchema = z.looseObject({
   categoryName: z.string().nullish(),
   isAssigned: z.boolean().nullish(),
   questionCount: z.number().nullish(),
+  /** Not sent live yet (2026-10-15); read when present to show the game template. */
+  slug: z.string().nullish(),
 });
 
 export interface AvailableActivity {
@@ -110,6 +112,7 @@ export interface AvailableActivity {
   categoryName: string | null;
   isAssigned: boolean;
   questionCount: number | null;
+  slug: string | null;
 }
 
 function trimOrNull(value: string | null | undefined): string | null {
@@ -137,6 +140,7 @@ export async function fetchAvailableActivities(
       categoryName: trimOrNull(dto.categoryName),
       isAssigned: dto.isAssigned ?? false,
       questionCount: dto.questionCount ?? null,
+      slug: dto.slug ?? null,
     }));
 }
 

@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http } from 'msw';
+import { http, HttpResponse } from 'msw';
 
 import { ADMIN_PATHS } from '@/constants/routes';
 import { apiUrl } from '@/mocks/http';
@@ -201,5 +201,46 @@ describe('ActivityDetailPage — correct answers (client revision 2026-10)', () 
     await waitFor(() => {
       expect(screen.getByText('الترتيب الصحيح: 2').parentElement).toHaveTextContent('ق');
     });
+  });
+});
+
+describe('ActivityDetailPage — game template (client revision 2026-10)', () => {
+  const gameDetail = (slug: string) =>
+    http.get(apiUrl('Admin/activities/:type/:id'), () =>
+      HttpResponse.json({
+        id: 'g-1',
+        title: 'لعبة الحروف',
+        description: '',
+        slug,
+        type: 'game',
+        iconUrl: '/uploads/letters.png',
+        categoryId: 'cat00000-0000-4000-8000-000000000001',
+        categoryName: 'الحروف والقراءة',
+        questions: [
+          { id: 'q1', questionText: 'سؤال 1', type: 'SingleChoice', order: 1, options: [] },
+          { id: 'q2', questionText: 'سؤال 2', type: 'Sequence', order: 2, options: [] },
+        ],
+      }),
+    );
+
+  it('shows the template from the saved slug and which questions fit it', async () => {
+    server.use(gameDetail('letter-hunt-2'));
+    renderContent(ADMIN_PATHS.activityDetail('game', 'g-1'));
+
+    const panel = await screen.findByRole('region', { name: 'نوع اللعبة' });
+    expect(within(panel).getByText('نوع اللعبة: صيد الحروف')).toBeInTheDocument();
+    expect(within(panel).getByText(/1 من الأسئلة من نوع آخر/)).toBeInTheDocument();
+    // The real icon is shown, with an Arabic alt.
+    expect(screen.getByRole('img', { name: 'أيقونة لعبة الحروف' })).toHaveAttribute(
+      'src',
+      expect.stringContaining('/uploads/letters.png') as string,
+    );
+  });
+
+  it('explains that a game without a template uses the generic player', async () => {
+    server.use(gameDetail('memory-game'));
+    renderContent(ADMIN_PATHS.activityDetail('game', 'g-1'));
+
+    expect(await screen.findByText(/لا يوجد «نوع لعبة» لهذا النشاط/)).toBeInTheDocument();
   });
 });

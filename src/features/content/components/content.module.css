@@ -673,3 +673,68 @@
   block-size: 100%;
   object-fit: cover;
 }
+
+/* Game form: «نوع اللعبة» and the chosen template's guidance. */
+.templatePicker {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.templateInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-muted);
+}
+
+.templateIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-violet-soft);
+  color: var(--color-violet-strong);
+}
+
+.templateIcon svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.templateCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.templateCard .rowMain {
+  flex: 1;
+  min-inline-size: 8rem;
+}
+
+/* Game detail: the template and how the questions fit it. */
+.templatePanel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+}

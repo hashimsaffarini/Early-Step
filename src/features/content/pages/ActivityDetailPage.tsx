@@ -15,6 +15,7 @@ import { useActivity } from '../api/contentQueries';
 import styles from '../components/content.module.css';
 import { ContentPage } from '../components/ContentPage';
 import { QuestionCard } from '../components/QuestionCard';
+import { GameTemplatePanel } from '../components/GameTemplatePanel';
 import { QuestionFormDialog } from '../components/QuestionFormDialog';
 import { QueryStatus } from '../components/QueryStatus';
 import { ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_SINGULAR } from '../types';
@@ -103,6 +104,9 @@ export function ActivityDetailPage() {
               </ul>
             </div>
           </Card>
+          {type === 'game' ? (
+            <GameTemplatePanel slug={activity.slug} questions={activity.questions} />
+          ) : null}
 
           <div className={styles.toolbar}>
             <h2
