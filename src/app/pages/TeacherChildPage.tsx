@@ -1,47 +1,33 @@
-import { ArrowRight, BookOpen, UserX } from 'lucide-react';
+import { ArrowRight, UserX } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
+import { ChildHero, childHeroProgress, PlanStatGrid } from '@/components/shared/ChildDashboard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
-import { PageBanner } from '@/components/shared/PageBanner';
 import { Button, getButtonClassName } from '@/components/ui/Button';
+import { childFacts } from '@/features/children';
 import { TeacherNotesSection } from '@/features/feedback';
 import { ChildPlanPanel } from '@/features/training-plans';
-import { useChildrenForRole } from '@/hooks/api/childResources';
+import { useChildPlanActivities, useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
-import type { ChildSummary } from '@/services/api/childrenLists';
-import { formatAge } from '@/utils/age';
+import { summarizePlan } from '@/services/api/planSummary';
 
-import styles from './TeacherChildPage.module.css';
-
-/** The child's facts the teacher list sends (`GET Teacher/children`) — nothing invented. */
-function childFacts(child: ChildSummary): string[] {
-  const facts: string[] = [];
-  if (child.age !== null) facts.push(`العمر: ${formatAge(child.age)}`);
-  if (child.gender) facts.push(`الجنس: ${child.gender}`);
-  if (child.parentName) facts.push(`ولي الأمر: ${child.parentName}`);
-  return facts;
-}
+import styles from './ChildDashboardPage.module.css';
 
 /**
- * The teacher's view of one assigned child (client revision 2026-10): focused on the training
- * plan — the child's info, the plan summary and progress, every assigned activity with its saved
- * result (and «ابدأ» to play it in class), and the teacher's notes with add / edit / delete.
- * No overview, initial-assessment or reports tabs for the teacher.
+ * The teacher's view of one assigned child (client revision 2026-10, dashboard style): header with
+ * the child's facts (`GET Teacher/children`) and plan progress, the plan's stat cards, the
+ * activities with their saved results («ابدأ» to play in class) and the teacher's notes (add /
+ * edit / delete). No overview, initial-assessment or reports for the teacher.
  */
 export function TeacherChildPage() {
   const { childId = '' } = useParams();
   const { paths } = useRoleArea();
   const children = useChildrenForRole('Teacher');
   const child = children.data?.find((item) => item.id === childId);
-
-  const backLink = (
-    <Link to={paths.children} className={styles.backLink}>
-      <ArrowRight aria-hidden="true" />
-      العودة إلى الأطفال
-    </Link>
-  );
+  const plan = useChildPlanActivities(child?.id);
+  const summary = plan.data ? summarizePlan(plan.data) : null;
 
   let body;
   if (children.isPending) {
@@ -72,31 +58,37 @@ export function TeacherChildPage() {
       />
     );
   } else {
-    const facts = childFacts(child);
     body = (
       <>
-        <PageBanner
-          tone="violet"
-          title={child.fullName}
-          subtitle={facts.length > 0 ? facts.join(' · ') : 'الخطة التدريبية وملاحظات المعلم'}
-          aside={
-            <span className={styles.bannerIcon} aria-hidden="true">
-              <BookOpen />
-            </span>
-          }
+        <ChildHero
+          name={child.fullName}
+          eyebrow="الخطة التدريبية وملاحظات المعلم"
+          facts={childFacts(child, { withParent: true })}
+          progress={childHeroProgress(summary)}
         />
-        <ChildPlanPanel
-          childId={child.id}
-          playTo={(activity) => paths.planActivityPlay(child.id, activity.activityId)}
-        />
-        <TeacherNotesSection childId={child.id} />
+        {summary && summary.total > 0 ? <PlanStatGrid summary={summary} /> : null}
+        <div className={styles.columns}>
+          <div className={styles.main}>
+            <ChildPlanPanel
+              childId={child.id}
+              showSummary={false}
+              playTo={(activity) => paths.planActivityPlay(child.id, activity.activityId)}
+            />
+          </div>
+          <div className={styles.aside}>
+            <TeacherNotesSection childId={child.id} />
+          </div>
+        </div>
       </>
     );
   }
 
   return (
     <div className={styles.page}>
-      {backLink}
+      <Link to={paths.children} className={styles.backLink}>
+        <ArrowRight aria-hidden="true" />
+        العودة إلى الأطفال
+      </Link>
       {body}
     </div>
   );

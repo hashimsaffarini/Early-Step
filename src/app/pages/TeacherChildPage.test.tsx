@@ -35,27 +35,35 @@ async function addNote(text: string) {
 }
 
 describe('TeacherChildPage — plan-focused view (client revision 2026-10)', () => {
-  it('shows the child, the plan summary, the activities with results and the notes — no tabs', async () => {
+  it('shows the child, the plan progress, stat cards, the activities and the notes — no tabs', async () => {
     renderNotes();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'يوسف' })).toBeInTheDocument();
-    // 1. Child information from GET Teacher/children (in the page banner).
+    // 1. Child information from GET Teacher/children, as header facts.
+    const facts = screen.getByRole('list', { name: 'بيانات الطفل' });
+    expect(within(facts).getByText('العمر: 7 سنوات')).toBeInTheDocument();
+    expect(within(facts).getByText('الجنس: ولد')).toBeInTheDocument();
+    expect(within(facts).getByText('ولي الأمر: محمد أحمد')).toBeInTheDocument();
+    // 2. Progress and figures derived from the real plan rows.
     expect(
-      screen.getByText(/العمر: 7 سنوات · الجنس: ولد · ولي الأمر: محمد أحمد/),
-    ).toBeInTheDocument();
-    // Plan: summary + progress derived from the real rows, and play links for open activities.
-    const summary = await screen.findByRole('region', { name: 'ملخص الأنشطة' });
-    expect(within(summary).getByText('إجمالي الأنشطة').nextElementSibling).toHaveTextContent('2');
-    expect(screen.getByRole('progressbar', { name: 'نسبة إنجاز الخطة' })).toBeInTheDocument();
+      await screen.findByRole('progressbar', { name: 'نسبة إنجاز الخطة التدريبية' }),
+    ).toHaveAttribute('aria-valuetext', '1 من 2 أنشطة منجزة');
+    const stats = screen.getByRole('list', { name: 'ملخص الخطة التدريبية' });
+    expect(within(stats).getByText('إجمالي الأنشطة').nextElementSibling).toHaveTextContent('2');
+    expect(within(stats).getByText('المكتملة').nextElementSibling).toHaveTextContent('1');
+    // The summary is not repeated inside the plan section.
+    expect(screen.queryByRole('region', { name: 'ملخص الأنشطة' })).not.toBeInTheDocument();
+    // 3. Activities: status as icon + text, play links for the open ones.
     const activities = screen.getByRole('list', { name: 'أنشطة الخطة التدريبية' });
     expect(within(activities).getByText('مكتمل')).toBeInTheDocument();
+    expect(within(activities).getByText('لم يكتمل بعد')).toBeInTheDocument();
     expect(within(activities).getAllByRole('link', { name: /^ابدأ: / })).toHaveLength(1);
-    // Notes live in the plan view.
+    // 4. Notes live in the plan view.
     expect(screen.getByRole('region', { name: 'ملاحظات المعلم' })).toBeInTheDocument();
-    // No overview / initial-assessment / reports tabs for the teacher.
+    // No overview / initial-assessment / reports for the teacher.
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     expect(screen.queryByText('التقييم المبدئي')).not.toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: /التقارير|التقرير/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/التقارير|التقرير/)).not.toBeInTheDocument();
   });
 
   it("lists the child's earlier notes from GET Teacher/children/{childId}/feedbacks", async () => {

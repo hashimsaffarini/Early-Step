@@ -10,13 +10,15 @@ export interface ChildPlanPanelProps {
   childId: string;
   /** Parent / Teacher: link to play an activity that is not completed yet. */
   playTo?: ((activity: PlanActivity) => string) | undefined;
+  /** False on the child dashboards (the summary is shown there as stat cards). */
+  showSummary?: boolean;
 }
 
 /**
  * Read-only training plan (Parent, Teacher) from `TrainingPlan/children/{id}/activities`: summary,
  * progress and every activity with the result fields the server sends for this role.
  */
-export function ChildPlanPanel({ childId, playTo }: ChildPlanPanelProps) {
+export function ChildPlanPanel({ childId, playTo, showSummary = true }: ChildPlanPanelProps) {
   const plan = useChildPlanActivities(childId);
   if (plan.isPending) return <LoadingState label="جارٍ تحميل الخطة…" />;
   if (plan.error) {
@@ -37,6 +39,7 @@ export function ChildPlanPanel({ childId, playTo }: ChildPlanPanelProps) {
       activities={plan.data}
       emptyText="يُضيف الأخصائي الأنشطة إلى الخطة بعد مراجعة التقييم المبدئي."
       playTo={playTo}
+      showSummary={showSummary}
     />
   );
 }

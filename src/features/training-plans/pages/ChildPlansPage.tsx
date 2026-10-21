@@ -1,24 +1,17 @@
-import { ArrowRight, BookOpen, Plus, UserX } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowRight, BookOpen, UserX } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
-import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { PageBanner } from '@/components/shared/PageBanner';
 import { Button, getButtonClassName } from '@/components/ui/Button';
-import { ConfirmDialog } from '@/components/ui/Modal';
 import { useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
-import type { PlanActivity } from '@/services/api/childPlan';
 import type { AppError } from '@/services/http/apiError';
 
-import { useRemoveActivityMutation, useSpecialistPlan } from '../api/trainingPlansQueries';
-import { AssignActivityDialog } from '../components/AssignActivityDialog';
-import { AssignTeacherCard } from '../components/AssignTeacherCard';
 import { ChildPlanPanel } from '../components/ChildPlanPanel';
-import { PlanSection } from '../components/PlanSection';
+import { SpecialistPlanEditor } from '../components/SpecialistPlanEditor';
 
 import styles from './ChildPlansPage.module.css';
 
@@ -46,86 +39,6 @@ function LoadError({
         </Button>
       }
     />
-  );
-}
-
-/** Specialist: manage the plan (add from available activities, remove with confirmation). */
-function SpecialistPlanEditor({ child }: { child: PlanChild }) {
-  const plan = useSpecialistPlan(child.id, true);
-  const removeMutation = useRemoveActivityMutation(child.id);
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [toRemove, setToRemove] = useState<PlanActivity | null>(null);
-
-  if (plan.isPending) return <LoadingState label="جارٍ تحميل الخطة…" />;
-  if (plan.error) {
-    return (
-      <LoadError
-        error={plan.error}
-        onRetry={() => {
-          void plan.refetch();
-        }}
-      />
-    );
-  }
-
-  const addButton = (
-    <Button
-      iconStart={<Plus aria-hidden="true" />}
-      onClick={() => {
-        setIsPickerOpen(true);
-      }}
-    >
-      إضافة نشاط
-    </Button>
-  );
-
-  return (
-    <>
-      <AssignTeacherCard
-        childId={child.id}
-        childName={child.name}
-        currentTeacherName={plan.data.teacherName}
-      />
-      <ApiErrorAlert error={removeMutation.error} />
-      <PlanSection
-        activities={plan.data.activities}
-        action={addButton}
-        emptyText={
-          plan.data.hasPlan
-            ? 'أضف أنشطة مناسبة للطفل من قائمة الأنشطة المتاحة.'
-            : 'لا توجد خطة تدريبية لهذا الطفل بعد. أسنِد له معلماً، ثم أضف أول نشاط لبدء الخطة.'
-        }
-        onRemove={setToRemove}
-        progress={plan.data.progress}
-        resultChildId={child.id}
-      />
-      <AssignActivityDialog
-        isOpen={isPickerOpen}
-        childId={child.id}
-        childName={child.name}
-        onClose={() => {
-          setIsPickerOpen(false);
-        }}
-      />
-      <ConfirmDialog
-        isOpen={toRemove !== null}
-        title="إزالة النشاط من الخطة"
-        description={`سيتم إزالة «${toRemove?.title ?? ''}» من خطة ${child.name}.`}
-        confirmLabel="إزالة"
-        isConfirming={removeMutation.isPending}
-        onCancel={() => {
-          setToRemove(null);
-        }}
-        onConfirm={() => {
-          if (!toRemove) return;
-          removeMutation.mutate(toRemove.activityId, {
-            onSettled: () => {
-              setToRemove(null);
-            },
-          });
-        }}
-      />
-    </>
   );
 }
 
