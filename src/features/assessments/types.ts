@@ -21,6 +21,17 @@ export interface AssessmentQuestion {
   options: readonly AssessmentOption[];
   /** Category/section title when the response provides one. */
   sectionTitle: string | null;
+  /** Id of the category the question was sent under (live: `categories[].id`). */
+  categoryId: string | null;
+}
+
+/** A category of the initial assessment (`GET initial-assessment/categories`). */
+export interface AssessmentCategory {
+  id: string;
+  name: string;
+  /** Only when the server sends one (it does not today). */
+  description: string | null;
+  iconUrl: string | null;
 }
 
 export interface StartedAssessment {

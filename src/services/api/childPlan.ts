@@ -29,6 +29,12 @@ export const planActivityDtoSchema = z.looseObject({
   wrongAnswers: z.number().nullish(),
   isCompleted: z.boolean().nullish(),
   completedAt: z.string().nullish(),
+  /**
+   * The activity's `slug` (saved by the Admin, `POST/PUT Admin/activities/{type}` `Slug`). NOT sent
+   * by the live Training Plan endpoints yet (verified 2026-10-15) — requested from the backend;
+   * read when present so a game opens its dedicated engine (`components/games`).
+   */
+  slug: z.string().nullish(),
 });
 
 export interface PlanActivity {
@@ -46,6 +52,8 @@ export interface PlanActivity {
   score: number | null;
   correctAnswers: number | null;
   wrongAnswers: number | null;
+  /** Game template key (`letter-hunt`, …) when the server sends the activity slug. */
+  slug: string | null;
 }
 
 export function mapPlanActivity(dto: z.infer<typeof planActivityDtoSchema>): PlanActivity {
@@ -63,6 +71,7 @@ export function mapPlanActivity(dto: z.infer<typeof planActivityDtoSchema>): Pla
     score: dto.score ?? null,
     correctAnswers: dto.correctAnswers ?? null,
     wrongAnswers: dto.wrongAnswers ?? null,
+    slug: dto.slug ?? null,
   };
 }
 

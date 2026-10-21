@@ -66,3 +66,33 @@ export async function fetchChildrenForRole(role: AreaRole): Promise<ChildSummary
   const { data } = await httpClient.get<unknown>(path);
   return z.array(childListItemSchema).parse(data).map(mapChildSummary);
 }
+
+/**
+ * `GET Parent/{childId}` (the parent's own child) — VERIFIED LIVE 2026-10-16:
+ * `{ id, fullName, age, gender, gamesCount, testsCount, reportsCount }`.
+ */
+const parentChildDetailSchema = childListItemSchema.extend({
+  gamesCount: z.number().nullish(),
+  testsCount: z.number().nullish(),
+  reportsCount: z.number().nullish(),
+});
+
+export interface ParentChildDetail extends ChildSummary {
+  /** Counts the server sends for the child (null when not sent — never shown as 0). */
+  testsCount: number | null;
+  gamesCount: number | null;
+  reportsCount: number | null;
+}
+
+export const PARENT_CHILD_PATH = (childId: string) => `Parent/${encodeURIComponent(childId)}`;
+
+export async function fetchParentChildDetail(childId: string): Promise<ParentChildDetail> {
+  const { data } = await httpClient.get<unknown>(PARENT_CHILD_PATH(childId));
+  const dto = parentChildDetailSchema.parse(data);
+  return {
+    ...mapChildSummary(dto),
+    testsCount: dto.testsCount ?? null,
+    gamesCount: dto.gamesCount ?? null,
+    reportsCount: dto.reportsCount ?? null,
+  };
+}

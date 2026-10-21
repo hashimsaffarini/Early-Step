@@ -33,18 +33,20 @@ export const queryKeys = {
   },
   assessments: {
     all: ['assessments'] as const,
+    categories: () => ['assessments', 'categories'] as const,
     result: (childId: string) => ['assessments', 'result', childId] as const,
   },
   content: {
     all: ['content'] as const,
     categories: () => ['content', 'categories'] as const,
-    categoriesWithCounts: (type: string) => ['content', 'categoriesActivity', type] as const,
     activities: (type: string, categoryId?: string) =>
       ['content', 'activities', type, categoryId ?? 'all'] as const,
     activity: (type: string, activityId: string) =>
       ['content', 'activity', type, activityId] as const,
     question: (questionId: string) => ['content', 'question', questionId] as const,
     initialAssessmentCategories: () => ['content', 'initialAssessment', 'categories'] as const,
+    categoryQuestions: (categoryId: string) =>
+      ['content', 'categoryQuestions', categoryId] as const,
   },
   dashboards: {
     admin: () => ['dashboards', 'admin'] as const,
@@ -58,6 +60,7 @@ export const queryKeys = {
       ['users', 'admin', role ?? '', search ?? ''] as const,
     adminDetail: (userId: string) => ['users', 'admin', 'detail', userId] as const,
     specialists: () => ['users', 'specialists'] as const,
+    assignableChildren: () => ['users', 'admin', 'assignableChildren'] as const,
     superAdmin: (role?: string, search?: string) =>
       ['users', 'superAdmin', role ?? '', search ?? ''] as const,
   },

@@ -176,24 +176,115 @@
   gap: var(--space-4);
 }
 
-.checkList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
 .legend {
   margin-block-end: var(--space-2);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
 }
 
-.fieldError {
-  margin: 0;
-  color: var(--color-danger-strong);
+.muted {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
+}
+
+/* Specialist ↔ children dialog. */
+.assignedList,
+.candidateList {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  list-style: none;
+}
+
+.assignedItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-success-soft);
+}
+
+.assignedIcon {
+  flex-shrink: 0;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  color: var(--color-success-strong);
+}
+
+.childText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.candidate {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.candidate:has(input:checked) {
+  border-color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
+}
+
+/* «+ تعيين أخصائي»: one selectable specialist card. */
+.specialistOption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--tap-target-min);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.specialistOption:has(input:checked) {
+  border-color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
+}
+
+.specialistOption:has(input:focus-visible) {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.specialistOption[data-inactive] {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.radio {
+  flex-shrink: 0;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  accent-color: var(--color-primary-strong);
+}
+
+.optionBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Children tab of «إسناد الأخصائيين». */
+.childRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.childRow .childText {
+  min-inline-size: min(100%, 12rem);
 }

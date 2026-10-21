@@ -156,9 +156,62 @@ describe('role area routing', () => {
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'));
     const paths = getAreaPaths('Parent');
-    expect(hrefs).toEqual([paths.dashboard, paths.children, paths.reports, paths.messages]);
+    // Client revision 2026-10: no reports entry for the parent.
+    expect(hrefs).toEqual([paths.dashboard, paths.children, paths.messages]);
     expect(within(desktopNav).queryByText('قريباً')).not.toBeInTheDocument();
   });
+
+  it('shows no Early Step logo and no notifications icon in the parent area', async () => {
+    renderAt(ROUTE_PATHS.parentDashboard);
+    await screen.findByRole('heading', { level: 1, name: /محمد أحمد/ });
+
+    expect(screen.queryByRole('img', { name: /Early Step/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Early Step')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'الإشعارات (قريباً)' })).not.toBeInTheDocument();
+  });
+
+  it.each(['Teacher', 'Specialist'] as const)(
+    'keeps the logo and the (disabled) notifications icon for the %s',
+    async (role) => {
+      renderAt(getAreaPaths(role).dashboard);
+      await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
+
+      expect(screen.getAllByText('Early Step').length).toBeGreaterThan(0);
+      for (const bell of screen.getAllByRole('button', { name: 'الإشعارات (قريباً)' })) {
+        expect(bell).toBeDisabled();
+      }
+    },
+  );
+
+  it.each(['Parent', 'Teacher', 'Specialist', 'Admin'] as const)(
+    'lists no reports in the %s sidebar',
+    async (role) => {
+      renderAt(getAreaPaths(role).dashboard);
+      const [desktopNav] = await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
+      if (!desktopNav) throw new Error('navigation not found');
+
+      expect(within(desktopNav).queryByRole('link', { name: /التقارير/ })).not.toBeInTheDocument();
+    },
+  );
+
+  it('lists no children entry in the admin sidebar (children are reached via assignment)', async () => {
+    renderAt(getAreaPaths('Admin').dashboard);
+    const [desktopNav] = await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
+    if (!desktopNav) throw new Error('navigation not found');
+
+    expect(within(desktopNav).queryByRole('link', { name: 'الأطفال' })).not.toBeInTheDocument();
+    expect(within(desktopNav).getByRole('link', { name: 'إسناد الأخصائيين' })).toBeInTheDocument();
+  });
+
+  it.each(['Parent', 'Teacher'] as const)(
+    'sends the old %s report links back to the dashboard',
+    async (role) => {
+      const router = renderAt(`${getAreaPaths(role).reports}/r-1`);
+
+      await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
+      expect(router.state.location.pathname).toBe(getAreaPaths(role).dashboard);
+    },
+  );
 
   it.each([
     ['Teacher', '/teacher'],
@@ -177,5 +230,31 @@ describe('role area routing', () => {
     const [desktopNav] = await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
     if (!desktopNav) throw new Error('navigation not found');
     expect(within(desktopNav).getAllByRole('link')).toHaveLength(1);
+  });
+});
+
+describe('teacher child view (client revision 2026-10)', () => {
+  const YOUSEF = 'c0000000-0000-4000-8000-000000000001';
+
+  it.each([
+    ['notes', getAreaPaths('Teacher').childNotes(YOUSEF)],
+    ['plan', getAreaPaths('Teacher').childPlans(YOUSEF)],
+  ])('redirects the old teacher %s link to the plan-focused child page', async (_name, path) => {
+    const router = renderAt(path);
+
+    expect(await screen.findByRole('region', { name: 'ملاحظات المعلم' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(getAreaPaths('Teacher').childProfile(YOUSEF));
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+  });
+});
+
+describe('no demo games outside mock mode', () => {
+  it('has no practice games route or nav item (games come only from the training plan)', async () => {
+    const router = renderAt(getAreaPaths('Parent').games);
+
+    expect(await screen.findByText(/الصفحة غير موجودة|غير موجودة/)).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(getAreaPaths('Parent').games);
+    const [nav] = screen.queryAllByRole('navigation', { name: 'القائمة الرئيسية' });
+    if (nav) expect(within(nav).queryByRole('link', { name: 'الألعاب' })).not.toBeInTheDocument();
   });
 });

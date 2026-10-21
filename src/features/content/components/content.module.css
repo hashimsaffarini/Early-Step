@@ -55,13 +55,6 @@
   gap: var(--space-3);
 }
 
-.toolbarGroup {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-3);
-}
-
 .filter {
   min-inline-size: 14rem;
 }
@@ -215,25 +208,98 @@
   font-weight: var(--font-weight-bold);
 }
 
+.imageFieldWrap {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.fieldLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
 .imageField {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
+  align-items: flex-start;
+  gap: var(--space-4);
 }
 
-.preview {
-  inline-size: 4rem;
-  block-size: 4rem;
+.previewBox {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 5.5rem;
+  block-size: 5.5rem;
+  overflow: hidden;
+  border: 1px dashed var(--color-border);
   border-radius: var(--radius-sm);
-  object-fit: cover;
-  border: 1px solid var(--color-border);
   background: var(--color-surface-muted);
 }
 
-.fileInput {
-  max-inline-size: 100%;
+.preview {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.previewEmpty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+.previewEmpty svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.imageActions {
+  display: grid;
+  flex: 1;
+  justify-items: start;
+  gap: var(--space-2);
+  min-inline-size: 12rem;
+}
+
+.fileButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--tap-target-min);
+  padding-inline: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-primary-strong);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.fileButton svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+/* The native input stays in the page (keyboard, screen readers) but is drawn by the label. */
+.fileInput {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fileInput:focus-visible + .fileButton,
+.imageActions:has(.fileInput:focus-visible) .fileButton {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .questionCard {
@@ -296,4 +362,379 @@
 .typeToggle {
   display: inline-flex;
   gap: var(--space-2);
+}
+
+/* Correct-answers editor (client revision 2026-10). */
+.correctList {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sequenceList {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sequenceItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.sequenceNumber {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-soft-text);
+  font-weight: var(--font-weight-black);
+}
+
+.sequenceLabel {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+/* Initial-assessment tree: assessment → category → activity → question (client 2026-10). */
+.assessmentRoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-card);
+  background: var(--gradient-brand);
+  color: var(--color-text-on-dark);
+}
+
+.assessmentRoot .muted {
+  color: inherit;
+  opacity: 0.9;
+}
+
+.rootIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 3rem;
+  block-size: 3rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-glass);
+}
+
+.rootIcon svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.rootTitle {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-black);
+}
+
+/* Categories hang from the assessment on a vertical rule. */
+.tree {
+  display: grid;
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  padding-inline-start: var(--space-4);
+  border-inline-start: 3px solid var(--color-primary-soft);
+  list-style: none;
+}
+
+.categoryBlock {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-inline-start: 5px solid var(--color-primary-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.categoryHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.categoryIndex {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-strong);
+  color: var(--color-text-on-dark);
+  font-weight: var(--font-weight-black);
+}
+
+.categoryQuestions {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.categoryTitle {
+  flex: 1;
+  min-inline-size: min(100%, 12rem);
+  margin: 0;
+  font-size: var(--font-size-lg);
+  overflow-wrap: anywhere;
+}
+
+/* Small level name before a title («التصنيف:», «اختبار», «لعبة»). */
+.levelLabel {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.levelText {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+/* Activity level: indented under its category on a light panel. */
+.activityGroup {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.groupTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-md);
+}
+
+.treeIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
+.treeIcon svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.treeIcon img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.questionList {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.questionNumber {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.questionThumb {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+
+.questionThumb img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.questionText {
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.questionRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.questionRow .rowMain {
+  flex: 1;
+  min-inline-size: min(100%, 10rem);
+}
+
+/* Admin activities grouped by category (client revision 2026-10). */
+.categoryGroups {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.categorySection {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.categoryHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding-block-end: var(--space-2);
+  border-block-end: 2px solid var(--color-primary-soft);
+  font-size: var(--font-size-lg);
+}
+
+.categoryHeading svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  color: var(--color-primary-strong);
+}
+
+/* Activity detail header: the real icon next to the activity's facts. */
+.detailHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.detailIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 4.5rem;
+  block-size: 4.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
+.detailIcon svg {
+  inline-size: 2rem;
+  block-size: 2rem;
+}
+
+.detailIcon img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+/* Game form: «نوع اللعبة» and the chosen template's guidance. */
+.templatePicker {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.templateInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-muted);
+}
+
+.templateIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-violet-soft);
+  color: var(--color-violet-strong);
+}
+
+.templateIcon svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.templateCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.templateCard .rowMain {
+  flex: 1;
+  min-inline-size: 8rem;
+}
+
+/* Game detail: the template and how the questions fit it. */
+.templatePanel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
 }

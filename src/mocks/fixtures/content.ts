@@ -45,6 +45,11 @@ export interface MockActivityRow {
 const CAT_READING = 'cat00000-0000-4000-8000-000000000001';
 const CAT_MATH = 'cat00000-0000-4000-8000-000000000002';
 const CAT_MEMORY = 'cat00000-0000-4000-8000-000000000003';
+export const MOCK_CATEGORY_IDS = {
+  reading: CAT_READING,
+  math: CAT_MATH,
+  memory: CAT_MEMORY,
+} as const;
 
 const INITIAL_CATEGORIES: readonly MockCategoryRow[] = [
   { id: CAT_READING, name: 'الحروف والقراءة', isDeleted: false, isInInitialAssessment: true },

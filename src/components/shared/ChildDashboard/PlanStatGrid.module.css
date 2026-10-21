@@ -1,0 +1,28 @@
+/*
+ * Columns follow the space the grid actually has (container query): one on phones, two, then
+ * three — so 3 cards fill one row and 6 cards form two even rows, with labels on one line.
+ */
+.wrap {
+  container-type: inline-size;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@container (min-width: 30rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 50rem) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

@@ -1,5 +1,5 @@
 import { ArrowRight, BriefcaseMedical, CalendarDays, UserX, Users } from 'lucide-react';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { ChildCard, type ChildCardDetail } from '@/components/shared/ChildCard';
@@ -17,7 +17,8 @@ import { HTTP_STATUS } from '@/services/http/httpStatus';
 import { formatAge } from '@/utils/age';
 
 import { useAdminUser } from '../api/usersQueries';
-import { AssignSpecialistForm } from '../components/AssignSpecialistForm';
+import { AssignChildSpecialistDialog } from '../components/AssignChildSpecialistDialog';
+import { AssignSpecialistButton } from '../components/ChildrenAssignmentList';
 import { RoleBadge } from '../components/RoleBadge';
 
 import styles from './users.module.css';
@@ -37,11 +38,15 @@ function childDetails(child: ChildSummary): ChildCardDetail[] {
   return details;
 }
 
-/** Admin user detail (`GET Admin/users/{userId}`) with the parent's children and assignment. */
+/**
+ * Admin user detail (`GET Admin/users/{userId}`) with the parent's children, each with
+ * «+ تعيين أخصائي» (client revision 2026-10).
+ */
 export function AdminUserDetailPage() {
   const { userId } = useParams();
   const user = useAdminUser(userId);
   const childrenHeadingId = useId();
+  const [assigning, setAssigning] = useState<ChildSummary | null>(null);
 
   const backLink = (
     <Link to={ADMIN_PATHS.users} className={styles.backLink}>
@@ -128,7 +133,18 @@ export function AdminUserDetailPage() {
             <ul className={styles.childGrid} aria-label="أطفال ولي الأمر">
               {data.children.map((child) => (
                 <li key={child.id}>
-                  <ChildCard name={child.fullName} details={childDetails(child)} />
+                  <ChildCard
+                    name={child.fullName}
+                    details={childDetails(child)}
+                    footer={
+                      <AssignSpecialistButton
+                        child={child}
+                        onClick={() => {
+                          setAssigning(child);
+                        }}
+                      />
+                    }
+                  />
                 </li>
               ))}
             </ul>
@@ -136,8 +152,13 @@ export function AdminUserDetailPage() {
         </section>
       ) : null}
 
-      {isParent && data.children.length > 0 ? (
-        <AssignSpecialistForm childrenOfParent={data.children} />
+      {assigning ? (
+        <AssignChildSpecialistDialog
+          child={assigning}
+          onClose={() => {
+            setAssigning(null);
+          }}
+        />
       ) : null}
     </div>
   );

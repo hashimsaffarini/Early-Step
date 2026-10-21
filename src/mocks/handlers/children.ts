@@ -2,6 +2,8 @@ import { http, HttpResponse, type HttpHandler } from 'msw';
 
 import { mockId } from '../db';
 import { findMockChild, mockChildren, type MockChildRow } from '../fixtures/children';
+import { mockPlanActivities } from '../fixtures/planActivities';
+import { mockReports } from '../fixtures/reports';
 import { apiUrl, badRequest, forbidden, notFound, requireRole } from '../http';
 
 function listItem(row: MockChildRow) {
@@ -54,7 +56,18 @@ export const childrenHandlers: HttpHandler[] = [
     const user = requireRole(request, ['Parent']);
     if (user instanceof Response) return user;
     const child = ownChild(user.id, String(params.childId));
-    return child instanceof Response ? child : HttpResponse.json(listItem(child));
+    if (child instanceof Response) return child;
+    // Live shape (2026-10-16): { id, fullName, age, gender, gamesCount, testsCount, reportsCount }.
+    const plan = mockPlanActivities.filter((row) => row.childId === child.id);
+    return HttpResponse.json({
+      id: child.id,
+      fullName: child.fullName,
+      age: child.age,
+      gender: child.gender,
+      gamesCount: plan.filter((row) => row.type === 'ألعاب').length,
+      testsCount: plan.filter((row) => row.type === 'اختبارات').length,
+      reportsCount: mockReports.filter((report) => report.childId === child.id).length,
+    });
   }),
   http.post(apiUrl('Parent'), async ({ request }) => {
     const user = requireRole(request, ['Parent']);

@@ -30,3 +30,9 @@ export function ServerImage({ path, alt, className, fallback = null }: ServerIma
     />
   );
 }
+
+/**
+ * Admin notice for an image the server has a path for but does not serve (live 2026-10-16: every
+ * `/uploads/...` file answers 404 — BACKEND_REQUESTS). The upload itself was saved.
+ */
+export const IMAGE_NOT_SERVED = 'الصورة محفوظة لكن الخادم لا يعرضها حالياً.';

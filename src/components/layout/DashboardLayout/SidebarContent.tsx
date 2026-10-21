@@ -24,6 +24,8 @@ export interface SidebarContentProps {
   footer?: ReactNode;
   /** Called after a nav link is activated (closes the mobile drawer). */
   onNavigate?: () => void;
+  /** False hides the logo row (Parent area, client revision 2026-10). */
+  showBrand?: boolean;
 }
 
 export function SidebarContent({
@@ -32,13 +34,16 @@ export function SidebarContent({
   headerActions,
   footer,
   onNavigate,
+  showBrand = true,
 }: SidebarContentProps) {
   return (
     <div className={styles.sidebar}>
-      <div className={styles.brandRow}>
-        <BrandMark />
-        {headerActions ? <div className={styles.headerActions}>{headerActions}</div> : null}
-      </div>
+      {showBrand || headerActions ? (
+        <div className={styles.brandRow}>
+          {showBrand ? <BrandMark /> : null}
+          {headerActions ? <div className={styles.headerActions}>{headerActions}</div> : null}
+        </div>
+      ) : null}
 
       {user ? (
         <div className={styles.user}>

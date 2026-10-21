@@ -1,6 +1,7 @@
 import { GraduationCap } from 'lucide-react';
 
 import { getAreaPaths } from '@/constants/routes';
+import { withoutReportStats } from '@/features/dashboards/api/dashboardStats';
 import { useDashboardStats } from '@/features/dashboards/api/dashboardsApi';
 import { ChildrenDirectory } from '@/features/dashboards/components/ChildrenDirectory';
 import { DashboardGreetingBanner } from '@/features/dashboards/components/DashboardGreetingBanner';
@@ -32,7 +33,7 @@ export function TeacherDashboardPage({ userName }: TeacherDashboardPageProps) {
         showAvatar
       />
       <DashboardStatsSection
-        stats={stats.data}
+        stats={withoutReportStats(stats.data)}
         isPending={stats.isPending}
         error={stats.error}
         onRetry={() => void stats.refetch()}

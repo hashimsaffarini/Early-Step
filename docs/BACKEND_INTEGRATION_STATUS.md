@@ -1,6 +1,6 @@
 # Backend integration status
 
-Branch `feature/backend-integration` · updated 2026-10-15 (production data audit and final checks —
+Branch `feature/backend-integration` (client revisions on `feature/earlystep-client-revisions`, 2026-10-16) · updated 2026-10-15 (production data audit and final checks —
 no dummy data in production, strict live contracts, `PRODUCTION_DATA_AUDIT.md`) · backend `https://earlystep22.runasp.net/api/` · per-endpoint results:
 `API_VERIFICATION_MATRIX.md` · shapes: `api/LIVE_CONTRACTS.md` · open backend items:
 `BACKEND_REQUESTS.md` · players: `PLAYER_BACKEND_COMPATIBILITY.md`.
@@ -118,6 +118,19 @@ no dummy data in production, strict live contracts, `PRODUCTION_DATA_AUDIT.md`) 
 | Send, mark seen                 | `POST Chats/send`, `mark-…-seen` | **VERIFIED LIVE — WRITE** |                                                    |
 | Real-time hub (SignalR)         | —                                | OUT OF SCOPE              | REST + polling is the accepted chat implementation |
 | Notifications                   | —                                | OUT OF SCOPE              |                                                    |
+
+### Client revisions 2026-10 (not counted in the totals below)
+
+| Capability                                           | API                                                                                 | Status                     | Notes                                                               |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------- |
+| Parent child cards with server counts                | `GET Parent/{childId}`                                                              | **VERIFIED LIVE**          | tests / games / reports counts                                      |
+| Plan activity summary + completion %                 | plan endpoints                                                                      | **VERIFIED LIVE**          | derived from real rows; server `progress` for the Specialist        |
+| Specialist assignment page                           | `Admin/specialists`, `Admin/users/{id}`, `POST Admin/assign-children-to-specialist` | **VERIFIED LIVE — WRITE**  | several children per call                                           |
+| Correct-answer editor                                | `PUT Admin/question-options/{id}`                                                   | **VERIFIED LIVE — WRITE**  | positional `Order` (backend does not store it — BACKEND_REQUESTS 3) |
+| Image create / replace                               | activity / question / option endpoints                                              | PARTIALLY VERIFIED         | paths stored; files 404 (BACKEND_REQUESTS 2)                        |
+| Initial-assessment hierarchy + category add / remove | `initial-assessment/categories`, `Admin/activities/*`                               | **VERIFIED LIVE — WRITE**  | question membership not listable (BACKEND_REQUESTS 4)               |
+| Teacher plan-focused page + notes inside             | Teacher plan + notes endpoints                                                      | BLOCKED BY MISSING ACCOUNT | SuperAdmin-created accounts cannot log in                           |
+| Games                                                | `Admin/activities/game`, plan endpoints                                             | **VERIFIED LIVE**          | no game activities exist yet; empty states                          |
 
 ## Totals (44 matrix rows)
 

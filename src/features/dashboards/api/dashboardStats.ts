@@ -51,6 +51,18 @@ const KNOWN_STATS: Readonly<Record<string, StatDisplay>> = {
   activeTrainingPlans: { label: 'خطط تدريبية نشطة', icon: Target, tone: 'violet' },
 };
 
+/** Report counts — hidden on the Teacher and Specialist dashboards (client revision 2026-10). */
+const REPORT_STAT_KEYS: ReadonlySet<string> = new Set([
+  'إجمالي التقارير',
+  'عددالتقارير',
+  'totalReports',
+  'reportsCount',
+]);
+
+export function withoutReportStats(stats: readonly DashboardStat[] | undefined) {
+  return stats?.filter((stat) => !REPORT_STAT_KEYS.has(stat.key));
+}
+
 const FALLBACK_TONES: readonly StatCardTone[] = ['primary', 'success', 'violet', 'warning'];
 
 /**

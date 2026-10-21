@@ -81,6 +81,29 @@ exist — ADR required; credentials only via CI secrets.
 - Don't snapshot whole pages.
 - Don't commit real credentials or real children's data as fixtures.
 
+## Client revisions 2026-10 (branch `feature/earlystep-client-revisions`, 2026-10-16)
+
+**379 tests in 74 files** (`npm run validate` green, build OK). New or updated tests cover:
+forgot password as one centred card with no «تجربة بريد إلكتروني آخر»; child cards as the profile
+link with real server counts and no button / progress; the plan summary and completion %
+(`planSummary.test.ts` — 2 of 4 → 50 %, all → 100 %, server progress preferred, no invented 0);
+specialist assignment (list + active state, assigned vs assignable children, one bulk request,
+refresh, inactive specialist, empty); correct answers (SingleChoice clears the old answer first and
+re-fetches, MultiSelect sends only changed options and needs one answer, Sequence move up / down
+sets `CorrectOrder`); image replacement payloads and the "saved but not served" notice; the
+initial-assessment hierarchy (category → questions, add appears at once, remove disappears, every
+category listed, empty and error states); the teacher plan page (no tabs, summary, results, play
+links, notes CRUD inside, old links redirect); games (real game row with play link, empty state, no
+games route outside mock mode).
+
+**Live suites (2026-10-16):** `test:live:read` **13/13** (now also the parent child counts, the
+questions of every category and the Admin's assignable children). `test:live:write` **4/6** — the
+Admin flow passes with the new checks (icon stored, replaced with a new path, kept without a file;
+SingleChoice answer A → B → A survives re-fetch); the two failures are the shared live state, not
+the frontend: the initial assessment currently has no categories, so `start` answers "لا يوجد تقييم
+أولي متاح حالياً." and the specialist's result read that depends on it has nothing to read. Cleanup
+verified (no new leftovers). Responsive check at 390 px on every changed screen: no sideways scroll.
+
 ## Current tests (2026-10-15)
 
 **346 tests in 67 files** (`npm run test`), all against MSW. The final pass removed the tests of

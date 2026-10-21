@@ -36,7 +36,17 @@ describe('ForgotPasswordPage', () => {
     expect(screen.getByText('البريد الإلكتروني غير صالح')).toBeInTheDocument();
   });
 
-  it('shows a neutral local success state and can start over', async () => {
+  it('is a single centred card: no side panel (client revision 2026-10)', () => {
+    renderForgot();
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'نسيت كلمة المرور؟' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('سنساعدك للعودة')).not.toBeInTheDocument();
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+  });
+
+  it('shows a neutral success state without an "another email" action', async () => {
     renderForgot();
 
     await userEvent.type(screen.getByLabelText('البريد الإلكتروني'), 'parent@example.com');
@@ -49,8 +59,8 @@ describe('ForgotPasswordPage', () => {
       ),
     ).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'تجربة بريد إلكتروني آخر' }));
-    expect(screen.getByLabelText('البريد الإلكتروني')).toHaveValue('');
+    expect(screen.queryByText('تجربة بريد إلكتروني آخر')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'إدخال رمز التحقق' })).toBeInTheDocument();
   });
 
   it('passes the email to the reset screen without putting it in the URL', async () => {
@@ -89,7 +99,7 @@ describe('ForgotPasswordPage', () => {
   it('links back to login', async () => {
     renderForgot();
 
-    await userEvent.click(screen.getByRole('link', { name: 'العودة لتسجيل الدخول' }));
+    await userEvent.click(screen.getByRole('link', { name: 'تسجيل الدخول' }));
 
     expect(screen.getByRole('heading', { name: 'صفحة الدخول' })).toBeInTheDocument();
   });

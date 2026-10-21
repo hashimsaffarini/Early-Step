@@ -1,8 +1,9 @@
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight, Gamepad2, ListChecks, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ServerImage } from '@/components/shared/ServerImage';
 import { Badge } from '@/components/ui/Badge';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -14,9 +15,10 @@ import { useActivity } from '../api/contentQueries';
 import styles from '../components/content.module.css';
 import { ContentPage } from '../components/ContentPage';
 import { QuestionCard } from '../components/QuestionCard';
+import { GameTemplatePanel } from '../components/GameTemplatePanel';
 import { QuestionFormDialog } from '../components/QuestionFormDialog';
 import { QueryStatus } from '../components/QueryStatus';
-import { ACTIVITY_TYPE_LABELS } from '../types';
+import { ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_SINGULAR } from '../types';
 
 /** One activity with its questions and options (add / edit / delete). */
 export function ActivityDetailPage() {
@@ -60,28 +62,51 @@ export function ActivityDetailPage() {
       />
       {activity ? (
         <>
-          <Card className={styles.rowMain}>
-            {activity.description ? <p className={styles.muted}>{activity.description}</p> : null}
-            <ul className={styles.meta} aria-label="تفاصيل النشاط">
-              {activity.categoryName ? (
+          <Card className={styles.detailHead}>
+            <span className={styles.detailIcon}>
+              <ServerImage
+                path={activity.iconUrl}
+                alt={`أيقونة ${activity.title || 'النشاط'}`}
+                fallback={
+                  type === 'game' ? (
+                    <Gamepad2 aria-hidden="true" />
+                  ) : (
+                    <ListChecks aria-hidden="true" />
+                  )
+                }
+              />
+            </span>
+            <div className={styles.rowMain}>
+              {activity.description ? <p className={styles.muted}>{activity.description}</p> : null}
+              <ul className={styles.meta} aria-label="تفاصيل النشاط">
                 <li>
-                  <Badge tone="primary">{activity.categoryName}</Badge>
-                </li>
-              ) : null}
-              {activity.slug ? (
-                <li>
-                  <Badge>
-                    <bdi dir="ltr">{activity.slug}</bdi>
+                  <Badge tone={type === 'game' ? 'accent' : 'primary'}>
+                    {ACTIVITY_TYPE_SINGULAR[type]}
                   </Badge>
                 </li>
-              ) : null}
-              {activity.createdByName ? (
-                <li>
-                  <Badge>{`أنشأه: ${activity.createdByName}`}</Badge>
-                </li>
-              ) : null}
-            </ul>
+                {activity.categoryName ? (
+                  <li>
+                    <Badge tone="primary">{activity.categoryName}</Badge>
+                  </li>
+                ) : null}
+                {activity.slug ? (
+                  <li>
+                    <Badge>
+                      <bdi dir="ltr">{activity.slug}</bdi>
+                    </Badge>
+                  </li>
+                ) : null}
+                {activity.createdByName ? (
+                  <li>
+                    <Badge>{`أنشأه: ${activity.createdByName}`}</Badge>
+                  </li>
+                ) : null}
+              </ul>
+            </div>
           </Card>
+          {type === 'game' ? (
+            <GameTemplatePanel slug={activity.slug} questions={activity.questions} />
+          ) : null}
 
           <div className={styles.toolbar}>
             <h2

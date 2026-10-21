@@ -1,8 +1,7 @@
 import {
-  childListItemSchema,
-  mapChildSummary,
+  fetchParentChildDetail,
   type ChildGenderValue,
-  type ChildSummary,
+  type ParentChildDetail,
 } from '@/services/api/childrenLists';
 import { toFormData } from '@/services/http/formData';
 import { httpClient } from '@/services/http/httpClient';
@@ -29,9 +28,8 @@ function toChildForm(input: ChildInput): FormData {
 }
 
 /** `GET Parent/{childId}` — the parent's own child (403/404 for anyone else's). */
-export async function fetchParentChild(childId: string): Promise<ChildSummary> {
-  const { data } = await httpClient.get<unknown>(CHILDREN_PATHS.child(childId));
-  return mapChildSummary(childListItemSchema.parse(data));
+export async function fetchParentChild(childId: string): Promise<ParentChildDetail> {
+  return fetchParentChildDetail(childId);
 }
 
 /** `POST Parent` */

@@ -10,6 +10,7 @@ import {
   fetchActivities,
   fetchActivity,
   fetchAssessmentCategoryIds,
+  fetchCategoryQuestions,
   fetchCategories,
   fetchCategoriesWithCounts,
   fetchQuestion,
@@ -29,7 +30,12 @@ import {
   fetchSpecialistPlan,
   fetchTeachers,
 } from '@/features/training-plans/api/trainingPlansApi';
-import { fetchAdminUser, fetchAdminUsers, fetchSpecialists } from '@/features/users/api/usersApi';
+import {
+  fetchAdminUser,
+  fetchAdminUsers,
+  fetchAssignableChildren,
+  fetchSpecialists,
+} from '@/features/users/api/usersApi';
 import { fetchUnreadMessagesCount } from '@/services/api/chatUnread';
 import { fetchChildPlanActivities, fetchChildPlanSummary } from '@/services/api/childPlan';
 import { fetchAssessmentResult } from '@/services/api/assessmentResult';
@@ -87,7 +93,11 @@ describe.runIf(hasAccount('PARENT'))('live — Parent', () => {
     expect(Array.isArray(children)).toBe(true);
     for (const child of children) {
       expect(child.gender === null || ['ولد', 'بنت'].includes(child.gender)).toBe(true);
-      await fetchParentChild(child.id);
+      // Client revision 2026-10: the dashboard card shows the server counts of GET Parent/{id}.
+      const detail = await fetchParentChild(child.id);
+      for (const count of [detail.testsCount, detail.gamesCount, detail.reportsCount]) {
+        expect(typeof count).toBe('number');
+      }
       const plan = await fetchChildPlanActivities(child.id);
       await fetchChildPlanSummary(child.id);
       const report = await fetchChildReport(child.id);
@@ -148,8 +158,17 @@ describe.runIf(hasAccount('ADMIN'))('live — Admin', () => {
     expect(specialists.map((item) => item.id).sort()).toEqual(
       (await fetchAdminUsers('أخصائي/ة', '')).users.map((user) => user.id).sort(),
     );
-    await fetchCategories();
+    const categories = await fetchCategories();
     expect(Array.isArray(await fetchAssessmentCategoryIds())).toBe(true);
+    // Client revision 2026-10: questions per category (assessment hierarchy) and the children
+    // the Admin can assign, each from the real endpoints.
+    for (const category of categories) {
+      const groups = await fetchCategoryQuestions(category.id);
+      for (const group of groups) expect(group.questions.length).toBeGreaterThan(0);
+    }
+    const assignable = await fetchAssignableChildren();
+    expect(assignable.every((child) => typeof child.id === 'string' && child.id !== '')).toBe(true);
+    expect(new Set(assignable.map((child) => child.id)).size).toBe(assignable.length);
     for (const type of ['test', 'game'] as const) {
       await fetchCategoriesWithCounts(type);
       const activities = await fetchActivities(type);

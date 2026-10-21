@@ -1,7 +1,6 @@
 import { Lightbulb } from 'lucide-react';
 
 import { SectionHeader } from '@/components/shared/SectionHeader';
-import { Card } from '@/components/ui/Card';
 import { cx } from '@/utils/classNames';
 
 import type { ParentTip } from '../types';
@@ -14,10 +13,13 @@ export interface ParentTipsCardProps {
   tips: readonly ParentTip[];
 }
 
-/** General, non-medical guidance tiles (Replit "insights" card pattern). */
+/**
+ * General, non-medical guidance tiles. A plain section (heading + tiles), like the children
+ * section, so every dashboard section sits on the same level (client revision 2026-10).
+ */
 export function ParentTipsCard({ tips }: ParentTipsCardProps) {
   return (
-    <Card as="section" className={styles.card} aria-labelledby={HEADING_ID}>
+    <section className={styles.section} aria-labelledby={HEADING_ID}>
       <SectionHeader id={HEADING_ID} title="نصائح لك" icon={Lightbulb} iconTone="primary" />
       <ul className={styles.grid}>
         {tips.map((tip) => (
@@ -30,6 +32,6 @@ export function ParentTipsCard({ tips }: ParentTipsCardProps) {
           </li>
         ))}
       </ul>
-    </Card>
+    </section>
   );
 }

@@ -1,6 +1,7 @@
 import { Check, X } from 'lucide-react';
 import type { ButtonHTMLAttributes } from 'react';
 
+import { ServerImage } from '@/components/shared/ServerImage';
 import { cx } from '@/utils/classNames';
 
 import styles from './AnswerTile.module.css';
@@ -20,8 +21,8 @@ export interface AnswerTileProps extends Omit<
   label: string;
   /** Decorative picture above the label. */
   emoji?: string | undefined;
-  /** Option picture from the server (already resolved with `resolveMediaUrl`). */
-  imageUrl?: string | null | undefined;
+  /** Option picture from the server (`/uploads/...`); hidden if it cannot be loaded. */
+  imagePath?: string | null | undefined;
   /** Arabic letter badge (أ ب ج د) — test player style. */
   badge?: string | undefined;
   state?: AnswerTileState;
@@ -35,7 +36,7 @@ export interface AnswerTileProps extends Omit<
 export function AnswerTile({
   label,
   emoji,
-  imageUrl,
+  imagePath,
   badge,
   state = 'idle',
   layout = 'stack',
@@ -65,8 +66,13 @@ export function AnswerTile({
           {emoji}
         </span>
       ) : null}
-      {imageUrl ? (
-        <img className={styles.image} src={imageUrl} alt={label ? '' : 'صورة الإجابة'} />
+      {imagePath ? (
+        <ServerImage
+          path={imagePath}
+          alt={label ? '' : 'صورة الإجابة'}
+          className={styles.image}
+          fallback={label ? null : <span className={styles.label}>صورة غير متاحة</span>}
+        />
       ) : null}
       {label ? <span className={styles.label}>{label}</span> : null}
       {state === 'correct' || state === 'wrong' ? (

@@ -1,6 +1,8 @@
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
+import type { ReactNode } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import type { AppError } from '@/services/http/apiError';
 
@@ -10,6 +12,8 @@ export interface QueryStatusProps {
   isEmpty: boolean;
   emptyTitle: string;
   emptyDescription?: string;
+  /** A real action for the empty state (e.g. «إضافة لعبة»). */
+  emptyAction?: ReactNode;
   onRetry: () => void;
 }
 
@@ -20,6 +24,7 @@ export function QueryStatus({
   isEmpty,
   emptyTitle,
   emptyDescription,
+  emptyAction,
   onRetry,
 }: QueryStatusProps) {
   if (isLoading) return <LoadingState />;
@@ -41,6 +46,7 @@ export function QueryStatus({
       <EmptyState
         title={emptyTitle}
         {...(emptyDescription ? { description: emptyDescription } : {})}
+        {...(emptyAction ? { action: emptyAction } : {})}
       />
     );
   }

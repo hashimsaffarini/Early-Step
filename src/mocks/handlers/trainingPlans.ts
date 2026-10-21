@@ -58,7 +58,7 @@ function childListItem(row: MockPlanActivityRow) {
 
 /** Specialist plan activity (VERIFIED LIVE shape). */
 function specialistItem(row: MockPlanActivityRow) {
-  const { id, childId: _childId, ...rest } = row;
+  const { id, childId: _childId, slug: _slug, ...rest } = row;
   return { trainingPlanActivityId: id, ...rest };
 }
 

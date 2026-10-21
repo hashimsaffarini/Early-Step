@@ -1,6 +1,7 @@
 import { Gamepad2, ListChecks, Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { resolveGameTemplate } from '@/components/games';
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
@@ -27,6 +28,12 @@ export interface AssignActivityDialogProps {
   childId: string;
   childName: string;
   onClose: () => void;
+}
+
+/** Empty-list title: a search with no match, no games yet, or no activities of this type. */
+function emptyTitle(search: string, type: ActivityType): string {
+  if (search) return 'لا توجد نتائج';
+  return type === 'game' ? 'لا توجد ألعاب مضافة حالياً' : 'لا توجد أنشطة متاحة من هذا النوع';
 }
 
 /** Specialist picker over `available-activities` → `POST …/activities { activityId }`. */
@@ -57,7 +64,10 @@ export function AssignActivityDialog({
     list = (
       <EmptyState
         isBoxed={false}
-        title={trimmed ? 'لا توجد نتائج' : 'لا توجد أنشطة متاحة من هذا النوع'}
+        title={emptyTitle(trimmed, type)}
+        {...(!trimmed && type === 'game'
+          ? { description: 'يمكن للإدارة إضافة ألعاب ليتم إسنادها لاحقاً ضمن الخطة التدريبية.' }
+          : {})}
       />
     );
   } else {
@@ -77,6 +87,9 @@ export function AssignActivityDialog({
               <h3 className={styles.itemTitle}>{item.title || 'نشاط'}</h3>
               <div className={styles.badges}>
                 {item.categoryName ? <Badge>{item.categoryName}</Badge> : null}
+                {type === 'game' && resolveGameTemplate(item.slug) ? (
+                  <Badge tone="accent">{resolveGameTemplate(item.slug)?.name}</Badge>
+                ) : null}
                 {item.questionCount !== null ? (
                   <Badge>{`${item.questionCount} أسئلة`}</Badge>
                 ) : null}

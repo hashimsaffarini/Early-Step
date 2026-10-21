@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http } from 'msw';
+import { http, HttpResponse } from 'msw';
 
 import { ADMIN_PATHS } from '@/constants/routes';
 import { apiUrl } from '@/mocks/http';
@@ -111,5 +111,136 @@ describe('ActivityDetailPage', () => {
     renderContent(ADMIN_PATHS.activityDetail('test', 'missing'));
 
     expect(await screen.findByText('لم يتم العثور على النشاط')).toBeInTheDocument();
+  });
+});
+
+describe('ActivityDetailPage — correct answers (client revision 2026-10)', () => {
+  function capturePuts() {
+    const puts: {
+      id: string;
+      isCorrect: string | null;
+      correctOrder: string | null;
+      order: string | null;
+    }[] = [];
+    server.events.on('request:start', ({ request }) => {
+      if (request.method !== 'PUT' || !request.url.includes('question-options')) return;
+      void request
+        .clone()
+        .formData()
+        .then((form) => {
+          puts.push({
+            id: request.url.split('/').pop() ?? '',
+            isCorrect: form.get('IsCorrect') as string | null,
+            correctOrder: form.get('CorrectOrder') as string | null,
+            order: form.get('Order') as string | null,
+          });
+        });
+    });
+    return puts;
+  }
+
+  afterEach(() => {
+    server.events.removeAllListeners();
+  });
+
+  it('SingleChoice: picks another answer — clears the old one first, then re-fetches', async () => {
+    const puts = capturePuts();
+    renderContent(DETAIL);
+    await screen.findByRole('heading', { name: 'الأسئلة (2)' });
+
+    const [first] = screen.getAllByRole('button', { name: 'الإجابة الصحيحة' });
+    if (!first) throw new Error('button not found');
+    await userEvent.click(first);
+    const dialog = screen.getByRole('dialog', { name: 'الإجابة الصحيحة — السؤال 1' });
+    expect(within(dialog).getByRole('radio', { name: 'بطة' })).toBeChecked();
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'تفاحة' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ الإجابة الصحيحة' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(puts.map((put) => [put.isCorrect, put.order])).toEqual([
+      ['false', '1'],
+      ['true', '2'],
+    ]);
+    // Re-fetched from the server: the new answer is marked.
+    const options = screen.getByRole('list', { name: 'خيارات السؤال 1' });
+    await waitFor(() => {
+      expect(within(options).getByText('تفاحة').parentElement).toHaveTextContent('إجابة صحيحة');
+    });
+    expect(within(options).getByText('بطة').parentElement).not.toHaveTextContent('إجابة صحيحة');
+  });
+
+  it('Sequence: moves an option and saves the new CorrectOrder values', async () => {
+    const puts = capturePuts();
+    renderContent(DETAIL);
+    await screen.findByRole('heading', { name: 'الأسئلة (2)' });
+
+    const [, second] = screen.getAllByRole('button', { name: 'الإجابة الصحيحة' });
+    if (!second) throw new Error('button not found');
+    await userEvent.click(second);
+    const dialog = screen.getByRole('dialog', { name: 'الإجابة الصحيحة — السؤال 2' });
+    const order = within(dialog).getByRole('list', { name: 'الترتيب الصحيح' });
+    expect(
+      within(order)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      expect.stringContaining('ق'),
+      expect.stringContaining('م'),
+      expect.stringContaining('ر'),
+    ]);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'تأخير ق' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ الإجابة الصحيحة' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    // ق: 1 → 2, م: 2 → 1 (ر unchanged, not sent).
+    expect(puts.map((put) => put.correctOrder).sort()).toEqual(['1', '2']);
+    await waitFor(() => {
+      expect(screen.getByText('الترتيب الصحيح: 2').parentElement).toHaveTextContent('ق');
+    });
+  });
+});
+
+describe('ActivityDetailPage — game template (client revision 2026-10)', () => {
+  const gameDetail = (slug: string) =>
+    http.get(apiUrl('Admin/activities/:type/:id'), () =>
+      HttpResponse.json({
+        id: 'g-1',
+        title: 'لعبة الحروف',
+        description: '',
+        slug,
+        type: 'game',
+        iconUrl: '/uploads/letters.png',
+        categoryId: 'cat00000-0000-4000-8000-000000000001',
+        categoryName: 'الحروف والقراءة',
+        questions: [
+          { id: 'q1', questionText: 'سؤال 1', type: 'SingleChoice', order: 1, options: [] },
+          { id: 'q2', questionText: 'سؤال 2', type: 'Sequence', order: 2, options: [] },
+        ],
+      }),
+    );
+
+  it('shows the template from the saved slug and which questions fit it', async () => {
+    server.use(gameDetail('letter-hunt-2'));
+    renderContent(ADMIN_PATHS.activityDetail('game', 'g-1'));
+
+    const panel = await screen.findByRole('region', { name: 'نوع اللعبة' });
+    expect(within(panel).getByText('نوع اللعبة: صيد الحروف')).toBeInTheDocument();
+    expect(within(panel).getByText(/1 من الأسئلة من نوع آخر/)).toBeInTheDocument();
+    // The real icon is shown, with an Arabic alt.
+    expect(screen.getByRole('img', { name: 'أيقونة لعبة الحروف' })).toHaveAttribute(
+      'src',
+      expect.stringContaining('/uploads/letters.png') as string,
+    );
+  });
+
+  it('explains that a game without a template uses the generic player', async () => {
+    server.use(gameDetail('memory-game'));
+    renderContent(ADMIN_PATHS.activityDetail('game', 'g-1'));
+
+    expect(await screen.findByText(/لا يوجد «نوع لعبة» لهذا النشاط/)).toBeInTheDocument();
   });
 });

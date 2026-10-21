@@ -64,6 +64,7 @@ import { fetchChildReport } from '@/services/api/childReports';
 import { fetchAssessmentResult } from '@/services/api/assessmentResult';
 import { fetchChildPlanActivities } from '@/services/api/childPlan';
 import { fetchChildrenForRole } from '@/services/api/childrenLists';
+import { planCorrectAnswerUpdates } from '@/features/content/api/correctAnswers';
 import { isAppError } from '@/services/http/apiError';
 
 import { hasAccount, signInLive, type LiveAccount } from './liveSession';
@@ -128,6 +129,14 @@ async function isGone(probe: () => Promise<unknown>): Promise<boolean> {
 }
 
 const ALL = hasAccount('PARENT') && hasAccount('SPECIALIST') && hasAccount('ADMIN');
+
+/** A valid 1×1 PNG for the image upload checks (disposable records only). */
+const PNG = Uint8Array.from(
+  atob(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  ),
+  (char) => char.charCodeAt(0),
+);
 
 describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', () => {
   let childId = '';
@@ -303,6 +312,26 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
       categoryId,
       icon: null,
     });
+    // Images (client revision 2026-10): an uploaded icon is stored, a replacement gets a new path,
+    // and an edit without a file keeps it. (Serving the files is a backend issue: /uploads → 404.)
+    const icon = () => new File([PNG], 'e2e.png', { type: 'image/png' });
+    const editTest = (withIcon: boolean) =>
+      updateActivity('test', activityIds.test, {
+        title: NAME('Activity test edited'),
+        description: 'E2E edited',
+        slug: `e2e-test-${RUN}`,
+        categoryId,
+        icon: withIcon ? icon() : null,
+      });
+    await editTest(true);
+    const firstIcon = (await fetchActivity('test', activityIds.test)).iconUrl;
+    expect(firstIcon).toMatch(/^\/uploads\//);
+    await editTest(true);
+    const secondIcon = (await fetchActivity('test', activityIds.test)).iconUrl;
+    expect(secondIcon).toMatch(/^\/uploads\//);
+    expect(secondIcon).not.toBe(firstIcon);
+    await editTest(false);
+    expect((await fetchActivity('test', activityIds.test)).iconUrl).toBe(secondIcon);
 
     await createQuestion(activityIds.test, {
       text: NAME('Question'),
@@ -332,6 +361,32 @@ describe.runIf(ALL)('live WRITE — disposable records with verified cleanup', (
     expect(question).toBeDefined();
     const questionId = question?.id ?? '';
     track({ kind: 'question', id: questionId, account: 'ADMIN' });
+
+    // Correct answers (client revision 2026-10): switch the SingleChoice answer A → B and back
+    // with the planned update order; each switch survives a re-fetch.
+    const switchTo = async (text: string) => {
+      const current = await fetchQuestion(questionId);
+      const target = current.options.find((item) => item.text === text);
+      for (const step of planCorrectAnswerUpdates(current, {
+        kind: 'choice',
+        correctIds: target ? [target.id] : [],
+      })) {
+        await updateOption(step.optionId, step.input);
+      }
+      return (await fetchQuestion(questionId)).options.map((item) => [item.text, item.isCorrect]);
+    };
+    expect(await switchTo('E2E B')).toEqual(
+      expect.arrayContaining([
+        ['E2E A', false],
+        ['E2E B', true],
+      ]),
+    );
+    expect(await switchTo('E2E A')).toEqual(
+      expect.arrayContaining([
+        ['E2E A', true],
+        ['E2E B', false],
+      ]),
+    );
     const option = (await fetchQuestion(questionId)).options[1];
     if (option) {
       await updateOption(option.id, {

@@ -24,12 +24,17 @@ export function RoleAreaLayout({ role }: RoleAreaLayoutProps) {
   const session = useSession();
   // The Super Admin area has no messages screen.
   const unreadMessages = useUnreadMessagesCount(role !== 'SuperAdmin');
+  // Client revision 2026-10: the Parent area has no logo and no notifications icon.
+  const isParent = role === 'Parent';
   return (
     <DashboardLayout
       navItems={getNavigation(role, unreadMessages)}
       user={{ name: session?.user.name ?? '', roleLabel: ROLE_LABELS[role] }}
+      showBrand={!isParent}
       headerActions={
-        <IconButton label={NOTIFICATIONS_UNAVAILABLE} icon={Bell} variant="muted" disabled />
+        isParent ? undefined : (
+          <IconButton label={NOTIFICATIONS_UNAVAILABLE} icon={Bell} variant="muted" disabled />
+        )
       }
       sidebarFooter={<LogoutButton />}
     />

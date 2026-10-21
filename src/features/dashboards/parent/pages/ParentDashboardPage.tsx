@@ -9,7 +9,6 @@ import { Button, getButtonClassName } from '@/components/ui/Button';
 import { ROUTE_PATHS } from '@/constants/routes';
 import { useChildrenForRole } from '@/hooks/api/childResources';
 import { fetchChildPlanSummary } from '@/services/api/childPlan';
-import { fetchChildReport } from '@/services/api/childReports';
 import { queryKeys } from '@/services/api/queryKeys';
 
 import { ChildrenPreviewSection } from '../components/ChildrenPreviewSection';
@@ -43,7 +42,7 @@ function sumWhenReady<T>(
 
 /**
  * Parent dashboard from the API: children (`GET Parent/GetMyChildren`), each child's plan summary
- * and reports. Replit's activity feed has no endpoint (BLOCKED BY BACKEND) and is not shown.
+ * (no reports in the Parent area — client revision 2026-10). Replit's activity feed has no endpoint (BLOCKED BY BACKEND) and is not shown.
  */
 export function ParentDashboardPage({ parentName }: ParentDashboardPageProps) {
   const childrenQuery = useChildrenForRole('Parent');
@@ -52,12 +51,6 @@ export function ParentDashboardPage({ parentName }: ParentDashboardPageProps) {
     queries: children.map((child) => ({
       queryKey: queryKeys.trainingPlans.childSummary(child.id),
       queryFn: () => fetchChildPlanSummary(child.id),
-    })),
-  });
-  const reports = useQueries({
-    queries: children.map((child) => ({
-      queryKey: queryKeys.reports.byChild(child.id),
-      queryFn: () => fetchChildReport(child.id),
     })),
   });
 
@@ -102,10 +95,9 @@ export function ParentDashboardPage({ parentName }: ParentDashboardPageProps) {
           stats={{
             children: children.length,
             planActivities: sumWhenReady(summaries, (summary) => summary.totalCount),
-            childrenWithReport: sumWhenReady(reports, (report) => (report ? 1 : 0)),
           }}
           onRetry={() => {
-            for (const result of [...summaries, ...reports]) {
+            for (const result of summaries) {
               if (result.isError) void result.refetch();
             }
           }}

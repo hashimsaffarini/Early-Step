@@ -149,3 +149,18 @@ export interface AssignSpecialistInput {
 export async function assignChildrenToSpecialist(input: AssignSpecialistInput): Promise<void> {
   await httpClient.post('Admin/assign-children-to-specialist', input);
 }
+
+/**
+ * Every child the Admin can assign (client revision 2026-10). The API has no Admin children list,
+ * so the children come from the parents' details: `GET Admin/users?Role=ولي أمر`, then
+ * `GET Admin/users/{parentId}` for each parent that has children (`childrenCount > 0`; a parent
+ * whose count is not sent is read too). Each child keeps its server `specialistName`.
+ */
+export async function fetchAssignableChildren(): Promise<ChildSummary[]> {
+  const { users } = await fetchAdminUsers(ROLE_WIRE_VALUES.Parent, '');
+  const parents = users.filter((user) => user.childrenCount === null || user.childrenCount > 0);
+  const details = await Promise.all(parents.map((parent) => fetchAdminUser(parent.id)));
+  return details
+    .flatMap((detail) => detail.children)
+    .sort((a, b) => a.fullName.localeCompare(b.fullName, 'ar'));
+}

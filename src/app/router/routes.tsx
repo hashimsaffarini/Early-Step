@@ -42,12 +42,18 @@ export const routes: RouteObject[] = [
         ],
       },
       {
-        path: ROUTE_PATHS.forgotPassword,
-        lazy: async () => ({ Component: (await loadAuth()).ForgotPasswordPage }),
-      },
-      {
-        path: ROUTE_PATHS.resetPassword,
-        lazy: async () => ({ Component: (await loadAuth()).ResetPasswordPage }),
+        // Password recovery: centred like login (same layout), no signed-in redirect.
+        element: <AuthLayout />,
+        children: [
+          {
+            path: ROUTE_PATHS.forgotPassword,
+            lazy: async () => ({ Component: (await loadAuth()).ForgotPasswordPage }),
+          },
+          {
+            path: ROUTE_PATHS.resetPassword,
+            lazy: async () => ({ Component: (await loadAuth()).ResetPasswordPage }),
+          },
+        ],
       },
       ...areaRoutes,
       { path: ROUTE_PATHS.unauthorized, element: <UnauthorizedPage /> },

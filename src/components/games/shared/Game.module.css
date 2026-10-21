@@ -1,0 +1,368 @@
+/* Early Step game system — one look for the four engines (client revision 2026-10). */
+
+.stage {
+  --game-gradient: var(--gradient-brand);
+  --game-soft: var(--color-primary-soft);
+  --game-strong: var(--color-primary-strong);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-inline-size: 0;
+}
+
+.stage[data-tone='reading'] {
+  --game-gradient: var(--gradient-category-reading);
+  --game-soft: var(--color-category-reading-soft);
+  --game-strong: var(--color-primary-strong);
+}
+
+.stage[data-tone='math'] {
+  --game-gradient: var(--gradient-category-math);
+  --game-soft: var(--color-category-math-soft);
+  --game-strong: var(--color-warning-strong);
+}
+
+.stage[data-tone='memory'] {
+  --game-gradient: var(--gradient-category-memory);
+  --game-soft: var(--color-category-memory-soft);
+  --game-strong: var(--color-violet-strong);
+}
+
+.stage[data-tone='attention'] {
+  --game-gradient: var(--gradient-category-attention);
+  --game-soft: var(--color-category-attention-soft);
+  --game-strong: var(--color-primary-strong);
+}
+
+.stageHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--game-gradient);
+  color: var(--color-text-on-dark);
+}
+
+.stageIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 3rem;
+  block-size: 3rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-glass);
+}
+
+.stageIcon svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.stageTitles {
+  min-inline-size: 0;
+}
+
+.stageName {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-black);
+}
+
+.stagePurpose {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+}
+
+.prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 2px solid var(--game-soft);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.promptText {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.promptText:focus {
+  outline: none;
+}
+
+.promptImage {
+  max-inline-size: min(100%, 18rem);
+  max-block-size: 12rem;
+  border-radius: var(--radius-card);
+  object-fit: contain;
+}
+
+.instruction {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Option grids: big cards, two per row on phones. */
+.optionGrid,
+.numberGrid,
+.focusGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .optionGrid,
+  .numberGrid {
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: var(--space-4);
+  }
+
+  .focusGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+}
+
+.option {
+  --swatch: var(--color-primary-soft);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  min-block-size: 7rem;
+  padding: var(--space-4) var(--space-3);
+  border: 3px solid transparent;
+  border-radius: var(--radius-xl);
+  background: var(--swatch);
+  color: var(--color-text-primary);
+  font: inherit;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+.option[data-swatch='1'] {
+  --swatch: var(--color-category-math-soft);
+}
+
+.option[data-swatch='2'] {
+  --swatch: var(--color-category-writing-soft);
+}
+
+.option[data-swatch='3'] {
+  --swatch: var(--color-category-logic-soft);
+}
+
+.option[data-swatch='4'] {
+  --swatch: var(--color-category-memory-soft);
+}
+
+.option[data-swatch='5'] {
+  --swatch: var(--color-category-reading-soft);
+}
+
+.option:hover:not(:disabled) {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.option:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+.option:disabled {
+  cursor: default;
+}
+
+.selected {
+  border-color: var(--game-strong);
+  box-shadow:
+    0 0 0 3px var(--color-surface) inset,
+    var(--shadow-card-hover);
+  transform: scale(1.03);
+}
+
+.optionImage {
+  max-inline-size: 100%;
+  max-block-size: 6rem;
+  border-radius: var(--radius-card);
+  object-fit: contain;
+}
+
+.optionText {
+  max-inline-size: 100%;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-extrabold);
+  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
+}
+
+.letter .optionText {
+  font-size: var(--font-size-4xl);
+  line-height: 1.1;
+}
+
+.number {
+  min-block-size: 8rem;
+  border-radius: var(--radius-pill);
+}
+
+.number .optionText {
+  font-size: var(--font-size-5xl);
+  line-height: 1;
+}
+
+.check,
+.orderBadge {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-start: var(--space-2);
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--radius-pill);
+  background: var(--game-strong);
+  color: var(--color-text-on-dark);
+  font-weight: var(--font-weight-black);
+}
+
+.check svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+/* Memory sequence: the child's order as numbered slots. */
+.sequence,
+.focus {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.orderPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--game-soft);
+}
+
+.orderTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slot,
+.slotFilled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--tap-target-min);
+  padding-block: var(--space-1);
+  padding-inline: var(--space-1) var(--space-3);
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.slotFilled {
+  border-style: solid;
+  border-color: var(--game-strong);
+}
+
+.slotNumber {
+  display: grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-pill);
+  background: var(--game-strong);
+  color: var(--color-text-on-dark);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-black);
+}
+
+.slotText {
+  font-weight: var(--font-weight-extrabold);
+  overflow-wrap: anywhere;
+}
+
+.slotEmpty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.counter {
+  margin: 0;
+  flex: 1;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+}
+
+.footer > * {
+  min-inline-size: min(100%, 16rem);
+  min-block-size: var(--tap-target-child);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .option {
+    transition: none;
+  }
+
+  .option:hover:not(:disabled),
+  .selected {
+    transform: none;
+  }
+}

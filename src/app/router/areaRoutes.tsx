@@ -3,12 +3,12 @@ import { Navigate, type RouteObject } from 'react-router';
 import { RoleAreaLayout } from '@/app/layouts/RoleAreaLayout';
 import { RoleAreaRoot } from '@/app/layouts/RoleAreaRoot';
 import { RequireRole } from '@/app/router/guards';
+import { RedirectToChildProfile } from '@/app/router/RedirectToChildProfile';
 import { showPracticeCatalogs } from '@/config/env';
 import {
   ADMIN_PATHS,
   ADMIN_SEGMENTS,
   AREA_SEGMENTS,
-  canCreateReports,
   getAreaPaths,
   ROLE_NAMESPACES,
   ROUTE_PATHS,
@@ -33,6 +33,36 @@ async function loadDashboardRoute(role: AreaRole) {
   return { Component: byRole[role] };
 }
 
+/** Teacher and Specialist pages compose several features, so they live in `app/pages`. */
+async function loadChildPage(role: AreaRole) {
+  if (role === 'Teacher') {
+    return { Component: (await import('@/app/pages/TeacherChildPage')).TeacherChildPage };
+  }
+  if (role === 'Specialist') {
+    return { Component: (await import('@/app/pages/SpecialistChildPage')).SpecialistChildPage };
+  }
+  return { Component: (await loadChildren()).ChildProfilePage };
+}
+
+/** Admin: the report list and details stay reachable (not in the sidebar). */
+const adminReportPages: RouteObject[] = [
+  {
+    path: AREA_SEGMENTS.reports,
+    lazy: async () => ({ Component: (await loadReports()).ReportsListPage }),
+  },
+  {
+    path: AREA_SEGMENTS.reportDetail,
+    lazy: async () => ({ Component: (await loadReports()).ReportDetailPage }),
+  },
+];
+
+function redirectReportsToDashboard(role: AreaRole): RouteObject {
+  return {
+    path: `${AREA_SEGMENTS.reports}/*`,
+    element: <Navigate to={getAreaPaths(role).dashboard} replace />,
+  };
+}
+
 const loadContent = () => import('@/features/content');
 const loadUsers = () => import('@/features/users');
 
@@ -45,6 +75,10 @@ const adminOnlyPages: RouteObject[] = [
   {
     path: ADMIN_SEGMENTS.userDetail,
     lazy: async () => ({ Component: (await loadUsers()).AdminUserDetailPage }),
+  },
+  {
+    path: ADMIN_SEGMENTS.specialists,
+    lazy: async () => ({ Component: (await loadUsers()).AdminSpecialistsPage }),
   },
   {
     path: ADMIN_SEGMENTS.content,
@@ -81,16 +115,17 @@ function buildAreaRoute(role: AreaRole): RouteObject {
       path: AREA_SEGMENTS.children,
       lazy: async () => ({ Component: (await loadChildren()).ChildrenListPage }),
     },
-    {
-      path: AREA_SEGMENTS.childProfile,
-      lazy: async () => ({ Component: (await loadChildren()).ChildProfilePage }),
-    },
-    {
-      path: AREA_SEGMENTS.childPlans,
-      lazy: async () => ({
-        Component: (await import('@/features/training-plans')).ChildPlansPage,
-      }),
-    },
+    // One dashboard-style page per child and role (client revision 2026-10).
+    { path: AREA_SEGMENTS.childProfile, lazy: () => loadChildPage(role) },
+    // The plan lives on the child page; the old plan links open it (the Admin keeps its notice).
+    role === 'Admin'
+      ? {
+          path: AREA_SEGMENTS.childPlans,
+          lazy: async () => ({
+            Component: (await import('@/features/training-plans')).ChildPlansPage,
+          }),
+        }
+      : { path: AREA_SEGMENTS.childPlans, element: <RedirectToChildProfile /> },
     ...(showPracticeCatalogs
       ? [
           {
@@ -103,40 +138,12 @@ function buildAreaRoute(role: AreaRole): RouteObject {
           },
         ]
       : []),
-    {
-      path: AREA_SEGMENTS.reports,
-      lazy: async () => ({ Component: (await loadReports()).ReportsListPage }),
-    },
-    ...(canCreateReports(role)
-      ? [
-          {
-            path: AREA_SEGMENTS.reportCreate,
-            lazy: async () => ({ Component: (await loadReports()).CreateReportPage }),
-          },
-        ]
-      : []),
-    {
-      path: AREA_SEGMENTS.reportDetail,
-      lazy: async () => ({ Component: (await loadReports()).ReportDetailPage }),
-    },
-    ...(canCreateReports(role)
-      ? [
-          {
-            path: AREA_SEGMENTS.reportEdit,
-            lazy: async () => ({ Component: (await loadReports()).EditReportPage }),
-          },
-        ]
-      : []),
+    // Reports are removed from the Parent, Teacher and Specialist UI (client revision 2026-10);
+    // their old links lead back to the dashboard. The Admin keeps the read-only report pages.
+    ...(role === 'Admin' ? adminReportPages : [redirectReportsToDashboard(role)]),
     ...(role === 'Admin' ? adminOnlyPages : []),
     ...(role === 'Teacher'
-      ? [
-          {
-            path: AREA_SEGMENTS.childNotes,
-            lazy: async () => ({
-              Component: (await import('@/features/feedback')).ChildNotesPage,
-            }),
-          },
-        ]
+      ? [{ path: AREA_SEGMENTS.childNotes, element: <RedirectToChildProfile /> }]
       : []),
     {
       path: AREA_SEGMENTS.messages,

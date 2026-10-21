@@ -1,8 +1,8 @@
 import {
   BrainCircuit,
+  BriefcaseMedical,
   FolderCog,
   Crown,
-  FileText,
   Gamepad2,
   House,
   LayoutDashboard,
@@ -17,16 +17,17 @@ import { ADMIN_PATHS, getAreaPaths, ROUTE_PATHS, type AreaRole } from '@/constan
 import type { UserRole } from '@/types/roles';
 
 /** Children nav label: the parent sees their own children, staff see the children they follow. */
-const CHILDREN_LABEL: Record<AreaRole, string> = {
+const CHILDREN_LABEL: Record<Exclude<AreaRole, 'Admin'>, string> = {
   Parent: 'أطفالي',
   Teacher: 'الأطفال',
   Specialist: 'الأطفال',
-  Admin: 'الأطفال',
 };
 
 /**
- * Sidebar order: dashboard, children, reports, messages. The static practice tests/games are
- * listed only in development mock mode (they are not backend data).
+ * Sidebar order: dashboard, children, (Admin management pages), messages. Client revision 2026-10:
+ * no reports entry for any role, and no children entry for the Admin (the Admin reaches children
+ * through «إسناد الأخصائيين» and the users pages). The static practice tests/games are listed only
+ * in development mock mode (they are not backend data).
  */
 function buildAreaNav(role: AreaRole, unreadMessages: number): NavLinkItem[] {
   const paths = getAreaPaths(role);
@@ -36,10 +37,11 @@ function buildAreaNav(role: AreaRole, unreadMessages: number): NavLinkItem[] {
       label: role === 'Parent' ? 'الرئيسية' : 'لوحة القيادة',
       icon: role === 'Parent' ? House : LayoutDashboard,
     },
-    { to: paths.children, label: CHILDREN_LABEL[role], icon: Users },
+    ...(role === 'Admin' ? [] : [{ to: paths.children, label: CHILDREN_LABEL[role], icon: Users }]),
     ...(role === 'Admin'
       ? [
           { to: ADMIN_PATHS.users, label: 'المستخدمون', icon: UserCog },
+          { to: ADMIN_PATHS.specialists, label: 'إسناد الأخصائيين', icon: BriefcaseMedical },
           { to: ADMIN_PATHS.content, label: 'إدارة المحتوى', icon: FolderCog },
         ]
       : []),
@@ -49,7 +51,6 @@ function buildAreaNav(role: AreaRole, unreadMessages: number): NavLinkItem[] {
           { to: paths.games, label: 'الألعاب', icon: Gamepad2 },
         ]
       : []),
-    { to: paths.reports, label: 'التقارير', icon: FileText },
     { to: paths.messages, label: 'الرسائل', icon: MessageCircle, badgeCount: unreadMessages },
   ];
 }

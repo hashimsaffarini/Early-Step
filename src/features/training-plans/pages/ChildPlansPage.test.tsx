@@ -49,18 +49,24 @@ describe('ChildPlansPage — read-only roles', () => {
     const list = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
     expect(screen.getByRole('heading', { level: 1, name: 'الخطة التدريبية' })).toBeInTheDocument();
     expect(screen.getByText('للطفل: يوسف')).toBeInTheDocument();
-    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(list.querySelectorAll(':scope > li')).toHaveLength(2);
     expect(within(list).getByText('مكتمل')).toBeInTheDocument();
     expect(within(list).getByText('لم يكتمل بعد')).toBeInTheDocument();
     // The live child-facing list has no answer counts (verified) — none are shown.
     expect(within(list).queryByText(/إجابات صحيحة/)).not.toBeInTheDocument();
-    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 من 2 أنشطة');
+    // Activity summary + completion %, derived from the real plan rows (1 of 2 → 50 %).
+    const summary = screen.getByRole('region', { name: 'ملخص الأنشطة' });
+    expect(within(summary).getByText('إجمالي الأنشطة').nextElementSibling).toHaveTextContent('2');
+    expect(within(summary).getByText('المنجزة').nextElementSibling).toHaveTextContent('1');
+    expect(within(summary).getByText('المتبقية').nextElementSibling).toHaveTextContent('1');
+    expect(within(summary).queryByText('متوسط النتيجة')).not.toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 من 2 أنشطة منجزة');
     expect(screen.queryByRole('button', { name: 'إضافة نشاط' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /إزالة/ })).not.toBeInTheDocument();
   });
 
   it('shows an empty state when the plan has no activities', async () => {
-    renderPlans('Teacher', NOUR);
+    renderPlans('Teacher', SALMA);
 
     expect(await screen.findByText('لا توجد أنشطة في الخطة بعد')).toBeInTheDocument();
   });
@@ -92,7 +98,7 @@ describe('ChildPlansPage — read-only roles', () => {
 
 describe('ChildPlansPage — specialist', () => {
   it('explains when the child has no plan yet', async () => {
-    renderPlans('Specialist', NOUR);
+    renderPlans('Specialist', SALMA);
 
     expect(await screen.findByText(/لا توجد خطة تدريبية لهذا الطفل بعد/)).toBeInTheDocument();
   });
@@ -125,9 +131,60 @@ describe('ChildPlansPage — specialist', () => {
     expect(body).toEqual({ activityId: 'a0000000-0000-4000-8000-000000000003' });
     const list = screen.getByRole('list', { name: 'أنشطة الخطة التدريبية' });
     await waitFor(() => {
-      expect(within(list).getAllByRole('listitem')).toHaveLength(3);
+      // Direct items only (each completed activity also lists its result figures).
+      expect(list.querySelectorAll(':scope > li')).toHaveLength(3);
     });
     server.events.removeAllListeners();
+  });
+
+  it('shows the game template and assigns the real game activity (no duplicate)', async () => {
+    let body: unknown;
+    server.use(
+      http.get(
+        apiUrl('TrainingPlan/specialist/children/:childId/available-activities'),
+        ({ request }) =>
+          HttpResponse.json(
+            new URL(request.url).searchParams.get('type') === 'game'
+              ? [
+                  {
+                    id: 'g-real',
+                    title: 'صيد حروف الحيوانات',
+                    type: 'ألعاب',
+                    categoryName: 'الحروف والقراءة',
+                    isAssigned: false,
+                    questionCount: 4,
+                    slug: 'letter-hunt',
+                  },
+                ]
+              : [],
+          ),
+      ),
+      http.post(
+        apiUrl('TrainingPlan/specialist/children/:childId/activities'),
+        async ({ request }) => {
+          body = await request.json();
+          return HttpResponse.json({
+            message: 'ok',
+            activity: { trainingPlanActivityId: 'pa-new' },
+          });
+        },
+      ),
+    );
+    renderPlans('Specialist', YOUSEF);
+    await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'إضافة نشاط' }));
+    const dialog = await screen.findByRole('dialog', { name: 'إضافة نشاط إلى الخطة' });
+    await userEvent.click(within(dialog).getByRole('tab', { name: /ألعاب/ }));
+    expect(await within(dialog).findByText('صيد الحروف')).toBeInTheDocument();
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'إضافة «صيد حروف الحيوانات» إلى الخطة' }),
+    );
+
+    expect(
+      await within(dialog).findByText('تمت إضافة «صيد حروف الحيوانات» إلى الخطة.'),
+    ).toBeInTheDocument();
+    expect(body).toEqual({ activityId: 'g-real' });
   });
 
   it('lists games in the second tab', async () => {
@@ -205,11 +262,21 @@ describe('ChildPlansPage — results (specialist)', () => {
     renderPlans('Specialist', YOUSEF);
 
     const list = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
-    expect(within(list).getByText(/النتيجة: 75%/)).toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'الأنشطة المنجزة' })).toHaveAttribute(
+    const result = within(list).getByRole('list', { name: 'نتيجة «اختبار الحروف»' });
+    expect(
+      within(result)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['النتيجة75%', 'الصحيحة3', 'الخاطئة1']);
+    expect(screen.getByRole('progressbar', { name: 'نسبة إنجاز الخطة' })).toHaveAttribute(
       'aria-valuenow',
       '50',
     );
+    // The specialist's rows carry the results: totals and the mean score of completed activities.
+    const summary = screen.getByRole('region', { name: 'ملخص الأنشطة' });
+    expect(within(summary).getByText('الإجابات الصحيحة').nextElementSibling).toHaveTextContent('3');
+    expect(within(summary).getByText('الإجابات الخاطئة').nextElementSibling).toHaveTextContent('1');
+    expect(within(summary).getByText('متوسط النتيجة').nextElementSibling).toHaveTextContent('75%');
     // Loaded only when opened, and only for completed activities.
     expect(within(list).getAllByText('عرض إجابات الطفل')).toHaveLength(1);
     expect(resultCalls).toBe(0);
