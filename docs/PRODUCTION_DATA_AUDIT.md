@@ -71,9 +71,12 @@ code.
   `Admin/activities/*`, questions, options). Title, icon, questions, option text and images come
   from the API.
 - **Engines (static code, allowed):** `components/players/*` (answer tiles, progress, shell) and
-  the 11 game components. The game components still carry their own demo content and no backend
-  activity type maps to them, so they run only in mock-mode practice. Plan activities of type
-  game are played with the generic multiple-choice player from their server questions.
+  the four game engines of `components/games` (صيد الحروف, طابق الرقم, تحدي الذاكرة, تحدي التركيز —
+  `docs/GAME_ENGINE.md`). The engines carry **no content**: they play the real questions of a
+  backend game activity whose `slug` names a template, and submit through the real Training Plan
+  endpoint. The live plan endpoints do not return `slug` yet, so live games open in the generic
+  player (requested from the backend). The 11 old practice game components still carry their own
+  demo content and run only in mock-mode practice.
 
 ## 4. Dashboard statistics matrix
 

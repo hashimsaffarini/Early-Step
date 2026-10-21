@@ -70,12 +70,13 @@ and is not part of this list.
 
 ## Small improvements (not merge blockers)
 
-| #   | Now                                                                                                                                                                    | Suggested                                                                                                  |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 5   | Deleting a child with saved results (`DELETE Parent/{id}`) or removing a played plan activity → **empty 500**                                                          | 400 / 409 with a message (e.g. "لا يمكن حذف طفل لديه نتائج محفوظة") — the app already blocks these actions |
-| 6   | `Admin/categoriesActivity` → `isInInitialAssessment` was false for categories in the assessment (2026-10-15); `Admin/categories` now follows add / remove (2026-10-16) | Keep both lists consistent (the app reads membership from `initial-assessment/categories`)                 |
-| 7   | `specialist/children` → `progressPercentage` stays 0 while the plan's `progress` is 50 / 100 (the app does not display it)                                             | Use the plan progress                                                                                      |
-| 8   | `SuperAdmin/children` has no specialist / teacher fields                                                                                                               | Optional: add `specialistName` (the panel then shows it)                                                   |
+| #   | Now                                                                                                                                                                           | Suggested                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 5   | Deleting a child with saved results (`DELETE Parent/{id}`) or removing a played plan activity → **empty 500**                                                                 | 400 / 409 with a message (e.g. "لا يمكن حذف طفل لديه نتائج محفوظة") — the app already blocks these actions |
+| 6   | `Admin/categoriesActivity` → `isInInitialAssessment` was false for categories in the assessment (2026-10-15); `Admin/categories` now follows add / remove (2026-10-16)        | Keep both lists consistent (the app reads membership from `initial-assessment/categories`)                 |
+| 7   | `specialist/children` → `progressPercentage` stays 0 while the plan's `progress` is 50 / 100 (the app does not display it)                                                    | Use the plan progress                                                                                      |
+| 8   | `SuperAdmin/children` has no specialist / teacher fields                                                                                                                      | Optional: add `specialistName` (the panel then shows it)                                                   |
+| 9   | The Training Plan activity responses (`TrainingPlan/children/{id}/activities[/{activityId}]`, `available-activities`) do not include the activity `slug` (saved by the Admin) | Return `slug` — the game engines then open automatically for games (`docs/GAME_ENGINE.md`)                 |
 
 ## Accounts / data
 

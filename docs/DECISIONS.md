@@ -607,3 +607,20 @@ Accepted (2026-10-16, `CLIENT_REVISIONS_2026-10.md`)
 
 Several backend gaps stay visible instead of being hidden: unserved uploads, unstored option
 order, no list of assessment questions (`BACKEND_REQUESTS.md`).
+
+## ADR-026 — Game engines in the shared layer, template in the activity `Slug`
+
+**Date:** 2026-10-21 · **Status:** Accepted
+
+**Context.** The client expects real educational games. Game activities exist in the backend
+(`type: game`) but carry no field naming an interaction style except the Admin-entered `Slug`.
+
+**Decision.** Four game engines live in `src/components/games` (shared layer): both the Admin
+content feature (template selector) and the activities player need the registry, and features never
+import each other. The template is saved in the activity's existing `Slug`
+(`template` or `template-suffix`); nothing is matched by GUID or title. The player picks the engine
+from the plan activity's `slug` when the server sends it, and otherwise keeps the generic player.
+
+**Consequences.** No backend contract change for saving; reading needs the backend to return `slug`
+on the Training Plan activity responses (`BACKEND_REQUESTS.md` #9). Until then live games use the
+generic player. Details: `docs/GAME_ENGINE.md`.

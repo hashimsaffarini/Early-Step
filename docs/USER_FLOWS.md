@@ -78,6 +78,19 @@ to `POST /TrainingPlan/children/{childId}/activities/{planActivityId}/submit`. E
 answered; a completed activity cannot be submitted again (409). No right/wrong feedback for the
 child; the specialist sees the score and the child's answers.
 
+### 2c. Child plays a game (client revision 2026-10)
+
+```text
+Admin: الأنشطة → الألعاب → «إنشاء لعبة» from a template (نوع اللعبة → Slug) → add questions
+Specialist: child page → «إضافة نشاط» → «ألعاب» → add the game to the plan
+Parent / Teacher: child page → game card («لعبة») → «ابدأ» → template engine → finish → submit once
+```
+
+The engine (صيد الحروف / طابق الرقم / تحدي الذاكرة / تحدي التركيز) plays the activity's real
+questions and sends the answers through the same submit endpoint as 2b. Games without a known slug
+— and every game until the plan endpoints return `slug` — use the generic player of 2b. Details:
+`docs/GAME_ENGINE.md`.
+
 ## 3. Admin review and specialist assignment
 
 ```text
