@@ -104,6 +104,32 @@ export const MOCK_ASSESSMENT_QUESTIONS: Readonly<Record<string, readonly MockQue
 
 /** Questions inside training-plan activities, keyed by `activityId`. */
 export const MOCK_ACTIVITY_QUESTIONS: Readonly<Record<string, readonly MockQuestion[]>> = {
+  // Mock game activities (dev review of the game engines; mock mode only).
+  'g0000000-0000-4000-8000-000000000001': [
+    single('q-g1-1', 'ما الحرف الأول في كلمة «أسد»؟', ['أ', 'ب', 'ت'], 0),
+    single('q-g1-2', 'ما الحرف الأول في كلمة «شمس»؟', ['س', 'ش', 'ص'], 1),
+  ],
+  'g0000000-0000-4000-8000-000000000002': [
+    single('q-g2-1', 'كم عدد أصابع اليد الواحدة؟', ['3', '4', '5', '6'], 2),
+    single('q-g2-2', 'ما العدد الذي يأتي بعد 7؟', ['6', '8', '9', '10'], 1),
+  ],
+  'g0000000-0000-4000-8000-000000000003': [
+    sequence('q-g3-1', 'رتّب حروف كلمة «قلم»', [
+      ['ل', 2],
+      ['م', 3],
+      ['ق', 1],
+    ]),
+  ],
+  'g0000000-0000-4000-8000-000000000004': [
+    multi('q-g4-1', 'اختر كل الفواكه', [
+      ['تفاحة', true],
+      ['كرسي', false],
+      ['موز', true],
+      ['قلم', false],
+      ['عنب', true],
+      ['كرة', false],
+    ]),
+  ],
   'a0000000-0000-4000-8000-000000000001': [
     single('q-act1-1', 'أي كلمة تبدأ بحرف الباء؟', ['بطة', 'تفاحة', 'شجرة', 'سيارة'], 0),
     single('q-act1-2', 'كم حرفاً في كلمة «شمس»؟', ['2', '3', '4', '5'], 1),

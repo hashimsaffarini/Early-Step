@@ -34,7 +34,8 @@ describe('ParentDashboardPage', () => {
     const value = (label: string) => within(summary).getByText(label).nextElementSibling;
     expect(value('عدد الأطفال')).toHaveTextContent('3');
     await waitFor(() => {
-      expect(value('أنشطة الخطط التدريبية')).toHaveTextContent('2');
+      // Mock plans: Yousef 2 activities, Nour 4 games, Reem none.
+      expect(value('أنشطة الخطط التدريبية')).toHaveTextContent('6');
     });
     expect(within(summary).queryByText(/تقرير/)).not.toBeInTheDocument();
     expect(within(summary).queryByText('التقييمات المكتملة')).not.toBeInTheDocument();

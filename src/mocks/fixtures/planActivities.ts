@@ -19,9 +19,33 @@ export interface MockPlanActivityRow {
   wrongAnswers: number | null;
   isCompleted: boolean;
   completedAt: string | null;
+  /** Activity slug (game template). Requested from the backend — NOT returned live yet. */
+  slug?: string;
 }
 
 const YOUSEF = 'c0000000-0000-4000-8000-000000000001';
+const NOUR = 'c0000000-0000-4000-8000-000000000002';
+
+/** Mock game rows (one per game template) so the game engines can be reviewed in mock mode. */
+function gameRow(order: number, slug: string, title: string, description: string) {
+  return {
+    id: `p0000000-0000-4000-8000-00000000010${order.toString()}`,
+    childId: NOUR,
+    activityId: `g0000000-0000-4000-8000-00000000000${order.toString()}`,
+    title,
+    description,
+    iconUrl: null,
+    type: 'ألعاب',
+    order,
+    assignedAt: '2026-10-20T09:00:00Z',
+    score: null,
+    correctAnswers: null,
+    wrongAnswers: null,
+    isCompleted: false,
+    completedAt: null,
+    slug,
+  };
+}
 
 const INITIAL: readonly MockPlanActivityRow[] = [
   {
@@ -56,6 +80,10 @@ const INITIAL: readonly MockPlanActivityRow[] = [
     isCompleted: false,
     completedAt: null,
   },
+  gameRow(1, 'letter-hunt', 'صيد الحروف', 'اصطد الحرف الصحيح.'),
+  gameRow(2, 'number-match', 'طابق الرقم', 'اختر الرقم المناسب.'),
+  gameRow(3, 'memory-sequence', 'تحدي الذاكرة', 'رتّب البطاقات بالترتيب الصحيح.'),
+  gameRow(4, 'focus-challenge', 'تحدي التركيز', 'اختر كل البطاقات المطلوبة.'),
 ];
 
 export const mockPlanActivities: MockPlanActivityRow[] = [];

@@ -10,7 +10,7 @@ import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
 const YOUSEF = 'c0000000-0000-4000-8000-000000000001';
-const NOUR = 'c0000000-0000-4000-8000-000000000002';
+const SALMA = 'c0000000-0000-4000-8000-000000000005';
 
 function renderPage(childId = YOUSEF) {
   signInAs('Specialist');
@@ -69,8 +69,8 @@ describe('SpecialistChildPage — dashboard (client revision 2026-10)', () => {
   });
 
   it('hides progress and stats for a child without plan activities', async () => {
-    renderPage(NOUR);
-    await heading('نور');
+    renderPage(SALMA);
+    await heading('سلمى');
 
     expect(
       await screen.findByText(/لا توجد خطة تدريبية لهذا الطفل بعد|أضف أنشطة مناسبة/),

@@ -2,6 +2,7 @@ import { ArrowLeft, CircleCheck, FileQuestion, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
+import { resolveGameTemplate, type GameQuestion } from '@/components/games';
 import {
   AnswerTile,
   CHOICE_HINTS,
@@ -30,6 +31,7 @@ import {
   type PlanAnswer,
   type PlanQuestion,
 } from '../api/planActivityApi';
+import { PlanGameRun } from '../components/PlanGameRun';
 
 import styles from './TestPlayerPage.module.css';
 
@@ -184,11 +186,29 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
   );
 }
 
-/** A child's training-plan activity, played from the server's questions; the result is saved. */
+/** Every question has a known type here (`isPlayable` was checked before). */
+function toGameQuestions(questions: readonly PlanQuestion[]): GameQuestion[] {
+  return questions.flatMap((question) =>
+    question.type === null ? [] : [{ ...question, type: question.type }],
+  );
+}
+
+/**
+ * A child's training-plan activity, played from the server's questions; the result is saved.
+ * Routing (client revision 2026-10): a game whose `slug` names a known template opens that game
+ * engine (`components/games`); tests, games without a slug and unknown slugs use the generic
+ * player below — old activities keep working.
+ */
 export function PlanActivityPlayerPage() {
   const { childId = '', activityId = '' } = useParams();
   const { paths } = useRoleArea();
   const query = usePlanActivityDetail(childId, activityId);
+  // "Already done" is decided on the first load: after this session's submission the refetched
+  // activity is completed, but the run (and its result screen) stays on screen.
+  const [completedOnLoad, setCompletedOnLoad] = useState<boolean | null>(null);
+  if (query.data && completedOnLoad === null) {
+    setCompletedOnLoad(query.data.activity.isCompleted);
+  }
   const exitTo = paths.childProfile(childId);
   const activityTitle = query.data?.activity.title.trim();
   const title =
@@ -229,7 +249,7 @@ export function PlanActivityPlayerPage() {
       </PlayerShell>
     );
   }
-  if (query.data.activity.isCompleted) {
+  if (completedOnLoad ?? query.data.activity.isCompleted) {
     // One attempt per activity: the server rejects a second submission.
     return (
       <PlayerShell {...shell}>
@@ -262,6 +282,22 @@ export function PlanActivityPlayerPage() {
           title="لا تتوفر أسئلة لهذا النشاط"
           description="لم يُرسل الخادم أسئلة لهذا النشاط، لذلك لا يمكن تشغيله هنا حالياً."
           action={backLink}
+        />
+      </PlayerShell>
+    );
+  }
+  const template =
+    query.data.activity.type === 'game' ? resolveGameTemplate(query.data.activity.slug) : null;
+  if (template) {
+    return (
+      <PlayerShell {...shell} emoji="🎮" width="wide">
+        <PlanGameRun
+          childId={childId}
+          activity={query.data.activity}
+          savedActivity={query.data.activity}
+          template={template}
+          questions={toGameQuestions(query.data.questions)}
+          exitTo={exitTo}
         />
       </PlayerShell>
     );

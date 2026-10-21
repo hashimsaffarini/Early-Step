@@ -223,6 +223,8 @@ export const planActivityDetailHandler = http.get(
       iconUrl: row.iconUrl,
       type: row.type,
       isCompleted: row.isCompleted,
+      // Requested backend field (not returned live yet): the game template slug.
+      ...(row.slug ? { slug: row.slug } : {}),
       questions: (MOCK_ACTIVITY_QUESTIONS[row.activityId] ?? []).map(toChildQuestion),
     });
   },

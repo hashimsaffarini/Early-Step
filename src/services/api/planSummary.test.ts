@@ -16,6 +16,7 @@ function row(overrides: Partial<PlanActivity>): PlanActivity {
     score: null,
     correctAnswers: null,
     wrongAnswers: null,
+    slug: null,
     ...overrides,
   };
 }
