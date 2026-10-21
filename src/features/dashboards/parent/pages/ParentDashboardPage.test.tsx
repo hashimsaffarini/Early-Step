@@ -23,19 +23,29 @@ describe('ParentDashboardPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: /محمد أحمد/ })).toBeInTheDocument();
   });
 
-  it('shows counts from the API (children, plan activities, reports)', async () => {
+  it('shows counts from the API (children, plan activities) — no reports', async () => {
+    let reportCalls = 0;
+    server.events.on('request:start', ({ request }) => {
+      if (request.url.includes('Reports')) reportCalls += 1;
+    });
     renderDashboard();
     const summary = await screen.findByRole('region', { name: 'ملخص' });
 
     const value = (label: string) => within(summary).getByText(label).nextElementSibling;
     expect(value('عدد الأطفال')).toHaveTextContent('3');
     await waitFor(() => {
-      expect(value('أطفال لديهم تقرير')).toHaveTextContent('2');
-    });
-    await waitFor(() => {
       expect(value('أنشطة الخطط التدريبية')).toHaveTextContent('2');
     });
+    expect(within(summary).queryByText(/تقرير/)).not.toBeInTheDocument();
     expect(within(summary).queryByText('التقييمات المكتملة')).not.toBeInTheDocument();
+    expect(reportCalls).toBe(0);
+    server.events.removeAllListeners();
+  });
+
+  it('shows no Early Step logo in the welcome banner', () => {
+    renderDashboard();
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
   it('renders each child card as the profile link with real info, no button or progress', async () => {
@@ -47,12 +57,12 @@ describe('ParentDashboardPage', () => {
     }
     const card = within(section).getByRole('link', { name: 'ملف يوسف' });
     expect(card).toHaveAttribute('href', '/parent/children/c0000000-0000-4000-8000-000000000001');
-    // Real counts from GET Parent/{childId} (mock plan: 2 tests, 0 games; 1 report).
+    // Real games count from GET Parent/{childId}; client revision 2026-10: no tests or reports.
     const count = (label: string) => within(card).getByText(label).nextElementSibling?.textContent;
-    await within(card).findByText('الاختبارات');
-    expect(count('الاختبارات')).toBe('2');
+    await within(card).findByText('الألعاب');
     expect(count('الألعاب')).toBe('0');
-    expect(count('التقارير')).toBe('1');
+    expect(within(card).queryByText('الاختبارات')).not.toBeInTheDocument();
+    expect(within(card).queryByText('التقارير')).not.toBeInTheDocument();
     expect(within(card).getByText('العمر: 7 سنوات')).toBeInTheDocument();
     // Client revision 2026-10: no "عرض الملف" button and no progress on the card.
     expect(within(section).queryByText('عرض الملف')).not.toBeInTheDocument();

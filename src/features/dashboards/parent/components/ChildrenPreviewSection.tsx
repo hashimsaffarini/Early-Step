@@ -1,4 +1,4 @@
-import { ArrowLeft, Cake, ClipboardList, FileText, Gamepad2, Smile, Users } from 'lucide-react';
+import { ArrowLeft, Cake, Gamepad2, Smile, Users } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { ChildCard, type ChildCardDetail } from '@/components/shared/ChildCard';
@@ -22,17 +22,15 @@ function childDetails(child: ChildSummary): ChildCardDetail[] {
 }
 
 /**
- * The counts the server sends for the child (`GET Parent/{childId}`: tests, games, reports), as a
- * compact row of numbers. A count is shown only once the server has sent it — never a placeholder.
+ * The games count the server sends for the child (`GET Parent/{childId}`). Client revision
+ * 2026-10: no tests or reports on the card. Shown only once the server has sent it.
  */
 function ChildCounts({ childId }: { childId: string }) {
   const { data } = useParentChildDetail(childId);
   if (!data) return null;
-  const counts = [
-    { label: 'الاختبارات', value: data.testsCount, icon: ClipboardList },
-    { label: 'الألعاب', value: data.gamesCount, icon: Gamepad2 },
-    { label: 'التقارير', value: data.reportsCount, icon: FileText },
-  ].filter((count) => count.value !== null);
+  const counts = [{ label: 'الألعاب', value: data.gamesCount, icon: Gamepad2 }].filter(
+    (count) => count.value !== null,
+  );
   if (counts.length === 0) return null;
   return (
     <dl className={styles.counts}>

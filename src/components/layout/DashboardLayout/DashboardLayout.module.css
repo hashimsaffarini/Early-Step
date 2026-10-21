@@ -52,6 +52,15 @@
 }
 
 /* ── Main content ── */
+.mobileTitle {
+  min-inline-size: 0;
+  overflow: hidden;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .main {
   min-inline-size: 0;
   padding: var(--space-4);

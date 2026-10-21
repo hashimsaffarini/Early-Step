@@ -1,4 +1,4 @@
-import { FileText, ListChecks, RotateCcw, Users } from 'lucide-react';
+import { ListChecks, RotateCcw, Users } from 'lucide-react';
 
 import { StatCard } from '@/components/shared/StatCard';
 import { Button } from '@/components/ui/Button';
@@ -19,9 +19,9 @@ export interface ParentStatsGridProps {
   onRetry: () => void;
 }
 
-/** Counts from the API only (children list, plan summaries, child reports). */
+/** Counts from the API only (children list, plan summaries). No reports (client 2026-10). */
 export function ParentStatsGrid({ stats, onRetry }: ParentStatsGridProps) {
-  const failed = stats.planActivities === 'error' || stats.childrenWithReport === 'error';
+  const failed = stats.planActivities === 'error';
   return (
     <section aria-label="ملخص">
       <ul className={styles.grid}>
@@ -34,14 +34,6 @@ export function ParentStatsGrid({ stats, onRetry }: ParentStatsGridProps) {
             value={display(stats.planActivities)}
             icon={ListChecks}
             tone="warning"
-          />
-        </li>
-        <li>
-          <StatCard
-            label="أطفال لديهم تقرير"
-            value={display(stats.childrenWithReport)}
-            icon={FileText}
-            tone="violet"
           />
         </li>
       </ul>

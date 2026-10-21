@@ -1,6 +1,5 @@
-import { Zap } from 'lucide-react';
+import { Sprout, Zap } from 'lucide-react';
 
-import logo from '@/assets/images/logo.png';
 import { PageBanner } from '@/components/shared/PageBanner';
 
 import { formatTodayLong } from '@/utils/dateFormat';
@@ -10,14 +9,16 @@ import { getGreeting } from '../format';
 import styles from './ParentWelcomeBanner.module.css';
 
 const SUBTITLE = 'إليك نظرة عامة على آخر التطورات والأنشطة.';
-const LOGO_SIZE_PX = 256;
 
 export interface ParentWelcomeBannerProps {
   parentName: string;
   now?: Date;
 }
 
-/** Replit dashboard banner: date chip, greeting, parent name, subtitle, friendly illustration. */
+/**
+ * Replit dashboard banner: date chip, greeting, parent name, subtitle and a decorative icon
+ * (client revision 2026-10: no Early Step logo in the Parent area).
+ */
 export function ParentWelcomeBanner({ parentName, now = new Date() }: ParentWelcomeBannerProps) {
   return (
     <PageBanner
@@ -33,7 +34,7 @@ export function ParentWelcomeBanner({ parentName, now = new Date() }: ParentWelc
       subtitle={SUBTITLE}
       aside={
         <span className={styles.illustration} aria-hidden="true">
-          <img src={logo} alt="" width={LOGO_SIZE_PX} height={LOGO_SIZE_PX} />
+          <Sprout />
         </span>
       }
     />

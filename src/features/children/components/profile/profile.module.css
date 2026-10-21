@@ -1,34 +1,3 @@
-/* Shared layout styles for the child-profile cards and tabs. */
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  block-size: 100%;
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.meta li {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.meta svg {
-  inline-size: 1rem;
-  block-size: 1rem;
-  color: var(--color-accent);
-}
-
 .lead {
   font-weight: var(--font-weight-bold);
 }
@@ -38,13 +7,6 @@
   font-size: var(--font-size-sm);
 }
 
-.footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin-block-start: auto;
-}
-
 .list {
   display: flex;
   flex-direction: column;
@@ -52,150 +14,6 @@
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.activityIcon {
-  flex-shrink: 0;
-  inline-size: 2.75rem;
-  block-size: 2.75rem;
-  border-radius: var(--radius-sm);
-  object-fit: contain;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-background);
-}
-
-/* A list row inside a section, without its own box (sections stay on one level). */
-.flatRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding-block: var(--space-3);
-  border-block-start: 1px solid var(--color-border);
-}
-
-.rowBody {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-inline-size: 0;
-}
-
-.rowTitle {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-}
-
-.iconTile {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  inline-size: 2.75rem;
-  block-size: 2.75rem;
-  border-radius: var(--radius-sm);
-}
-
-.iconTile svg {
-  inline-size: 1.25rem;
-  block-size: 1.25rem;
-}
-
-.toneViolet {
-  background: var(--color-violet-soft);
-  color: var(--color-violet-strong);
-}
-
-.stack {
-  display: grid;
-  gap: var(--space-6);
-}
-
-.twoColumns {
-  display: grid;
-  gap: var(--space-6);
-}
-
-@media (min-width: 64rem) {
-  .twoColumns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
-  }
-}
-
-.tile {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-card);
-}
-
-.cardHeader {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.rowLink {
-  color: var(--color-primary-strong);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-  text-decoration: none;
-}
-
-.rowLink:hover {
-  text-decoration: underline;
-}
-
-.column {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
-/* Action row above the activities groups (e.g. the specialist plan-management link). */
-.actionBar {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.playLink {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: var(--space-1);
-  min-block-size: var(--tap-target-min);
-  padding-inline: var(--space-3);
-  border-radius: var(--radius-pill);
-  color: var(--color-primary-strong);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  text-decoration: none;
-}
-
-.playLink:hover {
-  background: var(--color-primary-soft);
-}
-
-.playLink svg {
-  inline-size: 1rem;
-  block-size: 1rem;
-}
-
-.rowActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-2);
 }
 
 /* Initial-assessment result: one answered question (staff view). */
@@ -215,4 +33,30 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+}
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-inline-start: 4px solid var(--color-violet);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.noteText {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }

@@ -15,5 +15,4 @@ export type DerivedCount = number | 'loading' | 'error';
 export interface ParentDashboardStats {
   children: number;
   planActivities: DerivedCount;
-  childrenWithReport: DerivedCount;
 }

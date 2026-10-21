@@ -1,14 +1,14 @@
 import { ChevronLeft, CircleCheck, Clock, Gamepad2, ListChecks, Trash2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import { ServerImage } from '@/components/shared/ServerImage';
-import { Badge } from '@/components/ui/Badge';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import type { PlanActivity } from '@/services/api/childPlan';
+import { cx } from '@/utils/classNames';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
-import { PlanActivityResultDetails } from './PlanActivityResultDetails';
-import styles from './plans.module.css';
+import styles from './PlanActivityList.module.css';
 
 const TYPE_LABEL = { test: 'اختبار', game: 'لعبة' } as const;
 
@@ -19,8 +19,8 @@ export interface PlanActivityListProps {
    * keep their results and cannot be removed (product rule, 2026-10-14).
    */
   onRemove?: ((activity: PlanActivity) => void) | undefined;
-  /** Specialist only: lets completed activities open the child's answers. */
-  resultChildId?: string | undefined;
+  /** Extra content under a completed activity (the specialist's answer details). */
+  renderDetails?: ((activity: PlanActivity) => ReactNode) | undefined;
   /** Parent / Teacher: link to play an activity that is not completed yet. */
   playTo?: ((activity: PlanActivity) => string) | undefined;
 }
@@ -46,11 +46,14 @@ function datesLine(activity: PlanActivity): string | null {
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 
-/** Activities of a child's training plan — only the server's fields, status in words + icon. */
+/**
+ * Activities of a child's training plan as dashboard cards (shared by the Parent, Teacher and
+ * Specialist pages): only the server's fields, status always as icon + text.
+ */
 export function PlanActivityList({
   activities,
   onRemove,
-  resultChildId,
+  renderDetails,
   playTo,
 }: PlanActivityListProps) {
   return (
@@ -59,35 +62,41 @@ export function PlanActivityList({
         const result = resultFigures(activity);
         const dates = datesLine(activity);
         const title = activity.title || 'نشاط';
+        const details = activity.isCompleted ? renderDetails?.(activity) : null;
         return (
-          <li key={activity.id} className={styles.item}>
-            <span className={styles.itemIcon} aria-hidden="true">
+          <li key={activity.id} className={cx(styles.item, activity.isCompleted && styles.done)}>
+            <span
+              className={cx(styles.icon, activity.type === 'game' && styles.iconGame)}
+              aria-hidden="true"
+            >
               <ServerImage
                 path={activity.iconUrl}
                 alt=""
-                className={styles.itemIconImage}
+                className={styles.iconImage}
                 fallback={activity.type === 'game' ? <Gamepad2 /> : <ListChecks />}
               />
             </span>
-            <div className={styles.itemText}>
-              <h3 className={styles.itemTitle}>{title}</h3>
-              {activity.description ? (
-                <p className={styles.itemDescription}>{activity.description}</p>
-              ) : null}
-              <div className={styles.badges}>
-                {activity.type ? <Badge tone="primary">{TYPE_LABEL[activity.type]}</Badge> : null}
+            <div className={styles.text}>
+              <h3 className={styles.title}>{title}</h3>
+              <div className={styles.chips}>
+                {activity.type ? (
+                  <span className={styles.typeChip}>{TYPE_LABEL[activity.type]}</span>
+                ) : null}
                 {activity.isCompleted ? (
-                  <Badge tone="success">
-                    <CircleCheck aria-hidden="true" size={14} />
+                  <span className={cx(styles.status, styles.statusDone)}>
+                    <CircleCheck aria-hidden="true" />
                     مكتمل
-                  </Badge>
+                  </span>
                 ) : (
-                  <Badge tone="neutral">
-                    <Clock aria-hidden="true" size={14} />
+                  <span className={styles.status}>
+                    <Clock aria-hidden="true" />
                     لم يكتمل بعد
-                  </Badge>
+                  </span>
                 )}
               </div>
+              {activity.description ? (
+                <p className={styles.description}>{activity.description}</p>
+              ) : null}
               {result.length > 0 ? (
                 <ul className={styles.resultChips} aria-label={`نتيجة «${title}»`}>
                   {result.map((figure) => (
@@ -100,36 +109,32 @@ export function PlanActivityList({
               ) : null}
               {dates ? <p className={styles.meta}>{dates}</p> : null}
             </div>
-            {playTo && !activity.isCompleted ? (
-              <Link
-                to={playTo(activity)}
-                className={getButtonClassName({ size: 'sm' })}
-                aria-label={`ابدأ: ${title}`}
-              >
-                ابدأ
-                <ChevronLeft aria-hidden="true" />
-              </Link>
-            ) : null}
-            {onRemove && !activity.isCompleted ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                iconStart={<Trash2 aria-hidden="true" />}
-                aria-label={`إزالة «${title}» من الخطة`}
-                onClick={() => {
-                  onRemove(activity);
-                }}
-              >
-                إزالة
-              </Button>
-            ) : null}
-            {resultChildId && activity.isCompleted ? (
-              <PlanActivityResultDetails
-                childId={resultChildId}
-                planActivityId={activity.id}
-                title={title}
-              />
-            ) : null}
+            <div className={styles.actions}>
+              {playTo && !activity.isCompleted ? (
+                <Link
+                  to={playTo(activity)}
+                  className={getButtonClassName({ size: 'sm' })}
+                  aria-label={`ابدأ: ${title}`}
+                >
+                  ابدأ
+                  <ChevronLeft aria-hidden="true" />
+                </Link>
+              ) : null}
+              {onRemove && !activity.isCompleted ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconStart={<Trash2 aria-hidden="true" />}
+                  aria-label={`إزالة «${title}» من الخطة`}
+                  onClick={() => {
+                    onRemove(activity);
+                  }}
+                >
+                  إزالة
+                </Button>
+              ) : null}
+            </div>
+            {details ? <div className={styles.details}>{details}</div> : null}
           </li>
         );
       })}

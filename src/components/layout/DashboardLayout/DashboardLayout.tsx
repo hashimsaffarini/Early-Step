@@ -24,6 +24,8 @@ export interface DashboardLayoutProps {
   headerActions?: ReactNode;
   /** Bottom of the sidebar (e.g. logout). */
   sidebarFooter?: ReactNode;
+  /** False hides the Early Step logo in the sidebar and the mobile header (Parent area). */
+  showBrand?: boolean;
 }
 
 /**
@@ -35,6 +37,7 @@ export function DashboardLayout({
   user,
   headerActions,
   sidebarFooter,
+  showBrand = true,
 }: DashboardLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const drawerId = useId();
@@ -60,11 +63,12 @@ export function DashboardLayout({
           user={user}
           headerActions={headerActions}
           footer={sidebarFooter}
+          showBrand={showBrand}
         />
       </aside>
 
       <header className={styles.mobileHeader}>
-        <BrandMark />
+        {showBrand ? <BrandMark /> : <span className={styles.mobileTitle}>{user?.name}</span>}
         <div className={styles.mobileHeaderActions}>
           {headerActions}
           <IconButton
@@ -86,6 +90,7 @@ export function DashboardLayout({
           navItems={navItems}
           user={user}
           footer={sidebarFooter}
+          showBrand={showBrand}
           onNavigate={closeDrawer}
         />
       </MobileNavDrawer>

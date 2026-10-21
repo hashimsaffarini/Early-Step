@@ -1,188 +1,116 @@
-import {
-  Activity,
-  ArrowRight,
-  ClipboardCheck,
-  FileText,
-  ListChecks,
-  ServerOff,
-  UserX,
-  NotebookPen,
-} from 'lucide-react';
+import { ArrowRight, ClipboardCheck, Pencil, ServerOff, Target, UserX } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 
-import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
+import {
+  ChildHero,
+  childHeroProgress,
+  DashboardPanel,
+  PlanStatGrid,
+} from '@/components/shared/ChildDashboard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PlanActivityList } from '@/components/shared/PlanActivityList';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
-import { ConfirmDialog } from '@/components/ui/Modal';
-import { Tabs, type TabItem } from '@/components/ui/Tabs';
-import type { AreaRole } from '@/constants/routes';
 import { useChildPlanActivities } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import type { ChildSummary } from '@/services/api/childrenLists';
+import { summarizePlan } from '@/services/api/planSummary';
 
-import { useDeleteChild } from '../api/childrenQueries';
 import { ChildFormDialog } from '../components/ChildFormDialog';
-import { ActivitiesTab } from '../components/profile/ActivitiesTab';
-import { AssessmentsTab } from '../components/profile/AssessmentsTab';
-import { ChildProfileHeader, DELETE_BLOCKED } from '../components/profile/ChildProfileHeader';
-import { OverviewTab } from '../components/profile/OverviewTab';
-import { ReportsTab } from '../components/profile/ReportsTab';
-import { TeacherFeedbackTab } from '../components/profile/TeacherFeedbackTab';
+import { childFacts } from '../components/profile/childFacts';
+import styles from '../components/profile/profile.module.css';
+import { StartAssessmentLink } from '../components/profile/StartAssessmentLink';
+import { QueryStatus } from '../components/profile/TabStatus';
 import { useChildProfile } from '../hooks/useChildProfile';
 
 import { BACK_TO_CHILDREN } from './childrenCopy';
-import styles from './ChildProfilePage.module.css';
+import pageStyles from './ChildProfilePage.module.css';
 
-type ProfileTab = 'overview' | 'assessments' | 'activities' | 'reports' | 'feedback';
-
-const TAB_ITEMS: readonly TabItem<ProfileTab>[] = [
-  { value: 'overview', label: 'نظرة عامة', icon: <Activity aria-hidden="true" size={16} /> },
-  {
-    value: 'assessments',
-    label: 'التقييمات',
-    icon: <ClipboardCheck aria-hidden="true" size={16} />,
-  },
-  { value: 'activities', label: 'الأنشطة', icon: <ListChecks aria-hidden="true" size={16} /> },
-  { value: 'reports', label: 'التقرير', icon: <FileText aria-hidden="true" size={16} /> },
-];
-
-/** The specialist also reads the teacher's notes (the teacher writes them on their notes page). */
-const SPECIALIST_TAB_ITEMS: readonly TabItem<ProfileTab>[] = [
-  ...TAB_ITEMS,
-  {
-    value: 'feedback',
-    label: 'ملاحظات المعلم',
-    icon: <NotebookPen aria-hidden="true" size={16} />,
-  },
-];
-
-function ProfileContent({ child, role }: { child: ChildSummary; role: AreaRole }) {
+/**
+ * The parent's child page (client revision 2026-10, dashboard style): header with the child's
+ * facts and plan progress, the plan's stat cards, then the initial assessment and the training-plan
+ * activities. No reports and no delete action for the parent (client request).
+ */
+function ParentChildDashboard({ child }: { child: ChildSummary }) {
   const { paths } = useRoleArea();
-  const navigate = useNavigate();
-  const [tab, setTab] = useState<ProfileTab>('overview');
+  const plan = useChildPlanActivities(child.id);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
-  const deleteMutation = useDeleteChild();
-  const isParent = role === 'Parent';
-  // Live: the result is for the assigned Specialist and Admin (Parent 403; Teacher not documented).
-  const canReadResult = role === 'Specialist' || role === 'Admin';
-  // Product rule (2026-10-14): a child with saved activity results is not deleted.
-  const plan = useChildPlanActivities(isParent ? child.id : undefined);
-  const hasResults = plan.data?.some((activity) => activity.isCompleted) ?? false;
-  // Until the plan is loaded we cannot tell, so delete stays off (never assume "no results").
-  const isDeleteBlocked = !plan.isSuccess || hasResults;
+  const summary = plan.data ? summarizePlan(plan.data) : null;
+
+  let planBody: ReactNode;
+  if (plan.isPending || plan.isError) {
+    planBody = <QueryStatus query={plan} errorTitle="تعذّر تحميل الخطة التدريبية" />;
+  } else if (plan.data.length === 0) {
+    planBody = (
+      <p className={styles.muted}>
+        لا توجد أنشطة في الخطة بعد. يُضيف الأخصائي الأنشطة والألعاب بعد مراجعة التقييم المبدئي.
+      </p>
+    );
+  } else {
+    planBody = (
+      <PlanActivityList
+        activities={plan.data}
+        playTo={(activity) => paths.planActivityPlay(child.id, activity.activityId)}
+      />
+    );
+  }
 
   return (
     <>
-      <ChildProfileHeader
-        child={child}
-        role={role}
-        onEdit={
-          isParent
-            ? () => {
-                setIsEditOpen(true);
-              }
-            : undefined
+      <ChildHero
+        name={child.fullName}
+        eyebrow="ملف الطفل"
+        facts={childFacts(child)}
+        progress={childHeroProgress(summary)}
+        actions={
+          <Button
+            variant="outline"
+            iconStart={<Pencil aria-hidden="true" />}
+            onClick={() => {
+              setIsEditOpen(true);
+            }}
+          >
+            تعديل البيانات
+          </Button>
         }
-        onDelete={
-          isParent
-            ? () => {
-                setIsDeleteOpen(true);
-              }
-            : undefined
-        }
-        isDeleteBlocked={isDeleteBlocked}
       />
-      {isParent && hasResults ? <p className={styles.deleteNote}>{DELETE_BLOCKED}</p> : null}
-      {isParent && plan.isError ? (
-        <p className={styles.deleteNote}>
-          تعذّر التحقق من نتائج خطة الطفل، لذلك الحذف غير متاح الآن.
-        </p>
-      ) : null}
       {savedMessage ? <Alert tone="success">{savedMessage}</Alert> : null}
-      <ApiErrorAlert error={deleteMutation.error} />
-      <Tabs
-        label="أقسام ملف الطفل"
-        items={role === 'Specialist' ? SPECIALIST_TAB_ITEMS : TAB_ITEMS}
-        value={tab}
-        onChange={setTab}
-        className={styles.tabs}
+      {summary && summary.total > 0 ? <PlanStatGrid summary={summary} /> : null}
+      <DashboardPanel
+        id="child-assessment-title"
+        title="التقييم المبدئي"
+        icon={ClipboardCheck}
+        action={<StartAssessmentLink childId={child.id} childName={child.fullName} />}
       >
-        {tab === 'overview' ? (
-          <OverviewTab
-            childId={child.id}
-            childName={child.fullName}
-            canStartAssessment={isParent}
-            canReadAssessmentResult={canReadResult}
-            onShowActivities={() => {
-              setTab('activities');
-            }}
-            onShowReports={() => {
-              setTab('reports');
-            }}
-          />
-        ) : null}
-        {tab === 'assessments' ? (
-          <AssessmentsTab
-            childId={child.id}
-            childName={child.fullName}
-            canStart={isParent}
-            canReadResult={canReadResult}
-          />
-        ) : null}
-        {tab === 'activities' ? <ActivitiesTab childId={child.id} role={role} /> : null}
-        {tab === 'reports' ? <ReportsTab childId={child.id} /> : null}
-        {tab === 'feedback' ? <TeacherFeedbackTab childId={child.id} /> : null}
-      </Tabs>
-      {isParent ? (
-        <>
-          <ChildFormDialog
-            isOpen={isEditOpen}
-            child={child}
-            onClose={() => {
-              setIsEditOpen(false);
-            }}
-            onSaved={() => {
-              setIsEditOpen(false);
-              setSavedMessage('تم حفظ بيانات الطفل.');
-            }}
-          />
-          <ConfirmDialog
-            isOpen={isDeleteOpen}
-            title="حذف ملف الطفل"
-            description={`سيتم حذف ملف «${child.fullName}» نهائياً. لا يمكن التراجع عن هذا الإجراء.`}
-            confirmLabel="حذف"
-            tone="danger"
-            isConfirming={deleteMutation.isPending}
-            onCancel={() => {
-              setIsDeleteOpen(false);
-            }}
-            onConfirm={() => {
-              deleteMutation.mutate(child.id, {
-                onSuccess: () => {
-                  setIsDeleteOpen(false);
-                  void navigate(paths.children, { replace: true });
-                },
-                onError: () => {
-                  setIsDeleteOpen(false);
-                },
-              });
-            }}
-          />
-        </>
-      ) : null}
+        <p className={styles.muted}>
+          يتكوّن التقييم المبدئي من أنشطة وألعاب قصيرة مناسبة لعمر الطفل، ويراجع الأخصائي نتيجته.
+        </p>
+      </DashboardPanel>
+      <DashboardPanel id="child-plan-title" title="الخطة التدريبية" icon={Target} iconTone="accent">
+        {planBody}
+      </DashboardPanel>
+      <ChildFormDialog
+        isOpen={isEditOpen}
+        child={child}
+        onClose={() => {
+          setIsEditOpen(false);
+        }}
+        onSaved={() => {
+          setIsEditOpen(false);
+          setSavedMessage('تم حفظ بيانات الطفل.');
+        }}
+      />
     </>
   );
 }
 
 /**
- * Child profile for every role. Parent: `GET Parent/{childId}` (+ edit/delete); staff: the child
- * from their assigned list; tabs read plan activities and reports from the API.
+ * Child page of the Parent (`GET Parent/{childId}`). Teacher and Specialist have their own
+ * plan-focused pages (`app/pages`); the Admin has no child endpoint (BLOCKED BY BACKEND).
  */
 export function ChildProfilePage() {
   const { role, paths } = useRoleArea();
@@ -234,13 +162,13 @@ export function ChildProfilePage() {
       );
       break;
     case 'ready':
-      content = <ProfileContent child={profile.child} role={role} />;
+      content = <ParentChildDashboard child={profile.child} />;
       break;
   }
 
   return (
-    <div className={styles.page}>
-      <Link to={paths.children} className={styles.backLink}>
+    <div className={pageStyles.page}>
+      <Link to={paths.children} className={pageStyles.backLink}>
         <ArrowRight aria-hidden="true" />
         {backLabel}
       </Link>
