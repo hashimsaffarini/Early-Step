@@ -83,4 +83,44 @@ describe('AdminSpecialistsPage (client revision 2026-10)', () => {
     renderPage();
     expect(await screen.findByText('لا يوجد أخصائيون بعد')).toBeInTheDocument();
   });
+
+  it('lists every child with its specialist and assigns one with «+ تعيين أخصائي»', async () => {
+    let body: unknown;
+    server.events.on('request:start', ({ request }) => {
+      if (request.url.includes('assign-children-to-specialist')) {
+        void request
+          .clone()
+          .json()
+          .then((json: unknown) => {
+            body = json;
+          });
+      }
+    });
+    renderPage();
+    await screen.findByRole('list', { name: 'الأخصائيون' });
+
+    await userEvent.click(screen.getByRole('tab', { name: /الأطفال/ }));
+    const children = await screen.findByRole('list', { name: 'الأطفال' });
+    const reem = within(children).getByText('ريم').closest('li');
+    if (!reem) throw new Error('child row not found');
+    expect(within(reem).getByText('بلا أخصائي')).toBeInTheDocument();
+    await userEvent.click(within(reem).getByRole('button', { name: 'تعيين أخصائي لـ ريم' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'تعيين أخصائي لـ ريم' });
+    await userEvent.click(await within(dialog).findByRole('radio', { name: /أ. ليلى حسن/ }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'تعيين الأخصائي' }));
+
+    expect(
+      await within(dialog).findByText('تم تعيين أ. ليلى حسن أخصائياً لـ ريم.'),
+    ).toBeInTheDocument();
+    expect(body).toEqual({
+      specialistId: 'u-specialist',
+      childIds: ['c0000000-0000-4000-8000-000000000003'],
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: /إغلاق/ }));
+    // The children list re-fetches: the child now shows its new specialist.
+    expect(await within(reem).findByText('الأخصائي: أ. ليلى حسن')).toBeInTheDocument();
+    expect(within(reem).queryByText('بلا أخصائي')).not.toBeInTheDocument();
+    server.events.removeAllListeners();
+  });
 });

@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
@@ -29,7 +29,7 @@ describe('AdminUserDetailPage', () => {
     expect(screen.getByRole('heading', { name: 'ريم' })).toBeInTheDocument();
   });
 
-  it('validates, confirms and assigns children to a specialist', async () => {
+  it('assigns a specialist to one child with the + action (one-child request)', async () => {
     let body: unknown;
     server.use(
       http.post(apiUrl('Admin/assign-children-to-specialist'), async ({ request }) => {
@@ -40,31 +40,25 @@ describe('AdminUserDetailPage', () => {
     renderDetail('u-parent');
     await screen.findByRole('heading', { level: 1, name: 'محمد أحمد' });
 
-    await userEvent.click(screen.getByRole('button', { name: 'إسناد' }));
-    expect(screen.getByText('يرجى اختيار الأخصائي')).toBeInTheDocument();
-    expect(screen.getByText('يرجى اختيار طفل واحد على الأقل')).toBeInTheDocument();
-
-    const select = screen.getByRole('combobox', { name: /الأخصائي/ });
-    await waitFor(() => {
-      expect(screen.getByRole('option', { name: 'أ. ليلى حسن' })).toBeInTheDocument();
-    });
-    await userEvent.selectOptions(select, 'u-specialist');
-    await userEvent.click(screen.getByRole('checkbox', { name: 'ريم' }));
-    await userEvent.click(screen.getByRole('button', { name: 'إسناد' }));
-
-    const dialog = screen.getByRole('dialog', { name: 'تأكيد الإسناد' });
-    await userEvent.click(within(dialog).getByRole('button', { name: 'تأكيد' }));
+    await userEvent.click(screen.getByRole('button', { name: 'تعيين أخصائي لـ ريم' }));
+    const dialog = screen.getByRole('dialog', { name: 'تعيين أخصائي لـ ريم' });
+    expect(within(dialog).getByText('لم يُعيَّن أخصائي لهذا الطفل بعد.')).toBeInTheDocument();
+    const save = within(dialog).getByRole('button', { name: 'تعيين الأخصائي' });
+    expect(save).toBeDisabled();
+    await userEvent.click(await within(dialog).findByRole('radio', { name: /أ. ليلى حسن/ }));
+    await userEvent.click(save);
 
     expect(
-      await screen.findByText('تم إسناد الأطفال المختارين إلى أ. ليلى حسن.'),
+      await within(dialog).findByText('تم تعيين أ. ليلى حسن أخصائياً لـ ريم.'),
     ).toBeInTheDocument();
+    expect(within(dialog).getByText('الأخصائي الحالي: أ. ليلى حسن')).toBeInTheDocument();
     expect(body).toEqual({
       specialistId: 'u-specialist',
       childIds: ['c0000000-0000-4000-8000-000000000003'],
     });
   });
 
-  it('lists specialists from Admin/specialists, disables inactive ones and refreshes the child', async () => {
+  it('lists specialists from Admin/specialists, blocks inactive ones and refreshes the child', async () => {
     let usersCalls = 0;
     server.use(
       http.get(apiUrl('Admin/specialists'), () =>
@@ -81,27 +75,25 @@ describe('AdminUserDetailPage', () => {
     renderDetail('u-parent');
     await screen.findByRole('heading', { level: 1, name: 'محمد أحمد' });
 
-    expect(await screen.findByRole('option', { name: 'أ. سابق (غير نشط)' })).toBeDisabled();
-    // The generic user list is no longer used to find specialists.
+    await userEvent.click(screen.getByRole('button', { name: 'تعيين أخصائي لـ ريم' }));
+    const dialog = screen.getByRole('dialog', { name: 'تعيين أخصائي لـ ريم' });
+    const inactive = await within(dialog).findByRole('radio', { name: /أ. سابق/ });
+    expect(inactive).toBeDisabled();
+    expect(within(dialog).getByText('غير نشط')).toBeInTheDocument();
+    // The generic user list is not used to find specialists.
     expect(usersCalls).toBe(0);
-    await userEvent.selectOptions(
-      screen.getByRole('combobox', { name: /الأخصائي/ }),
-      'u-specialist',
-    );
-    await userEvent.click(screen.getByRole('checkbox', { name: 'ريم' }));
-    await userEvent.click(screen.getByRole('button', { name: 'إسناد' }));
-    await userEvent.click(
-      within(screen.getByRole('dialog', { name: 'تأكيد الإسناد' })).getByRole('button', {
-        name: 'تأكيد',
-      }),
-    );
+    await userEvent.click(within(dialog).getByRole('radio', { name: /أ. ليلى حسن/ }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'تعيين الأخصائي' }));
+    await within(dialog).findByText('تم تعيين أ. ليلى حسن أخصائياً لـ ريم.');
+    await userEvent.click(within(dialog).getByRole('button', { name: /إغلاق/ }));
 
-    expect(
-      await screen.findByRole('checkbox', { name: 'ريم (الأخصائي الحالي: أ. ليلى حسن)' }),
-    ).toBeInTheDocument();
+    const list = screen.getByRole('list', { name: 'أطفال ولي الأمر' });
+    const reem = within(list).getByRole('heading', { name: 'ريم' }).closest('li');
+    if (!reem) throw new Error('child card not found');
+    expect(await within(reem).findByText('الأخصائي: أ. ليلى حسن')).toBeInTheDocument();
   });
 
-  it('shows the backend error when the assignment fails', async () => {
+  it('marks the current specialist and keeps the dialog open with the backend error', async () => {
     server.use(
       http.post(apiUrl('Admin/assign-children-to-specialist'), () =>
         HttpResponse.json({ message: 'الأخصائي غير موجود.' }, { status: 404 }),
@@ -110,22 +102,29 @@ describe('AdminUserDetailPage', () => {
     renderDetail('u-parent');
     await screen.findByRole('heading', { level: 1, name: 'محمد أحمد' });
 
-    await waitFor(() => {
-      expect(screen.getByRole('option', { name: 'أ. ليلى حسن' })).toBeInTheDocument();
-    });
-    await userEvent.selectOptions(
-      screen.getByRole('combobox', { name: /الأخصائي/ }),
-      'u-specialist',
-    );
-    await userEvent.click(screen.getByRole('checkbox', { name: 'ريم' }));
-    await userEvent.click(screen.getByRole('button', { name: 'إسناد' }));
-    await userEvent.click(
-      within(screen.getByRole('dialog', { name: 'تأكيد الإسناد' })).getByRole('button', {
-        name: 'تأكيد',
-      }),
-    );
+    await userEvent.click(screen.getByRole('button', { name: 'تعيين أخصائي لـ يوسف' }));
+    const dialog = screen.getByRole('dialog', { name: 'تعيين أخصائي لـ يوسف' });
+    const current = await within(dialog).findByRole('radio', { name: /أ. ليلى حسن/ });
+    expect(within(current.closest('label') ?? dialog).getByText('الحالي')).toBeInTheDocument();
+    // Re-assigning the current specialist is not offered.
+    await userEvent.click(current);
+    expect(within(dialog).getByRole('button', { name: 'تعيين الأخصائي' })).toBeDisabled();
 
-    expect(await screen.findByText('الأخصائي غير موجود.')).toBeInTheDocument();
+    server.use(
+      http.get(apiUrl('Admin/specialists'), () =>
+        HttpResponse.json([
+          { id: 'u-specialist', fullName: 'أ. ليلى حسن', isActive: true },
+          { id: 'u-other', fullName: 'أ. أخرى', isActive: true },
+        ]),
+      ),
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: /إغلاق/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'تعيين أخصائي لـ يوسف' }));
+    const reopened = screen.getByRole('dialog', { name: 'تعيين أخصائي لـ يوسف' });
+    await userEvent.click(await within(reopened).findByRole('radio', { name: /أ. أخرى/ }));
+    await userEvent.click(within(reopened).getByRole('button', { name: 'تعيين الأخصائي' }));
+
+    expect(await within(reopened).findByText('الأخصائي غير موجود.')).toBeInTheDocument();
   });
 
   it('shows not-found for an unknown user', async () => {

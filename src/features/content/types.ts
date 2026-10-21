@@ -16,6 +16,18 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   game: 'الألعاب',
 };
 
+/** One activity of a type (row badges). */
+export const ACTIVITY_TYPE_SINGULAR: Record<ActivityType, string> = {
+  test: 'اختبار',
+  game: 'لعبة',
+};
+
+/** Create action per type («+ إضافة لعبة» on the games tab — client revision 2026-10). */
+export const ADD_LABELS: Record<ActivityType, string> = {
+  test: 'إضافة اختبار',
+  game: 'إضافة لعبة',
+};
+
 export interface Category {
   id: string;
   name: string;

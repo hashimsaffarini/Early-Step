@@ -1,4 +1,4 @@
-import { Users, UserX } from 'lucide-react';
+import { BriefcaseMedical, Users, UserX } from 'lucide-react';
 import { useState } from 'react';
 
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -8,20 +8,35 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Tabs, type TabItem } from '@/components/ui/Tabs';
 
 import type { AdminSpecialist } from '../api/usersApi';
 import { useAdminSpecialists } from '../api/usersQueries';
+import { ChildrenAssignmentList } from '../components/ChildrenAssignmentList';
 import { SpecialistChildrenDialog } from '../components/SpecialistChildrenDialog';
 
 import styles from './users.module.css';
 
+type View = 'specialists' | 'children';
+
+const VIEWS: readonly TabItem<View>[] = [
+  {
+    value: 'specialists',
+    label: 'الأخصائيون',
+    icon: <BriefcaseMedical aria-hidden="true" size={16} />,
+  },
+  { value: 'children', label: 'الأطفال', icon: <Users aria-hidden="true" size={16} /> },
+];
+
 /**
- * Specialist assignment (client revision 2026-10): the specialists from `GET Admin/specialists`
- * (with their real active state), each with «إدارة الأطفال» to see and assign their children.
+ * Specialist assignment (client revision 2026-10), two views of the same real data:
+ * - الأخصائيون: `GET Admin/specialists` (real active state), «إدارة الأطفال» per specialist.
+ * - الأطفال: every child with its current specialist and «+ تعيين أخصائي» per child.
  */
 export function AdminSpecialistsPage() {
   const specialists = useAdminSpecialists();
   const [managing, setManaging] = useState<AdminSpecialist | null>(null);
+  const [view, setView] = useState<View>('specialists');
 
   let content;
   if (specialists.isPending) {
@@ -88,9 +103,11 @@ export function AdminSpecialistsPage() {
     <div className={styles.page}>
       <PageHeader
         title="إسناد الأطفال إلى الأخصائيين"
-        subtitle="اختر أخصائياً لعرض أطفاله وإسناد أطفال جدد إليه."
+        subtitle="اختر أخصائياً لإدارة أطفاله، أو اختر طفلاً لتعيين أخصائي له."
       />
-      {content}
+      <Tabs label="طريقة العرض" items={VIEWS} value={view} onChange={setView}>
+        {view === 'specialists' ? content : <ChildrenAssignmentList />}
+      </Tabs>
       {managing ? (
         <SpecialistChildrenDialog
           specialist={managing}

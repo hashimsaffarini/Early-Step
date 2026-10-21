@@ -10,7 +10,7 @@ import type { ActivityType } from '@/services/api/activityType';
 
 import { useSaveActivity } from '../api/contentQueries';
 import { activitySchema, type ActivityFormValues } from '../schemas/contentForms';
-import { ACTIVITY_TYPE_LABELS, type ActivitySummary, type Category } from '../types';
+import { ACTIVITY_TYPE_LABELS, ADD_LABELS, type ActivitySummary, type Category } from '../types';
 
 import styles from './content.module.css';
 import { ImageField } from './ImageField';
@@ -57,7 +57,7 @@ export function ActivityFormDialog({
       isOpen
       onClose={onClose}
       size="lg"
-      title={activity ? 'تعديل النشاط' : 'إضافة نشاط'}
+      title={activity ? 'تعديل النشاط' : ADD_LABELS[type]}
       description={`النوع: ${typeLabel}`}
     >
       <form className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
