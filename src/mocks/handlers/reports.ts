@@ -85,6 +85,10 @@ export const reportsHandlers: HttpHandler[] = [
     if (!child) return notFound('الطفل غير موجود.');
     if (child.specialistId !== user.id) return forbidden();
     if (!body.title?.trim()) return badRequest('عنوان التقرير مطلوب.');
+    // Live (2026-10-14): one report per child — a second one → 409.
+    if (mockReports.some((report) => report.childId === child.id)) {
+      return HttpResponse.json({ message: 'يوجد تقرير لهذا الطفل بالفعل.' }, { status: 409 });
+    }
     const row: MockReportRow = {
       id: mockId(),
       childId: child.id,

@@ -49,15 +49,15 @@ describe('TeacherDashboardPage', () => {
 });
 
 describe('SpecialistDashboardPage', () => {
-  it('renders server stats and children without any report entry (client revision 2026-10)', async () => {
+  it('renders server stats (report count included again) and the children', async () => {
     signInAs('Specialist');
     renderInRouter(<SpecialistDashboardPage userName="أ. ليلى حسن" />);
 
     const summary = await screen.findByRole('region', { name: 'ملخص' });
     expect(within(summary).getByText('عدد الأطفال')).toBeInTheDocument();
-    expect(within(summary).queryByText('التقارير')).not.toBeInTheDocument();
+    // Latest client request (2026-10): the specialist writes reports again.
+    expect(within(summary).getByText('التقارير')).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /يوسف/ })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /تقرير|تقاريري/ })).not.toBeInTheDocument();
   });
 
   it('only shows numbers the server sent', async () => {

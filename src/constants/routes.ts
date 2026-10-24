@@ -47,6 +47,8 @@ export const AREA_SEGMENTS = {
   children: 'children',
   childProfile: 'children/:childId',
   childPlans: 'children/:childId/plans',
+  /** The child's initial-assessment result details (staff, client revision 2026-10). */
+  childAssessment: 'children/:childId/assessment',
   /** Teacher feedback notes for a child (Teacher only). */
   childNotes: 'children/:childId/notes',
   tests: 'tests',
@@ -70,6 +72,7 @@ export const ADMIN_SEGMENTS = {
   userDetail: 'users/:userId',
   specialists: 'specialists',
   categories: 'content/categories',
+  categoryActivities: 'content/categories/:categoryId',
   activities: 'content/activities',
   activityDetail: 'content/activities/:activityType/:activityId',
   initialAssessment: 'content/initial-assessment',
@@ -83,6 +86,8 @@ export const ADMIN_PATHS = {
   activities: `/admin/${ADMIN_SEGMENTS.activities}`,
   initialAssessment: `/admin/${ADMIN_SEGMENTS.initialAssessment}`,
   userDetail: (userId: string) => `/admin/users/${encodeURIComponent(userId)}`,
+  categoryActivities: (categoryId: string) =>
+    `/admin/content/categories/${encodeURIComponent(categoryId)}`,
   activityDetail: (activityType: string, activityId: string) =>
     `/admin/content/activities/${encodeURIComponent(activityType)}/${encodeURIComponent(activityId)}`,
 } as const;
@@ -109,6 +114,7 @@ export interface AreaPaths {
   messages: string;
   childProfile: (childId: string) => string;
   childPlans: (childId: string) => string;
+  childAssessment: (childId: string) => string;
   childNotes: (childId: string) => string;
   testPlay: (testId: string) => string;
   gamePlay: (gameId: string) => string;
@@ -135,6 +141,7 @@ export function getAreaPaths(role: AreaRole): AreaPaths {
     messages: at(AREA_SEGMENTS.messages),
     childProfile: withId(AREA_SEGMENTS.childProfile, ':childId'),
     childPlans: withId(AREA_SEGMENTS.childPlans, ':childId'),
+    childAssessment: withId(AREA_SEGMENTS.childAssessment, ':childId'),
     childNotes: withId(AREA_SEGMENTS.childNotes, ':childId'),
     testPlay: withId(AREA_SEGMENTS.testPlay, ':testId'),
     gamePlay: withId(AREA_SEGMENTS.gamePlay, ':gameId'),

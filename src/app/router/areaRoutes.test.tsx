@@ -171,19 +171,17 @@ describe('role area routing', () => {
   });
 
   it.each(['Teacher', 'Specialist'] as const)(
-    'keeps the logo and the (disabled) notifications icon for the %s',
+    'keeps the logo but no notifications icon for the %s',
     async (role) => {
       renderAt(getAreaPaths(role).dashboard);
       await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
 
       expect(screen.getAllByText('Early Step').length).toBeGreaterThan(0);
-      for (const bell of screen.getAllByRole('button', { name: 'الإشعارات (قريباً)' })) {
-        expect(bell).toBeDisabled();
-      }
+      expect(screen.queryByRole('button', { name: /الإشعارات/ })).not.toBeInTheDocument();
     },
   );
 
-  it.each(['Parent', 'Teacher', 'Specialist', 'Admin'] as const)(
+  it.each(['Parent', 'Teacher', 'Admin'] as const)(
     'lists no reports in the %s sidebar',
     async (role) => {
       renderAt(getAreaPaths(role).dashboard);
@@ -193,6 +191,24 @@ describe('role area routing', () => {
       expect(within(desktopNav).queryByRole('link', { name: /التقارير/ })).not.toBeInTheDocument();
     },
   );
+
+  it('lists reports in the Specialist sidebar again (latest client request)', async () => {
+    renderAt(getAreaPaths('Specialist').dashboard);
+    const [desktopNav] = await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
+    if (!desktopNav) throw new Error('navigation not found');
+
+    expect(within(desktopNav).getByRole('link', { name: 'التقارير' })).toHaveAttribute(
+      'href',
+      getAreaPaths('Specialist').reports,
+    );
+  });
+
+  it('opens the Specialist report pages', async () => {
+    const router = renderAt(getAreaPaths('Specialist').reportCreate);
+
+    expect(await screen.findByRole('heading', { name: 'إنشاء تقرير جديد' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(getAreaPaths('Specialist').reportCreate);
+  });
 
   it('lists no children entry in the admin sidebar (children are reached via assignment)', async () => {
     renderAt(getAreaPaths('Admin').dashboard);

@@ -9,6 +9,7 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button, getButtonClassName } from '@/components/ui/Button';
+import { useToast } from '@/components/ui/Toast';
 import { useRoleArea } from '@/hooks/useRoleArea';
 
 import { useRoleReports, useUpdateReportMutation, type ReportView } from '../api/reportsQueries';
@@ -20,6 +21,7 @@ import styles from './CreateReportPage.module.css';
 function EditReportForm({ report }: { report: ReportView }) {
   const { paths } = useRoleArea();
   const navigate = useNavigate();
+  const toast = useToast();
   const updateMutation = useUpdateReportMutation(report.id);
   const {
     register,
@@ -37,6 +39,7 @@ function EditReportForm({ report }: { report: ReportView }) {
   const onSubmit = handleSubmit((values) => {
     updateMutation.mutate(values, {
       onSuccess: () => {
+        toast.success('تم تحديث التقرير بنجاح');
         void navigate(paths.reportDetail(report.id));
       },
     });

@@ -3,7 +3,6 @@ import { Link } from 'react-router';
 
 import { getButtonClassName } from '@/components/ui/Button';
 import { getAreaPaths } from '@/constants/routes';
-import { withoutReportStats } from '@/features/dashboards/api/dashboardStats';
 import { useDashboardStats } from '@/features/dashboards/api/dashboardsApi';
 import { ChildrenDirectory } from '@/features/dashboards/components/ChildrenDirectory';
 import { DashboardGreetingBanner } from '@/features/dashboards/components/DashboardGreetingBanner';
@@ -21,7 +20,7 @@ export interface SpecialistDashboardPageProps {
 
 /**
  * Specialist dashboard: stats from `GET specialist/dashboard`, children from
- * `GET specialist/children`. Only server values are shown; no reports (client revision 2026-10).
+ * `GET specialist/children`. Only server values are shown (the report count is back with the specialist's reports).
  */
 export function SpecialistDashboardPage({ userName }: SpecialistDashboardPageProps) {
   const stats = useDashboardStats('specialist');
@@ -40,7 +39,7 @@ export function SpecialistDashboardPage({ userName }: SpecialistDashboardPagePro
         }
       />
       <DashboardStatsSection
-        stats={withoutReportStats(stats.data)}
+        stats={stats.data}
         isPending={stats.isPending}
         error={stats.error}
         onRetry={() => void stats.refetch()}

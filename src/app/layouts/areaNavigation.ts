@@ -1,6 +1,7 @@
 import {
   BrainCircuit,
   BriefcaseMedical,
+  FileText,
   FolderCog,
   Crown,
   Gamepad2,
@@ -24,8 +25,9 @@ const CHILDREN_LABEL: Record<Exclude<AreaRole, 'Admin'>, string> = {
 };
 
 /**
- * Sidebar order: dashboard, children, (Admin management pages), messages. Client revision 2026-10:
- * no reports entry for any role, and no children entry for the Admin (the Admin reaches children
+ * Sidebar order: dashboard, children, (Admin management pages), (Specialist reports), messages.
+ * Client revisions 2026-10: reports only for the Specialist (latest request), no children entry
+ * for the Admin (the Admin reaches children
  * through «إسناد الأخصائيين» and the users pages). The static practice tests/games are listed only
  * in development mock mode (they are not backend data).
  */
@@ -51,6 +53,8 @@ function buildAreaNav(role: AreaRole, unreadMessages: number): NavLinkItem[] {
           { to: paths.games, label: 'الألعاب', icon: Gamepad2 },
         ]
       : []),
+    // Latest client request (2026-10): the Specialist writes reports again.
+    ...(role === 'Specialist' ? [{ to: paths.reports, label: 'التقارير', icon: FileText }] : []),
     { to: paths.messages, label: 'الرسائل', icon: MessageCircle, badgeCount: unreadMessages },
   ];
 }

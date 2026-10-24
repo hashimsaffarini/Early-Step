@@ -1,13 +1,21 @@
 import { ArrowRight, UserX } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
-import { ChildHero, childHeroProgress, PlanStatGrid } from '@/components/shared/ChildDashboard';
+import {
+  AssessmentPlanGate,
+  AssessmentStatusCard,
+  ChildHero,
+  childHeroProgress,
+  PlanStatGrid,
+} from '@/components/shared/ChildDashboard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { Button, getButtonClassName } from '@/components/ui/Button';
-import { AssessmentResultPanel, childFacts, TeacherFeedbackPanel } from '@/features/children';
+import { childFacts, TeacherFeedbackPanel } from '@/features/children';
+import { ChildReportPanel } from '@/features/reports';
 import { SpecialistPlanEditor, useSpecialistPlan } from '@/features/training-plans';
+import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
 import { useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { summarizePlan } from '@/services/api/planSummary';
@@ -15,11 +23,12 @@ import { summarizePlan } from '@/services/api/planSummary';
 import styles from './ChildDashboardPage.module.css';
 
 /**
- * The specialist's child dashboard (client revision 2026-10): header with the child's facts
- * (`GET specialist/children`, the teacher from the plan) and the plan's server progress, the
- * plan's stat cards (`TrainingPlan/specialist/children/{id}`: results included), then the plan
- * management (teacher, add / remove activities, the child's answers) next to the initial
- * assessment result and the teacher's notes. No reports (client request).
+ * The specialist's child dashboard (client revisions 2026-10, latest request wins): header with the
+ * child's facts (`GET specialist/children`, the teacher from the plan) and the plan's server
+ * progress, the plan's stat cards (`TrainingPlan/specialist/children/{id}`: results included), the
+ * «التقييم الأولي» card that opens the dedicated assessment page, the plan (teacher, add / remove
+ * activities and games, the child's answers) — only once the initial assessment is completed —
+ * then the teacher's notes and the child's report (the specialist writes it).
  */
 export function SpecialistChildPage() {
   const { childId = '' } = useParams();
@@ -27,7 +36,11 @@ export function SpecialistChildPage() {
   const children = useChildrenForRole('Specialist');
   const child = children.data?.find((item) => item.id === childId);
   const plan = useSpecialistPlan(childId, Boolean(child));
-  const summary = plan.data ? summarizePlan(plan.data.activities, plan.data.progress) : null;
+  const assessment = useAssessmentStatus(child ? child.id : undefined);
+  // The plan (and its figures) appears once the assessment is completed (or is not readable).
+  const isPlanOpen = assessment.state === 'complete' || assessment.state === 'unavailable';
+  const summary =
+    plan.data && isPlanOpen ? summarizePlan(plan.data.activities, plan.data.progress) : null;
 
   let body;
   if (children.isPending) {
@@ -70,16 +83,19 @@ export function SpecialistChildPage() {
           progress={childHeroProgress(summary)}
         />
         {summary && summary.total > 0 ? <PlanStatGrid summary={summary} /> : null}
+        <AssessmentStatusCard status={assessment} to={paths.childAssessment(child.id)} />
         <div className={styles.columns}>
           <div className={styles.main}>
-            <SpecialistPlanEditor
-              child={{ id: child.id, name: child.fullName }}
-              showSummary={false}
-            />
+            <AssessmentPlanGate status={assessment}>
+              <SpecialistPlanEditor
+                child={{ id: child.id, name: child.fullName, teacherName: child.teacherName }}
+                showSummary={false}
+              />
+            </AssessmentPlanGate>
           </div>
           <div className={styles.aside}>
-            <AssessmentResultPanel childId={child.id} />
             <TeacherFeedbackPanel childId={child.id} />
+            <ChildReportPanel childId={child.id} />
           </div>
         </div>
       </>

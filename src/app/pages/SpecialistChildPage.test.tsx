@@ -3,18 +3,21 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
 import { routes } from '@/app/router/routes';
+import { PLAN_AFTER_ASSESSMENT } from '@/components/shared/ChildDashboard';
 import { getAreaPaths } from '@/constants/routes';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
 import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
-const YOUSEF = 'c0000000-0000-4000-8000-000000000001';
-const SALMA = 'c0000000-0000-4000-8000-000000000005';
+const YOUSEF = 'c0000000-0000-4000-8000-000000000001'; // assessment completed (mock), plan
+const NOUR = 'c0000000-0000-4000-8000-000000000002'; // plan, assessment NOT completed
+const SALMA = 'c0000000-0000-4000-8000-000000000005'; // no report
+const paths = getAreaPaths('Specialist');
 
 function renderPage(childId = YOUSEF) {
   signInAs('Specialist');
-  return renderWithRouter(routes, getAreaPaths('Specialist').childProfile(childId));
+  return renderWithRouter(routes, paths.childProfile(childId));
 }
 
 const heading = (name: string) => screen.findByRole('heading', { level: 1, name });
@@ -32,80 +35,112 @@ function optionsAfter(container: HTMLElement, label: string): string[] {
     .map((item) => item.textContent);
 }
 
-describe('SpecialistChildPage — dashboard (client revision 2026-10)', () => {
+describe('SpecialistChildPage — dashboard (client revisions 2026-10)', () => {
   it('shows the child, the plan server progress and every real figure as stat cards', async () => {
     renderPage();
     await heading('يوسف');
 
     const facts = screen.getByRole('list', { name: 'بيانات الطفل' });
     expect(within(facts).getByText(/^ولي الأمر:/)).toBeInTheDocument();
-    // The teacher comes from the specialist plan once it is loaded.
     expect(await within(facts).findByText('المعلم: أ. سارة خالد')).toBeInTheDocument();
     expect(
       await screen.findByRole('progressbar', { name: 'نسبة إنجاز الخطة التدريبية' }),
     ).toHaveAttribute('aria-valuenow', '50');
     const stats = screen.getByRole('list', { name: 'ملخص الخطة التدريبية' });
     expect(statValue(stats, 'إجمالي الأنشطة')).toBe('2');
-    expect(statValue(stats, 'المكتملة')).toBe('1');
-    expect(statValue(stats, 'المتبقية')).toBe('1');
-    // The specialist rows carry the saved results (score 75, 3 correct, 1 wrong).
     expect(statValue(stats, 'متوسط النتيجة')).toBe('75%');
     expect(statValue(stats, 'الإجابات الصحيحة')).toBe('3');
     expect(statValue(stats, 'الإجابات الخاطئة')).toBe('1');
   });
 
-  it('keeps the plan workflow on the page: results, add activity, no play links', async () => {
+  it('keeps the plan workflow: compact teacher line, results, add activity, no play links', async () => {
     renderPage();
     await heading('يوسف');
 
     const activities = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
-    expect(
-      within(activities).getByRole('list', { name: 'نتيجة «اختبار الحروف»' }),
-    ).toBeInTheDocument();
     expect(within(activities).getByText('عرض إجابات الطفل')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'إضافة نشاط' })).toBeInTheDocument();
+    expect(screen.getByText('المعلم المسؤول: أ. سارة خالد')).toBeInTheDocument();
+    expect(screen.queryByLabelText('اختر المعلم')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^ابدأ:/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /بدء التقييم/ })).not.toBeInTheDocument();
   });
 
-  it('hides progress and stats for a child without plan activities', async () => {
-    renderPage(SALMA);
-    await heading('سلمى');
+  it('hides the plan until the initial assessment is completed (real result endpoint)', async () => {
+    renderPage(NOUR);
+    await heading('نور');
 
-    expect(
-      await screen.findByText(/لا توجد خطة تدريبية لهذا الطفل بعد|أضف أنشطة مناسبة/),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('progressbar', { name: 'نسبة إنجاز الخطة التدريبية' }),
-    ).not.toBeInTheDocument();
+    expect(await screen.findByText(PLAN_AFTER_ASSESSMENT)).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'أنشطة الخطة التدريبية' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'إضافة نشاط' })).not.toBeInTheDocument();
     expect(screen.queryByRole('list', { name: 'ملخص الخطة التدريبية' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /التقييم الأولي: لم يكتمل/ })).toBeInTheDocument();
   });
 
-  it('shows the saved assessment result from GET initial-assessment/{childId}/result', async () => {
+  it('shows the initial assessment as a compact card that opens its own page', async () => {
+    const { router } = renderPage();
+    await heading('يوسف');
+
+    const card = await screen.findByRole('link', { name: /التقييم الأولي: مكتمل/ });
+    expect(card).toHaveAttribute('href', paths.childAssessment(YOUSEF));
+    expect(card).toHaveTextContent('النتيجة العامة: 50%');
+    // The details are not embedded in the dashboard.
+    expect(screen.queryByRole('list', { name: 'النتيجة حسب التصنيف' })).not.toBeInTheDocument();
+
+    await userEvent.click(card);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'التقييم الأولي' }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(paths.childAssessment(YOUSEF));
+  });
+
+  it('lists the teacher notes read-only and the child report with view / edit links', async () => {
     server.use(
-      http.get(apiUrl('initial-assessment/:childId/result'), () =>
-        HttpResponse.json({
-          childId: YOUSEF,
-          overallScore: 80,
-          categories: [{ categoryName: 'القراءة', percentage: 60 }],
-        }),
+      http.get(apiUrl('Teacher/children/:childId/feedbacks'), () =>
+        HttpResponse.json([{ id: 'n-1', content: 'يتحسّن في الحروف', createdAt: '2026-10-02' }]),
       ),
     );
     renderPage();
     await heading('يوسف');
 
-    const region = screen.getByRole('region', { name: 'التقييم المبدئي' });
-    expect(
-      await within(region).findByRole('progressbar', { name: 'النتيجة العامة للتقييم المبدئي' }),
-    ).toHaveAttribute('aria-valuenow', '80');
-    expect(within(region).getByRole('progressbar', { name: 'القراءة' })).toHaveAttribute(
-      'aria-valuenow',
-      '60',
+    const notes = screen.getByRole('region', { name: 'ملاحظات المعلم' });
+    expect(await within(notes).findByText('يتحسّن في الحروف')).toBeInTheDocument();
+    expect(within(notes).queryByRole('button')).not.toBeInTheDocument();
+    const report = screen.getByRole('region', { name: 'التقرير' });
+    expect(await within(report).findByRole('link', { name: 'عرض التقرير' })).toHaveAttribute(
+      'href',
+      paths.reportDetail('r0000000-0000-4000-8000-000000000001'),
     );
-    expect(within(region).getByText(/وليست تشخيصاً/)).toBeInTheDocument();
+    expect(within(report).getByRole('link', { name: 'تعديل التقرير' })).toBeInTheDocument();
   });
 
-  it('shows the per-question details the server sends to staff (live shape 2026-10-14)', async () => {
+  it('offers «إضافة تقرير» for a child without a report (the specialist writes it)', async () => {
+    renderPage(SALMA);
+    await heading('سلمى');
+
+    const report = screen.getByRole('region', { name: 'التقرير' });
+    expect(await within(report).findByText('لا يوجد تقرير لهذا الطفل بعد.')).toBeInTheDocument();
+    expect(within(report).getByRole('link', { name: 'إضافة تقرير' })).toHaveAttribute(
+      'href',
+      `${paths.reportCreate}?childId=${SALMA}`,
+    );
+  });
+
+  it('opens the old plan link on the child page', async () => {
+    signInAs('Specialist');
+    const { router } = renderWithRouter(routes, paths.childPlans(YOUSEF));
+
+    await heading('يوسف');
+    expect(router.state.location.pathname).toBe(paths.childProfile(YOUSEF));
+  });
+});
+
+describe('ChildAssessmentPage — the dedicated assessment page', () => {
+  function renderDetails(childId = YOUSEF) {
+    signInAs('Specialist');
+    return renderWithRouter(routes, paths.childAssessment(childId));
+  }
+
+  it('shows the overall result, categories and every question with answers and verdicts', async () => {
     const option = (optionId: string, optionText: string) => ({
       optionId,
       optionText,
@@ -116,7 +151,6 @@ describe('SpecialistChildPage — dashboard (client revision 2026-10)', () => {
         HttpResponse.json({
           childId: YOUSEF,
           overallScore: 66.67,
-          assessmentId: 'as-1',
           categories: [
             {
               categoryId: 'cat-1',
@@ -125,14 +159,6 @@ describe('SpecialistChildPage — dashboard (client revision 2026-10)', () => {
               totalQuestions: 3,
               correctAnswers: 2,
               questions: [
-                {
-                  questionId: 'q1',
-                  questionText: 'اختر الأعداد الزوجية',
-                  questionType: 'MultiSelect',
-                  isCorrect: true,
-                  childAnswers: [option('o2', '4'), option('o1', '2')],
-                  correctAnswers: [option('o1', '2'), option('o2', '4')],
-                },
                 {
                   questionId: 'q2',
                   questionText: 'رتّب الأعداد',
@@ -147,58 +173,55 @@ describe('SpecialistChildPage — dashboard (client revision 2026-10)', () => {
         }),
       ),
     );
-    renderPage();
-    await heading('يوسف');
+    renderDetails();
 
-    const region = screen.getByRole('region', { name: 'التقييم المبدئي' });
-    expect(await within(region).findByText('2 من 3 إجابات صحيحة')).toBeInTheDocument();
-    await userEvent.click(within(region).getByText('تفاصيل الأسئلة (2)'));
-    const questions = within(region).getByRole('list', { name: 'أسئلة الرياضيات' });
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'التقييم الأولي' }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('progressbar', { name: 'النتيجة العامة للتقييم المبدئي' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'الرياضيات' })).toHaveAttribute(
+      'aria-valuenow',
+      '67',
+    );
+    expect(screen.getByText('2 من 3 إجابات صحيحة')).toBeInTheDocument();
+    // Questions are shown directly on this page (not hidden behind «تفاصيل الأسئلة»).
+    const questions = screen.getByRole('list', { name: 'أسئلة الرياضيات' });
     const sequence = within(questions).getByText('رتّب الأعداد').closest('li');
-    if (!sequence) throw new Error('sequence question not found');
+    if (!sequence) throw new Error('question not found');
+    expect(within(sequence).getByText('ترتيب')).toBeInTheDocument();
+    expect(within(sequence).getByText('إجابة غير صحيحة')).toBeInTheDocument();
     expect(optionsAfter(sequence, 'إجابة الطفل')).toEqual(['3', '1']);
     expect(optionsAfter(sequence, 'الإجابة الصحيحة')).toEqual(['1', '3']);
-  });
-
-  it("shows the teacher's notes read-only", async () => {
-    server.use(
-      http.get(apiUrl('Teacher/children/:childId/feedbacks'), () =>
-        HttpResponse.json([{ id: 'n-1', content: 'يتحسّن في الحروف', createdAt: '2026-10-02' }]),
-      ),
+    expect(screen.getByRole('link', { name: 'العودة إلى ملف الطفل' })).toHaveAttribute(
+      'href',
+      paths.childProfile(YOUSEF),
     );
-    renderPage();
-    await heading('يوسف');
-
-    const region = screen.getByRole('region', { name: 'ملاحظات المعلم' });
-    expect(await within(region).findByText('يتحسّن في الحروف')).toBeInTheDocument();
-    expect(within(region).queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('has no reports on the page, in the dashboard links or in the sidebar', async () => {
-    renderPage();
-    await heading('يوسف');
+  it('explains when the assessment is not completed yet', async () => {
+    renderDetails(NOUR);
 
-    expect(screen.queryByText(/تقرير|التقارير/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(await screen.findByText('لم يكتمل التقييم الأولي بعد.')).toBeInTheDocument();
   });
 
-  it('opens the child page for the old plan link', async () => {
-    signInAs('Specialist');
-    const { router } = renderWithRouter(routes, getAreaPaths('Specialist').childPlans(YOUSEF));
+  it('shows an error with retry', async () => {
+    let calls = 0;
+    server.use(
+      http.get(apiUrl('initial-assessment/:childId/result'), () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json({ message: 'خطأ' }, { status: 500 })
+          : HttpResponse.json({ childId: YOUSEF, overallScore: 40, categories: [] });
+      }),
+    );
+    renderDetails();
 
-    await heading('يوسف');
-    expect(router.state.location.pathname).toBe(getAreaPaths('Specialist').childProfile(YOUSEF));
-  });
-
-  it('sends old report links back to the dashboard', async () => {
-    signInAs('Specialist');
-    const { router } = renderWithRouter(routes, getAreaPaths('Specialist').reports);
-
-    await screen
-      .findByRole('navigation', { name: 'القائمة الرئيسية' }, { timeout: 3000 })
-      .catch(() => null);
-    await vi.waitFor(() => {
-      expect(router.state.location.pathname).toBe(getAreaPaths('Specialist').dashboard);
-    });
+    expect(await screen.findByText('تعذّر تحميل نتيجة التقييم')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'إعادة المحاولة' }));
+    expect(
+      await screen.findByRole('progressbar', { name: 'النتيجة العامة للتقييم المبدئي' }),
+    ).toHaveAttribute('aria-valuenow', '40');
   });
 });

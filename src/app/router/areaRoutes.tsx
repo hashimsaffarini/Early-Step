@@ -56,6 +56,25 @@ const adminReportPages: RouteObject[] = [
   },
 ];
 
+/** The Specialist: list, create, details and edit. */
+const specialistReportPages: RouteObject[] = [
+  ...adminReportPages,
+  {
+    path: AREA_SEGMENTS.reportCreate,
+    lazy: async () => ({ Component: (await loadReports()).CreateReportPage }),
+  },
+  {
+    path: AREA_SEGMENTS.reportEdit,
+    lazy: async () => ({ Component: (await loadReports()).EditReportPage }),
+  },
+];
+
+function reportPagesFor(role: AreaRole): RouteObject[] {
+  if (role === 'Specialist') return specialistReportPages;
+  if (role === 'Admin') return adminReportPages;
+  return [redirectReportsToDashboard(role)];
+}
+
 function redirectReportsToDashboard(role: AreaRole): RouteObject {
   return {
     path: `${AREA_SEGMENTS.reports}/*`,
@@ -89,6 +108,10 @@ const adminOnlyPages: RouteObject[] = [
     lazy: async () => ({ Component: (await loadContent()).CategoriesPage }),
   },
   {
+    path: ADMIN_SEGMENTS.categoryActivities,
+    lazy: async () => ({ Component: (await loadContent()).CategoryActivitiesPage }),
+  },
+  {
     path: ADMIN_SEGMENTS.activities,
     lazy: async () => ({ Component: (await loadContent()).ActivitiesPage }),
   },
@@ -117,6 +140,17 @@ function buildAreaRoute(role: AreaRole): RouteObject {
     },
     // One dashboard-style page per child and role (client revision 2026-10).
     { path: AREA_SEGMENTS.childProfile, lazy: () => loadChildPage(role) },
+    // Staff: the initial-assessment details have their own page (client revision 2026-10).
+    ...(role === 'Specialist' || role === 'Teacher'
+      ? [
+          {
+            path: AREA_SEGMENTS.childAssessment,
+            lazy: async () => ({
+              Component: (await import('@/app/pages/ChildAssessmentPage')).ChildAssessmentPage,
+            }),
+          },
+        ]
+      : []),
     // The plan lives on the child page; the old plan links open it (the Admin keeps its notice).
     role === 'Admin'
       ? {
@@ -138,9 +172,10 @@ function buildAreaRoute(role: AreaRole): RouteObject {
           },
         ]
       : []),
-    // Reports are removed from the Parent, Teacher and Specialist UI (client revision 2026-10);
-    // their old links lead back to the dashboard. The Admin keeps the read-only report pages.
-    ...(role === 'Admin' ? adminReportPages : [redirectReportsToDashboard(role)]),
+    // Reports (latest client request 2026-10 overrides the earlier removal): the Specialist
+    // writes, edits and reads reports; the Admin keeps the read-only pages; the Parent and the
+    // Teacher have no reports (old links lead back to the dashboard).
+    ...reportPagesFor(role),
     ...(role === 'Admin' ? adminOnlyPages : []),
     ...(role === 'Teacher'
       ? [{ path: AREA_SEGMENTS.childNotes, element: <RedirectToChildProfile /> }]
