@@ -5,10 +5,12 @@ import { signInAs } from '@/test/session';
 import { ActivitiesPage } from '@/features/content/pages/ActivitiesPage';
 import { ActivityDetailPage } from '@/features/content/pages/ActivityDetailPage';
 import { CategoriesPage } from '@/features/content/pages/CategoriesPage';
+import { CategoryActivitiesPage } from '@/features/content/pages/CategoryActivitiesPage';
 import { InitialAssessmentAdminPage } from '@/features/content/pages/InitialAssessmentAdminPage';
 
 const contentRoutes = [
   { path: ADMIN_PATHS.categories, element: <CategoriesPage /> },
+  { path: `/admin/${ADMIN_SEGMENTS.categoryActivities}`, element: <CategoryActivitiesPage /> },
   { path: ADMIN_PATHS.activities, element: <ActivitiesPage /> },
   { path: `/admin/${ADMIN_SEGMENTS.activityDetail}`, element: <ActivityDetailPage /> },
   { path: ADMIN_PATHS.initialAssessment, element: <InitialAssessmentAdminPage /> },

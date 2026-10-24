@@ -288,3 +288,24 @@
 .childRow .childText {
   min-inline-size: min(100%, 12rem);
 }
+
+/* Admin → parent page: each child's initial-assessment result (client revision 2026-10). */
+.assessmentLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.assessmentLine[data-state='complete'] {
+  color: var(--color-success-strong);
+}
+
+.assessmentLine svg {
+  flex-shrink: 0;
+  inline-size: 1rem;
+  block-size: 1rem;
+}

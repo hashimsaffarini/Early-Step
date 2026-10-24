@@ -1,5 +1,12 @@
-import { ArrowRight, BriefcaseMedical, CalendarDays, UserX, Users } from 'lucide-react';
-import { useId, useState } from 'react';
+import {
+  ArrowRight,
+  BriefcaseMedical,
+  CalendarDays,
+  ClipboardCheck,
+  UserX,
+  Users,
+} from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { ChildCard, type ChildCardDetail } from '@/components/shared/ChildCard';
@@ -12,6 +19,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ADMIN_PATHS } from '@/constants/routes';
+import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
 import type { ChildSummary } from '@/services/api/childrenLists';
 import { HTTP_STATUS } from '@/services/http/httpStatus';
 import { formatAge } from '@/utils/age';
@@ -36,6 +44,43 @@ function childDetails(child: ChildSummary): ChildCardDetail[] {
     label: `الأخصائي: ${child.specialistName ?? 'لم يُعيَّن بعد'}`,
   });
   return details;
+}
+
+/**
+ * The child's initial-assessment result for the Admin (client revision 2026-10), from
+ * `GET initial-assessment/{childId}/result` (Admin 200 / 404 before completion) — the real overall
+ * percentage only, or why there is none. One cached request per child card.
+ */
+function AssessmentResultLine({ childId }: { childId: string }) {
+  const status = useAssessmentStatus(childId);
+  let text: ReactNode;
+  switch (status.state) {
+    case 'loading':
+      text = 'جارٍ تحميل نتيجة التقييم الأولي…';
+      break;
+    case 'complete':
+      text = (
+        <>
+          نتيجة التقييم الأولي: <bdi>{`${Math.round(status.result.overallScore).toString()}%`}</bdi>
+        </>
+      );
+      break;
+    case 'incomplete':
+      text = 'لم يكتمل التقييم الأولي';
+      break;
+    case 'unavailable':
+      text = 'نتيجة التقييم الأولي غير متاحة';
+      break;
+    case 'error':
+      text = 'تعذّر تحميل نتيجة التقييم الأولي';
+      break;
+  }
+  return (
+    <p className={styles.assessmentLine} data-state={status.state}>
+      <ClipboardCheck aria-hidden="true" />
+      {text}
+    </p>
+  );
 }
 
 /**
@@ -136,6 +181,7 @@ export function AdminUserDetailPage() {
                   <ChildCard
                     name={child.fullName}
                     details={childDetails(child)}
+                    children={<AssessmentResultLine childId={child.id} />}
                     footer={
                       <AssignSpecialistButton
                         child={child}

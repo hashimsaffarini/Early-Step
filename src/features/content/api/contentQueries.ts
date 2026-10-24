@@ -60,6 +60,39 @@ export function useActivities(type: ActivityType, categoryId?: string) {
   });
 }
 
+export interface CategoryActivityCount {
+  tests: number;
+  games: number;
+}
+
+/**
+ * Activities per category, counted from the REAL activity lists (`GET Admin/activities/test` and
+ * `/game`, client revision 2026-10). The server's `count` on `Admin/categories` showed 0 for
+ * categories that have activities, so it is not used. Shares the lists' cache, so every content
+ * mutation (which refreshes the `content` cache) updates the counts.
+ */
+export function useCategoryActivityCounts() {
+  const tests = useActivities('test');
+  const games = useActivities('game');
+  const counts = new Map<string, CategoryActivityCount>();
+  const add = (categoryId: string | null, key: keyof CategoryActivityCount) => {
+    if (!categoryId) return;
+    const current = counts.get(categoryId) ?? { tests: 0, games: 0 };
+    counts.set(categoryId, { ...current, [key]: current[key] + 1 });
+  };
+  for (const activity of tests.data ?? []) add(activity.categoryId, 'tests');
+  for (const activity of games.data ?? []) add(activity.categoryId, 'games');
+  return {
+    counts,
+    isPending: tests.isPending || games.isPending,
+    error: tests.error ?? games.error,
+    refetch: () => {
+      void tests.refetch();
+      void games.refetch();
+    },
+  };
+}
+
 export function useActivity(type: ActivityType | null, activityId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.content.activity(type ?? '', activityId ?? ''),
