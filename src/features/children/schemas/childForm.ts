@@ -1,14 +1,16 @@
 import { z } from 'zod';
 
 const MIN_NAME_LENGTH = 2;
-export const MIN_CHILD_AGE = 1;
-export const MAX_CHILD_AGE = 18;
+/** Early Step children are 2 to 10 years old (client revision 2026-10, replaces 4–10). */
+export const MIN_CHILD_AGE = 2;
+export const MAX_CHILD_AGE = 10;
 
 export const CHILD_FORM_MESSAGES = {
   nameRequired: 'اسم الطفل مطلوب',
   nameTooShort: 'يجب أن يحتوي الاسم على حرفين على الأقل',
   ageRequired: 'العمر مطلوب',
-  ageInvalid: `يجب أن يكون العمر عدداً صحيحاً بين ${MIN_CHILD_AGE.toString()} و${MAX_CHILD_AGE.toString()}`,
+  ageInvalid: `يجب أن يكون العمر عدداً صحيحاً من ${MIN_CHILD_AGE.toString()} إلى ${MAX_CHILD_AGE.toString()} سنوات`,
+  ageHint: `من ${MIN_CHILD_AGE.toString()} إلى ${MAX_CHILD_AGE.toString()} سنوات`,
   genderRequired: 'يرجى اختيار الجنس',
 } as const;
 

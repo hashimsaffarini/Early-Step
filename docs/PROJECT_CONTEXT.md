@@ -2,7 +2,7 @@
 
 ## What Early Step is
 
-Early Step is a web platform for children aged approximately **4–10** who may experience
+Early Step is a web platform for children aged approximately **2–10** who may experience
 **learning difficulties**. It supports early assessment through tests and games, specialist
 training plans, and progress follow-up by teachers and specialists, with parents involved
 from the start.

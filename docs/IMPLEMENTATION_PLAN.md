@@ -133,7 +133,7 @@ Done: tooling, architecture, HTTP layer, providers, router shell, docs. Commit `
 - **Depends on:** 5 (child), 6 (content exists). **BLOCKED on:** start response, `{id}`
   semantics, non-single-choice payloads, operator (parent vs child), timing requirements.
 - **Tests:** runner state machine, renderers, full MSW run.
-- **Risks:** child UX (4–10), audio for pre-readers, focus/timing requirements.
+- **Risks:** child UX (2–10), audio for pre-readers, focus/timing requirements.
 
 ## Stage 8 — Admin users + specialist assignment
 

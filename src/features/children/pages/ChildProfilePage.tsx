@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 
 import {
+  AssessmentPlanGate,
   ChildHero,
   childHeroProgress,
   DashboardPanel,
@@ -13,7 +14,8 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { PlanActivityList } from '@/components/shared/PlanActivityList';
 import { Button, getButtonClassName } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Feedback';
+import { useToast } from '@/components/ui/Toast';
+import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
 import { useChildPlanActivities } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import type { ChildSummary } from '@/services/api/childrenLists';
@@ -37,9 +39,12 @@ import pageStyles from './ChildProfilePage.module.css';
 function ParentChildDashboard({ child }: { child: ChildSummary }) {
   const { paths } = useRoleArea();
   const plan = useChildPlanActivities(child.id);
+  const assessment = useAssessmentStatus(child.id);
+  // Client revision 2026-10: the plan appears after the initial assessment is completed.
+  const isPlanOpen = assessment.state === 'complete' || assessment.state === 'unavailable';
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [savedMessage, setSavedMessage] = useState<string | null>(null);
-  const summary = plan.data ? summarizePlan(plan.data) : null;
+  const toast = useToast();
+  const summary = plan.data && isPlanOpen ? summarizePlan(plan.data) : null;
 
   let planBody: ReactNode;
   if (plan.isPending || plan.isError) {
@@ -78,20 +83,25 @@ function ParentChildDashboard({ child }: { child: ChildSummary }) {
           </Button>
         }
       />
-      {savedMessage ? <Alert tone="success">{savedMessage}</Alert> : null}
       {summary && summary.total > 0 ? <PlanStatGrid summary={summary} /> : null}
       <DashboardPanel
         id="child-assessment-title"
         title="التقييم المبدئي"
         icon={ClipboardCheck}
-        action={<StartAssessmentLink childId={child.id} childName={child.fullName} />}
+        action={
+          assessment.state === 'complete' ? undefined : (
+            <StartAssessmentLink childId={child.id} childName={child.fullName} />
+          )
+        }
       >
         <p className={styles.muted}>
-          يتكوّن التقييم المبدئي من أنشطة وألعاب قصيرة مناسبة لعمر الطفل، ويراجع الأخصائي نتيجته.
+          {assessment.state === 'complete'
+            ? 'أكمل الطفل التقييم المبدئي، ويراجع الأخصائي نتيجته.'
+            : 'يتكوّن التقييم المبدئي من أنشطة وألعاب قصيرة مناسبة لعمر الطفل، ويراجع الأخصائي نتيجته.'}
         </p>
       </DashboardPanel>
       <DashboardPanel id="child-plan-title" title="الخطة التدريبية" icon={Target} iconTone="accent">
-        {planBody}
+        <AssessmentPlanGate status={assessment}>{planBody}</AssessmentPlanGate>
       </DashboardPanel>
       <ChildFormDialog
         isOpen={isEditOpen}
@@ -101,7 +111,7 @@ function ParentChildDashboard({ child }: { child: ChildSummary }) {
         }}
         onSaved={() => {
           setIsEditOpen(false);
-          setSavedMessage('تم حفظ بيانات الطفل.');
+          toast.success('تم حفظ البيانات بنجاح');
         }}
       />
     </>
