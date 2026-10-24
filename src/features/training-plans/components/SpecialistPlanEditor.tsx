@@ -17,6 +17,8 @@ import { PlanSection } from './PlanSection';
 export interface PlanChild {
   id: string;
   name: string;
+  /** The teacher from the specialist's children list (used when the plan does not exist yet). */
+  teacherName?: string | null;
 }
 
 /** Specialist: manage the plan (add from available activities, remove with confirmation). */
@@ -64,7 +66,7 @@ export function SpecialistPlanEditor({
       <AssignTeacherCard
         childId={child.id}
         childName={child.name}
-        currentTeacherName={plan.data.teacherName}
+        currentTeacherName={plan.data.teacherName ?? child.teacherName ?? null}
       />
       <ApiErrorAlert error={removeMutation.error} />
       <PlanSection

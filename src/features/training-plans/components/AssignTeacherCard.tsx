@@ -1,4 +1,4 @@
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, RefreshCw, X } from 'lucide-react';
 import { useId, useState } from 'react';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Feedback';
 import { FormField, Select } from '@/components/ui/Field';
 import { ConfirmDialog } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/Toast';
 
 import { useAssignTeacherMutation, useTeachers } from '../api/trainingPlansQueries';
 
@@ -21,8 +22,11 @@ export interface AssignTeacherCardProps {
 }
 
 /**
- * Specialist assigns the child's teacher: teachers from `GET specialist/teachers`,
- * `POST specialist/assign-teacher { teacherId, childIds: [childId] }`, with confirmation.
+ * The child's teacher (Specialist). Client revision 2026-10: with a teacher assigned only a compact
+ * line «المعلم المسؤول: …» stays, with a small «تغيير المعلم»; the full form is shown only when there
+ * is no teacher or while changing. Teachers from `GET specialist/teachers`;
+ * `POST specialist/assign-teacher { teacherId, childIds: [childId] }` with confirmation; the plan
+ * re-fetches and a temporary toast confirms it.
  */
 export function AssignTeacherCard({
   childId,
@@ -30,29 +34,85 @@ export function AssignTeacherCard({
   currentTeacherName,
 }: AssignTeacherCardProps) {
   const headingId = useId();
-  const teachers = useTeachers(true);
-  const assign = useAssignTeacherMutation();
-  const [teacherId, setTeacherId] = useState('');
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [lastAssigned, setLastAssigned] = useState<string | null>(null);
-  const selected = teachers.data?.find((teacher) => teacher.id === teacherId) ?? null;
+  const toast = useToast();
+  const [isChanging, setIsChanging] = useState(false);
+  const showForm = currentTeacherName === null || isChanging;
+
+  if (!showForm) {
+    return (
+      <div className={styles.teacherSummary}>
+        <GraduationCap className={styles.teacherIcon} aria-hidden="true" />
+        <p className={styles.teacherName}>{`المعلم المسؤول: ${currentTeacherName}`}</p>
+        <Button
+          variant="ghost"
+          size="sm"
+          iconStart={<RefreshCw aria-hidden="true" />}
+          onClick={() => {
+            setIsChanging(true);
+          }}
+        >
+          تغيير المعلم
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <Card as="section" className={styles.teacherCard} aria-labelledby={headingId}>
       <SectionHeader
         id={headingId}
-        title="المعلم المسؤول"
+        title={isChanging ? 'تغيير المعلم المسؤول' : 'تعيين معلم'}
         icon={GraduationCap}
         iconTone="success"
+        action={
+          isChanging ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              iconStart={<X aria-hidden="true" />}
+              onClick={() => {
+                setIsChanging(false);
+              }}
+            >
+              إلغاء
+            </Button>
+          ) : undefined
+        }
       />
       <p className={styles.teacherCurrent}>
         {currentTeacherName
           ? `المعلم الحالي: ${currentTeacherName}`
-          : 'لم يُعيَّن معلم لهذا الطفل بعد.'}
+          : 'لم يتم تعيين معلم لهذا الطفل بعد.'}
       </p>
-      {lastAssigned ? (
-        <Alert tone="success">{`تم تعيين ${lastAssigned} معلماً لـ ${childName}.`}</Alert>
-      ) : null}
+      <TeacherForm
+        childId={childId}
+        childName={childName}
+        onAssigned={(name) => {
+          setIsChanging(false);
+          toast.success(`تم تعيين ${name} معلماً لـ ${childName} بنجاح`);
+        }}
+      />
+    </Card>
+  );
+}
+
+function TeacherForm({
+  childId,
+  childName,
+  onAssigned,
+}: {
+  childId: string;
+  childName: string;
+  onAssigned: (teacherName: string) => void;
+}) {
+  const teachers = useTeachers(true);
+  const assign = useAssignTeacherMutation();
+  const [teacherId, setTeacherId] = useState('');
+  const [isConfirming, setIsConfirming] = useState(false);
+  const selected = teachers.data?.find((teacher) => teacher.id === teacherId) ?? null;
+
+  return (
+    <>
       <ApiErrorAlert error={teachers.error} onRetry={() => void teachers.refetch()} />
       <ApiErrorAlert error={assign.error} />
       <div className={styles.teacherRow}>
@@ -104,8 +164,7 @@ export function AssignTeacherCard({
             { teacherId: selected.id, childIds: [childId] },
             {
               onSuccess: () => {
-                setLastAssigned(selected.name);
-                setTeacherId('');
+                onAssigned(selected.name);
               },
               onSettled: () => {
                 setIsConfirming(false);
@@ -114,6 +173,6 @@ export function AssignTeacherCard({
           );
         }}
       />
-    </Card>
+    </>
   );
 }
