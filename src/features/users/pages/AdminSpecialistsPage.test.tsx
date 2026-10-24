@@ -48,12 +48,16 @@ describe('AdminSpecialistsPage (client revision 2026-10)', () => {
     await userEvent.click(reem);
     await userEvent.click(within(dialog).getByRole('button', { name: 'إسناد المحددين (1)' }));
 
-    expect(await within(dialog).findByText('تم إسناد 1 طفل إلى أ. ليلى حسن.')).toBeInTheDocument();
+    // A temporary toast confirms it and the dialog closes (client revision 2026-10).
+    expect(await screen.findByText('تم إسناد 1 طفل إلى أ. ليلى حسن بنجاح')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'أطفال أ. ليلى حسن' })).not.toBeInTheDocument();
     expect(bodies).toEqual([{ specialistId: 'u-specialist', childIds: [expect.any(String)] }]);
     // Refreshed from the server: ريم is now among the assigned children.
+    await userEvent.click(screen.getByRole('button', { name: 'إدارة أطفال أ. ليلى حسن' }));
+    const reopened = screen.getByRole('dialog', { name: 'أطفال أ. ليلى حسن' });
     await waitFor(() => {
       expect(
-        within(within(dialog).getByRole('list', { name: 'الأطفال المسندون' })).getByText('ريم'),
+        within(within(reopened).getByRole('list', { name: 'الأطفال المسندون' })).getByText('ريم'),
       ).toBeInTheDocument();
     });
     server.events.removeAllListeners();
@@ -111,13 +115,13 @@ describe('AdminSpecialistsPage (client revision 2026-10)', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'تعيين الأخصائي' }));
 
     expect(
-      await within(dialog).findByText('تم تعيين أ. ليلى حسن أخصائياً لـ ريم.'),
+      await screen.findByText('تم تعيين أ. ليلى حسن أخصائياً لـ ريم بنجاح'),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'تعيين أخصائي لـ ريم' })).not.toBeInTheDocument();
     expect(body).toEqual({
       specialistId: 'u-specialist',
       childIds: ['c0000000-0000-4000-8000-000000000003'],
     });
-    await userEvent.click(within(dialog).getByRole('button', { name: /إغلاق/ }));
     // The children list re-fetches: the child now shows its new specialist.
     expect(await within(reem).findByText('الأخصائي: أ. ليلى حسن')).toBeInTheDocument();
     expect(within(reem).queryByText('بلا أخصائي')).not.toBeInTheDocument();

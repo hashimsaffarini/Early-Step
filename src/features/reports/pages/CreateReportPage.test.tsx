@@ -78,7 +78,9 @@ describe('CreateReportPage', () => {
     await fillReport();
     await userEvent.click(screen.getByRole('button', { name: 'حفظ التقرير' }));
 
-    expect(await screen.findByRole('heading', { name: 'تم حفظ التقرير' })).toBeInTheDocument();
+    // A temporary toast confirms it and the list opens (no large success box).
+    expect(await screen.findByText('تم حفظ التقرير بنجاح')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'قائمة التقارير' })).toBeInTheDocument();
     expect(body).toEqual({
       childId: SALMA,
       title: 'تقرير شهري',
@@ -86,6 +88,44 @@ describe('CreateReportPage', () => {
       recommendations: 'ألعاب عدّ قصيرة',
     });
     server.events.removeAllListeners();
+  });
+
+  it('from a child page: preselects that child and returns there after saving', async () => {
+    const { router } = renderReportsPage('Specialist', <CreateReportPage />, {
+      routePath: paths.reportCreate,
+      path: `${paths.reportCreate}?childId=${SALMA}`,
+    });
+
+    const radios = await screen.findAllByRole('radio');
+    expect(radios).toHaveLength(1);
+    expect(radios[0]).toBeChecked();
+    expect(screen.getByRole('link', { name: 'العودة إلى ملف سلمى' })).toHaveAttribute(
+      'href',
+      paths.childProfile(SALMA),
+    );
+    await userEvent.type(screen.getByLabelText(/عنوان التقرير/), 'تقرير شهري');
+    await userEvent.type(screen.getByLabelText(/جوانب تحتاج إلى دعم/), 'العدّ بعد 10');
+    await userEvent.type(screen.getByLabelText(/التوصيات/), 'ألعاب عدّ قصيرة');
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ التقرير' }));
+
+    expect(await screen.findByText('تم حفظ التقرير بنجاح')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(paths.childProfile(SALMA));
+    });
+  });
+
+  it('explains a duplicate (409: one report per child) in clear Arabic', async () => {
+    server.use(
+      http.post(apiUrl('specialist/CreateReport'), () =>
+        HttpResponse.json({ message: 'يوجد تقرير لهذا الطفل بالفعل.' }, { status: 409 }),
+      ),
+    );
+    renderCreate();
+    await fillReport();
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ التقرير' }));
+
+    expect(await screen.findByText('يوجد تقرير مسجل لهذا الطفل بالفعل.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'حفظ التقرير' })).toBeInTheDocument();
   });
 
   it('shows the server error and keeps the form', async () => {
@@ -129,6 +169,7 @@ describe('EditReportPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'حفظ التعديلات' }));
 
     expect(await screen.findByRole('heading', { name: 'تفاصيل التقرير' })).toBeInTheDocument();
+    expect(screen.getByText('تم تحديث التقرير بنجاح')).toBeInTheDocument();
     await waitFor(() => {
       expect(form?.get('Title')).toBe('تقرير متابعة محدّث');
     });

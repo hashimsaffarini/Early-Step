@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { AuthHttpBridge } from '@/app/providers/AuthHttpBridge';
 import { createQueryClient } from '@/app/providers/queryClient';
 import { AppErrorBoundary } from '@/components/shared/AppErrorBoundary';
+import { ToastProvider } from '@/components/ui/Toast';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -20,7 +21,7 @@ export function AppProviders({ children }: AppProvidersProps) {
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthHttpBridge />
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </QueryClientProvider>
     </AppErrorBoundary>
   );

@@ -68,7 +68,7 @@ describe('SuperAdminPanelPage', () => {
     expect(within(list).queryByRole('button', { name: /إيقاف حساب/ })).toBeNull();
 
     await userEvent.click(within(list).getByRole('button', { name: 'تفعيل حساب معلم موقوف' }));
-    expect(await screen.findByText('تم تفعيل حساب معلم موقوف.')).toBeInTheDocument();
+    expect(await screen.findByText('تم تفعيل حساب معلم موقوف بنجاح')).toBeInTheDocument();
     expect(bodies).toEqual([
       { fullName: 'معلم موقوف', email: 'off@example.com', role: 'معلم/ة', isActive: true },
     ]);
@@ -128,7 +128,7 @@ describe('SuperAdminPanelPage', () => {
     await userEvent.type(within(dialog).getByLabelText(/كلمة المرور/), 'Strong#Pass1');
     await userEvent.click(within(dialog).getByRole('button', { name: 'إنشاء الحساب' }));
 
-    expect(await screen.findByText('تم إنشاء حساب أ. هدى.')).toBeInTheDocument();
+    expect(await screen.findByText('تم إنشاء حساب أ. هدى بنجاح')).toBeInTheDocument();
     expect(body).toEqual({
       fullName: 'أ. هدى',
       email: 'huda@demo.test',
@@ -136,6 +136,102 @@ describe('SuperAdminPanelPage', () => {
       role: 'معلم/ة',
     });
     server.events.removeAllListeners();
+  });
+
+  it('edits an employee: prefilled values, PUT with the changes, list refreshed, toast', async () => {
+    let body: unknown;
+    server.events.on('request:start', ({ request }) => {
+      if (request.method === 'PUT' && request.url.includes('SuperAdmin/users/u-teacher')) {
+        void request
+          .clone()
+          .json()
+          .then((json: unknown) => {
+            body = json;
+          });
+      }
+    });
+    renderPanel();
+
+    await userEvent.click(screen.getByRole('tab', { name: /المستخدمون/ }));
+    const list = await screen.findByRole('list', { name: 'المستخدمون' });
+    expect(within(list).queryByRole('button', { name: /تعديل بيانات عبدالله/ })).toBeNull();
+    await userEvent.click(within(list).getByRole('button', { name: 'تعديل بيانات أ. سارة خالد' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'تعديل بيانات الموظف' });
+    const name = within(dialog).getByLabelText(/الاسم الكامل/);
+    expect(name).toHaveValue('أ. سارة خالد');
+    expect(within(dialog).getByLabelText(/البريد الإلكتروني/)).toHaveValue('teacher@demo.test');
+    expect(within(dialog).getByLabelText(/الدور/)).toHaveValue('معلم/ة');
+    expect(within(dialog).getByRole('checkbox', { name: /الحساب مفعّل/ })).toBeChecked();
+
+    await userEvent.clear(name);
+    await userEvent.type(name, 'أ. سارة خالد العلي');
+    await userEvent.selectOptions(within(dialog).getByLabelText(/الدور/), 'أخصائي/ة');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ التعديلات' }));
+
+    expect(await screen.findByText('تم تحديث بيانات أ. سارة خالد العلي بنجاح')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'تعديل بيانات الموظف' })).not.toBeInTheDocument();
+    expect(body).toEqual({
+      fullName: 'أ. سارة خالد العلي',
+      email: 'teacher@demo.test',
+      role: 'أخصائي/ة',
+      isActive: true,
+    });
+    await waitFor(() => {
+      expect(within(list).getByText('أ. سارة خالد العلي')).toBeInTheDocument();
+    });
+    server.events.removeAllListeners();
+  });
+
+  it('edits a parent account and sends its role back unchanged', async () => {
+    let body: unknown;
+    server.events.on('request:start', ({ request }) => {
+      if (request.method === 'PUT') {
+        void request
+          .clone()
+          .json()
+          .then((json: unknown) => {
+            body = json;
+          });
+      }
+    });
+    renderPanel();
+    await userEvent.click(screen.getByRole('tab', { name: /المستخدمون/ }));
+    const list = await screen.findByRole('list', { name: 'المستخدمون' });
+    await userEvent.click(within(list).getByRole('button', { name: 'تعديل بيانات محمد أحمد' }));
+    const dialog = screen.getByRole('dialog', { name: 'تعديل بيانات الموظف' });
+
+    expect(within(dialog).getByLabelText(/الدور/)).toHaveAttribute('readonly');
+    const name = within(dialog).getByLabelText(/الاسم الكامل/);
+    await userEvent.clear(name);
+    await userEvent.type(name, 'محمد أحمد علي');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ التعديلات' }));
+
+    expect(await screen.findByText('تم تحديث بيانات محمد أحمد علي بنجاح')).toBeInTheDocument();
+    expect(body).toMatchObject({ fullName: 'محمد أحمد علي', role: 'ولي أمر', isActive: true });
+    server.events.removeAllListeners();
+  });
+
+  it('keeps the edit dialog open with the server error and validates the fields', async () => {
+    server.use(
+      http.put(apiUrl('SuperAdmin/users/:id'), () =>
+        HttpResponse.json({ message: 'البريد الإلكتروني مستخدم بالفعل.' }, { status: 400 }),
+      ),
+    );
+    renderPanel();
+    await userEvent.click(screen.getByRole('tab', { name: /المستخدمون/ }));
+    const list = await screen.findByRole('list', { name: 'المستخدمون' });
+    await userEvent.click(within(list).getByRole('button', { name: 'تعديل بيانات أ. سارة خالد' }));
+    const dialog = screen.getByRole('dialog', { name: 'تعديل بيانات الموظف' });
+
+    const email = within(dialog).getByLabelText(/البريد الإلكتروني/);
+    await userEvent.clear(email);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ التعديلات' }));
+    expect(within(dialog).getByText('البريد الإلكتروني مطلوب')).toBeInTheDocument();
+
+    await userEvent.type(email, 'taken@demo.test');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ التعديلات' }));
+    expect(await within(dialog).findByText('البريد الإلكتروني مستخدم بالفعل.')).toBeInTheDocument();
   });
 
   it('deactivates an account after confirmation, never the super admin', async () => {
@@ -153,7 +249,7 @@ describe('SuperAdminPanelPage', () => {
     const dialog = screen.getByRole('dialog', { name: 'إيقاف الحساب' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'إيقاف' }));
 
-    expect(await screen.findByText('تم إيقاف حساب أ. سارة خالد.')).toBeInTheDocument();
+    expect(await screen.findByText('تم إيقاف حساب أ. سارة خالد بنجاح')).toBeInTheDocument();
     expect(deleted).toEqual(['/api/SuperAdmin/users/u-teacher']);
     server.events.removeAllListeners();
   });

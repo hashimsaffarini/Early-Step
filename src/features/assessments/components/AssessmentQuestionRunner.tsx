@@ -142,7 +142,7 @@ export function AssessmentQuestionRunner({
 
         {supported && type !== null ? (
           <>
-            <p>{CHOICE_HINTS[type]}</p>
+            <p className={styles.hint}>{CHOICE_HINTS[type]}</p>
             <div className={styles.answers} role="group" aria-label="الإجابات">
               {question.options.map((option) => {
                 const position = selection.indexOf(option.id);

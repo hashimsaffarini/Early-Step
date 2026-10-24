@@ -1,9 +1,6 @@
-import { Bell } from 'lucide-react';
-
 import { getNavigation } from '@/app/layouts/areaNavigation';
 import { LogoutButton } from '@/app/layouts/LogoutButton';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { IconButton } from '@/components/ui/IconButton';
 import { ROLE_LABELS } from '@/constants/roleLabels';
 import { useUnreadMessagesCount } from '@/hooks/api/useUnreadMessagesCount';
 import { useSession } from '@/services/session';
@@ -13,9 +10,6 @@ export interface RoleAreaLayoutProps {
   role: UserRole;
 }
 
-/** The backend has no notifications API (BLOCKED BY BACKEND) — the bell stays disabled. */
-const NOTIFICATIONS_UNAVAILABLE = 'الإشعارات (قريباً)';
-
 /**
  * Shell for every role area (rendered inside `RequireRole`). Shows the signed-in user from the
  * session and the unread-messages badge from `GET Chats/unread-count` (polled).
@@ -24,18 +18,13 @@ export function RoleAreaLayout({ role }: RoleAreaLayoutProps) {
   const session = useSession();
   // The Super Admin area has no messages screen.
   const unreadMessages = useUnreadMessagesCount(role !== 'SuperAdmin');
-  // Client revision 2026-10: the Parent area has no logo and no notifications icon.
-  const isParent = role === 'Parent';
+  // Client revisions 2026-10: no notifications icon in any area (the backend has no
+  // notifications API); the Parent area also has no logo.
   return (
     <DashboardLayout
       navItems={getNavigation(role, unreadMessages)}
       user={{ name: session?.user.name ?? '', roleLabel: ROLE_LABELS[role] }}
-      showBrand={!isParent}
-      headerActions={
-        isParent ? undefined : (
-          <IconButton label={NOTIFICATIONS_UNAVAILABLE} icon={Bell} variant="muted" disabled />
-        )
-      }
+      showBrand={role !== 'Parent'}
       sidebarFooter={<LogoutButton />}
     />
   );

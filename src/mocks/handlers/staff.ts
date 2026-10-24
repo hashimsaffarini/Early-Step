@@ -19,10 +19,19 @@ const LISTED_ROLES: readonly MockUser['role'][] = ['Parent', 'Teacher', 'Special
 const createdUsers: MockUser[] = [];
 /** Soft-deactivated accounts (`DELETE SuperAdmin/users/{id}`); `PUT … isActive` toggles it. */
 const deactivatedUserIds = new Set<string>();
+/** Name / email / role saved with `PUT SuperAdmin/users/{id}` in this mock session. */
+const editedUsers = new Map<string, Pick<MockUser, 'fullName' | 'email' | 'role' | 'roleValue'>>();
 registerMockTable(() => {
   createdUsers.splice(0, createdUsers.length);
   deactivatedUserIds.clear();
+  editedUsers.clear();
 });
+
+/** A user with the edits saved in this mock session. */
+function withEdits(user: MockUser): MockUser {
+  const edit = editedUsers.get(user.id);
+  return edit ? { ...user, ...edit } : user;
+}
 
 const STAFF_ROLE_BY_WIRE: Record<string, MockUser['role']> = {
   'معلم/ة': 'Teacher',
@@ -52,6 +61,7 @@ function filterUsers(request: Request, roles: readonly MockUser['role'][]) {
   const role = params.get('Role') ?? params.get('role') ?? '';
   const search = (params.get('Search') ?? params.get('search') ?? '').trim().toLowerCase();
   return [...MOCK_USERS, ...createdUsers]
+    .map(withEdits)
     .filter((user) => roles.includes(user.role))
     .filter((user) => !role || user.roleValue === role)
     .filter(
@@ -261,6 +271,15 @@ export const staffHandlers: HttpHandler[] = [
     if (!body.fullName || !body.email || !body.role) {
       return badRequest('One or more validation errors occurred.');
     }
+    const id = String(params.id);
+    const current = [...MOCK_USERS, ...createdUsers].find((user) => user.id === id);
+    if (!current) return notFound('User not found.');
+    editedUsers.set(id, {
+      fullName: body.fullName,
+      email: body.email,
+      role: STAFF_ROLE_BY_WIRE[body.role] ?? current.role,
+      roleValue: body.role,
+    });
     if (body.isActive === true) deactivatedUserIds.delete(String(params.id));
     if (body.isActive === false) deactivatedUserIds.add(String(params.id));
     return HttpResponse.json({ message: 'User updated successfully.' });

@@ -6,6 +6,7 @@ import { routes } from '@/app/router/routes';
 import { getAreaPaths, type AreaRole } from '@/constants/routes';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
+import { PLAN_AFTER_ASSESSMENT } from '@/components/shared/ChildDashboard';
 import { renderWithRouter } from '@/test/renderWithRouter';
 import { signInAs } from '@/test/session';
 
@@ -143,20 +144,14 @@ describe('ChildProfilePage — parent dashboard (client revision 2026-10)', () =
     );
   });
 
-  it('offers the parent to start the assessment and never reads the saved result', async () => {
-    let resultCalls = 0;
-    server.events.on('request:start', ({ request }) => {
-      if (request.url.includes('/result')) resultCalls += 1;
-    });
+  it('offers the parent to start the assessment (the result is staff-only: 403 for the parent)', async () => {
     renderProfile('Parent', YOUSEF);
     await heading('يوسف');
 
     const assessment = screen.getByRole('region', { name: 'التقييم المبدئي' });
     expect(
-      within(assessment).getByRole('link', { name: 'بدء التقييم المبدئي لـ يوسف' }),
+      await within(assessment).findByRole('link', { name: 'بدء التقييم المبدئي لـ يوسف' }),
     ).toHaveAttribute('href', getAreaPaths('Parent').assessment(YOUSEF));
-    expect(resultCalls).toBe(0);
-    server.events.removeAllListeners();
   });
 
   it('has no reports, no delete action and no tabs for the parent', async () => {
@@ -194,11 +189,102 @@ describe('ChildProfilePage — parent dashboard (client revision 2026-10)', () =
     await userEvent.type(age, '8');
     await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ' }));
 
-    expect(await screen.findByText('تم حفظ بيانات الطفل.')).toBeInTheDocument();
+    // A temporary toast, not a box inside the page (client revision 2026-10).
+    expect(await screen.findByText('تم حفظ البيانات بنجاح')).toBeInTheDocument();
     expect(received?.get('Age')).toBe('8');
     expect(received?.get('Gender')).toBe('ولد');
     await waitFor(() => {
       expect(screen.getByText(/العمر: 8 سنوات/)).toBeInTheDocument();
     });
+  });
+});
+
+describe('ChildProfilePage — the plan waits for the initial assessment (client revision 2026-10)', () => {
+  const result = (status: number) =>
+    http.get(apiUrl('initial-assessment/:childId/result'), () =>
+      status === 200
+        ? HttpResponse.json({ childId: YOUSEF, overallScore: 70, categories: [] })
+        : new HttpResponse('No completed assessment found for this child.', { status }),
+    );
+
+  it('hides the plan, its progress and figures while the assessment is not completed', async () => {
+    server.use(result(404));
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    const plan = screen.getByRole('region', { name: 'الخطة التدريبية' });
+    expect(await within(plan).findByText(PLAN_AFTER_ASSESSMENT)).toBeInTheDocument();
+    expect(within(plan).queryByRole('list', { name: 'أنشطة الخطة التدريبية' })).toBeNull();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'ملخص الخطة التدريبية' })).not.toBeInTheDocument();
+  });
+
+  it('shows the plan once the assessment is completed, and no start link any more', async () => {
+    server.use(result(200));
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    const plan = screen.getByRole('region', { name: 'الخطة التدريبية' });
+    expect(
+      await within(plan).findByRole('list', { name: 'أنشطة الخطة التدريبية' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('أكمل الطفل التقييم المبدئي، ويراجع الأخصائي نتيجته.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /بدء التقييم/ })).not.toBeInTheDocument();
+  });
+
+  it('never flashes the plan while the assessment state is loading', async () => {
+    let release: () => void = () => undefined;
+    server.use(
+      http.get(apiUrl('initial-assessment/:childId/result'), async () => {
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        return new HttpResponse('No completed assessment found for this child.', { status: 404 });
+      }),
+    );
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+    const plan = screen.getByRole('region', { name: 'الخطة التدريبية' });
+
+    expect(within(plan).getByText('جارٍ التحقق من التقييم الأولي…')).toBeInTheDocument();
+    expect(within(plan).queryByRole('list', { name: 'أنشطة الخطة التدريبية' })).toBeNull();
+    release();
+    expect(await within(plan).findByText(PLAN_AFTER_ASSESSMENT)).toBeInTheDocument();
+  });
+
+  it('shows an error with retry when the assessment state cannot be read', async () => {
+    let calls = 0;
+    server.use(
+      http.get(apiUrl('initial-assessment/:childId/result'), () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json({ message: 'خطأ' }, { status: 500 })
+          : HttpResponse.json({ childId: YOUSEF, overallScore: 70, categories: [] });
+      }),
+    );
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+    const plan = screen.getByRole('region', { name: 'الخطة التدريبية' });
+
+    expect(
+      await within(plan).findByText('تعذّر التحقق من حالة التقييم الأولي'),
+    ).toBeInTheDocument();
+    expect(within(plan).queryByRole('list', { name: 'أنشطة الخطة التدريبية' })).toBeNull();
+    await userEvent.click(within(plan).getByRole('button', { name: 'إعادة المحاولة' }));
+    expect(
+      await within(plan).findByRole('list', { name: 'أنشطة الخطة التدريبية' }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the plan when the server does not let the parent read the result (403, live)', async () => {
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    const plan = screen.getByRole('region', { name: 'الخطة التدريبية' });
+    expect(
+      await within(plan).findByRole('list', { name: 'أنشطة الخطة التدريبية' }),
+    ).toBeInTheDocument();
   });
 });

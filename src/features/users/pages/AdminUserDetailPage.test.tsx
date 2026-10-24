@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
@@ -29,6 +29,22 @@ describe('AdminUserDetailPage', () => {
     expect(screen.getByRole('heading', { name: 'ريم' })).toBeInTheDocument();
   });
 
+  it("shows each child's real initial-assessment result, or that it is not completed", async () => {
+    renderDetail('u-parent');
+    const list = await screen.findByRole('list', { name: 'أطفال ولي الأمر' });
+
+    const card = (name: string) => {
+      const item = within(list).getByRole('heading', { name }).closest('li');
+      if (!item) throw new Error('child card not found');
+      return item;
+    };
+    // Mock: يوسف completed the assessment (1 of 2 correct → 50 %); ريم has not.
+    await waitFor(() => {
+      expect(card('يوسف')).toHaveTextContent('نتيجة التقييم الأولي: 50%');
+    });
+    expect(await within(card('ريم')).findByText('لم يكتمل التقييم الأولي')).toBeInTheDocument();
+  });
+
   it('assigns a specialist to one child with the + action (one-child request)', async () => {
     let body: unknown;
     server.use(
@@ -48,10 +64,11 @@ describe('AdminUserDetailPage', () => {
     await userEvent.click(await within(dialog).findByRole('radio', { name: /أ. ليلى حسن/ }));
     await userEvent.click(save);
 
+    // Success: a temporary toast, the dialog closes.
     expect(
-      await within(dialog).findByText('تم تعيين أ. ليلى حسن أخصائياً لـ ريم.'),
+      await screen.findByText('تم تعيين أ. ليلى حسن أخصائياً لـ ريم بنجاح'),
     ).toBeInTheDocument();
-    expect(within(dialog).getByText('الأخصائي الحالي: أ. ليلى حسن')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'تعيين أخصائي لـ ريم' })).not.toBeInTheDocument();
     expect(body).toEqual({
       specialistId: 'u-specialist',
       childIds: ['c0000000-0000-4000-8000-000000000003'],
@@ -84,8 +101,7 @@ describe('AdminUserDetailPage', () => {
     expect(usersCalls).toBe(0);
     await userEvent.click(within(dialog).getByRole('radio', { name: /أ. ليلى حسن/ }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'تعيين الأخصائي' }));
-    await within(dialog).findByText('تم تعيين أ. ليلى حسن أخصائياً لـ ريم.');
-    await userEvent.click(within(dialog).getByRole('button', { name: /إغلاق/ }));
+    await screen.findByText('تم تعيين أ. ليلى حسن أخصائياً لـ ريم بنجاح');
 
     const list = screen.getByRole('list', { name: 'أطفال ولي الأمر' });
     const reem = within(list).getByRole('heading', { name: 'ريم' }).closest('li');

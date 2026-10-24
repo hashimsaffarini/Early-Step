@@ -10,7 +10,7 @@ items without confirmation.
 - Responsive: desktop, laptop, tablet, mobile.
 - Five roles: Parent, Teacher, Specialist, Admin, SuperAdmin.
 - Role-based dashboards.
-- Part of the app is used directly by young children (4–10).
+- Part of the app is used directly by young children (2–10).
 - Visual design follows the existing Early Step Replit app.
 
 ## Modules

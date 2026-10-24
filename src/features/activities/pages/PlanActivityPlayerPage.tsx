@@ -138,7 +138,7 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
           {question.text}
         </h2>
         <ServerImage path={question.imageUrl} alt="" className={styles.questionImage} />
-        <p>{CHOICE_HINTS[type]}</p>
+        <p className={styles.hint}>{CHOICE_HINTS[type]}</p>
       </Card>
       <ul className={styles.answers} aria-label="الإجابات">
         {question.options.map((option, optionIndex) => {

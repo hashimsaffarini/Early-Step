@@ -6,8 +6,8 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Feedback';
 import { Modal } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/Toast';
 import type { ChildSummary } from '@/services/api/childrenLists';
 
 import { useAdminSpecialists, useAssignSpecialist } from '../api/usersQueries';
@@ -22,7 +22,8 @@ export interface AssignChildSpecialistDialogProps {
 /**
  * «+ تعيين أخصائي» for one child (client revision 2026-10): the real specialists
  * (`GET Admin/specialists`) as selectable cards with their active state and the current one
- * marked; inactive specialists cannot be chosen. Saves through the documented
+ * marked; inactive specialists cannot be chosen. On success a temporary toast confirms it and the
+ * dialog closes. Saves through the documented
  * `POST Admin/assign-children-to-specialist { specialistId, childIds: [childId] }`; user and
  * children data refresh afterwards.
  */
@@ -30,10 +31,9 @@ export function AssignChildSpecialistDialog({ child, onClose }: AssignChildSpeci
   const groupName = useId();
   const specialists = useAdminSpecialists();
   const assign = useAssignSpecialist();
+  const toast = useToast();
   const [selectedId, setSelectedId] = useState('');
-  // The child's specialist after a save here (the lists re-fetch in the background).
-  const [currentName, setCurrentName] = useState(child.specialistName);
-  const [notice, setNotice] = useState<string | null>(null);
+  const currentName = child.specialistName;
 
   const options = specialists.data ?? [];
   const selected = options.find((specialist) => specialist.id === selectedId);
@@ -66,7 +66,6 @@ export function AssignChildSpecialistDialog({ child, onClose }: AssignChildSpeci
                 disabled={!specialist.isActive}
                 onChange={() => {
                   setSelectedId(specialist.id);
-                  setNotice(null);
                   assign.reset();
                 }}
               />
@@ -109,7 +108,6 @@ export function AssignChildSpecialistDialog({ child, onClose }: AssignChildSpeci
       }
     >
       <div className={styles.assign}>
-        {notice ? <Alert tone="success">{notice}</Alert> : null}
         <ApiErrorAlert error={assign.error} />
         {list}
         <p className={styles.muted}>الأخصائيون غير النشطين لا يمكن تعيينهم.</p>
@@ -124,9 +122,8 @@ export function AssignChildSpecialistDialog({ child, onClose }: AssignChildSpeci
               { specialistId: selected.id, childIds: [child.id] },
               {
                 onSuccess: () => {
-                  setCurrentName(selected.name);
-                  setSelectedId('');
-                  setNotice(`تم تعيين ${selected.name} أخصائياً لـ ${child.fullName}.`);
+                  toast.success(`تم تعيين ${selected.name} أخصائياً لـ ${child.fullName} بنجاح`);
+                  onClose();
                 },
               },
             );

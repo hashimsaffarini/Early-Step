@@ -263,6 +263,18 @@ API functions (live suites) and a read-only walkthrough of every endpoint those 
 
 No new value is static, placeholder or invented; a value the server does not send is hidden.
 
+## 15b. Final client revision batch (update.docx) — data sources
+
+- Plan gate, assessment cards and the Admin child results: `GET initial-assessment/{childId}/result`
+  (200 → completed with the real overall %; the documented 404 → not completed; 403 → not readable,
+  never guessed). No local flag or storage.
+- Category activity counts: counted from `GET Admin/activities/test` + `/game` (the server `count`
+  is not used). Category page: `?categoryId=` lists.
+- Specialist report: `GET Reports/child/{id}`, `POST specialist/CreateReport` (409 duplicate),
+  `PUT specialist/{id}`. Employee edit: `PUT SuperAdmin/users/{id}`.
+- Toasts only confirm a server success; they carry no data of their own.
+- Mock mode only: Yousef has a completed assessment so both gate states can be reviewed.
+
 ## 16. Verification still blocked
 
 The Teacher area (dashboard, children, profile, plan, feedback, chat) is wired to the real

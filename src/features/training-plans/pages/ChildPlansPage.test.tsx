@@ -327,27 +327,47 @@ describe('ChildPlansPage — first activity (live behaviour)', () => {
 });
 
 describe('ChildPlansPage — teacher assignment (specialist)', () => {
-  it('shows the current teacher from the plan and lists teachers from specialist/teachers', async () => {
+  it('shows only a compact line once a teacher is assigned, with «تغيير المعلم»', async () => {
     renderPlans('Specialist', YOUSEF);
 
-    expect(await screen.findByText('المعلم الحالي: أ. سارة خالد')).toBeInTheDocument();
+    expect(await screen.findByText('المعلم المسؤول: أ. سارة خالد')).toBeInTheDocument();
+    expect(screen.queryByLabelText('اختر المعلم')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'تعيين معلم' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'تغيير المعلم' }));
     const select = await screen.findByLabelText('اختر المعلم');
     await waitFor(() => {
       expect(within(select).getByRole('option', { name: 'أ. سارة خالد' })).toBeInTheDocument();
     });
+    expect(screen.getByText('المعلم الحالي: أ. سارة خالد')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'إلغاء' }));
+    expect(screen.queryByLabelText('اختر المعلم')).not.toBeInTheDocument();
   });
 
-  it('assigns the chosen teacher with POST { teacherId, childIds } after confirmation', async () => {
+  it('shows the assignment form without a teacher, then hides it after assigning', async () => {
+    let teacherName: string | null = null;
     let body: unknown;
     server.use(
+      http.get(apiUrl('TrainingPlan/specialist/children/:childId'), () =>
+        HttpResponse.json({
+          id: 'plan-1',
+          childId: YOUSEF,
+          teacherName,
+          progress: 0,
+          activities: [],
+        }),
+      ),
       http.post(apiUrl('specialist/assign-teacher'), async ({ request }) => {
         body = await request.json();
+        teacherName = 'أ. سارة خالد';
         return HttpResponse.json({ message: 'ok' });
       }),
     );
     renderPlans('Specialist', YOUSEF);
 
-    const select = await screen.findByLabelText('اختر المعلم');
+    expect(await screen.findByRole('heading', { name: 'تعيين معلم' })).toBeInTheDocument();
+    expect(screen.getByText('لم يتم تعيين معلم لهذا الطفل بعد.')).toBeInTheDocument();
+    const select = screen.getByLabelText('اختر المعلم');
     await waitFor(() => {
       expect(within(select).getByRole('option', { name: 'أ. سارة خالد' })).toBeInTheDocument();
     });
@@ -356,8 +376,13 @@ describe('ChildPlansPage — teacher assignment (specialist)', () => {
     const dialog = screen.getByRole('dialog', { name: 'تعيين المعلم' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'تعيين' }));
 
-    expect(await screen.findByText('تم تعيين أ. سارة خالد معلماً لـ يوسف.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('تم تعيين أ. سارة خالد معلماً لـ يوسف بنجاح'),
+    ).toBeInTheDocument();
     expect(body).toEqual({ teacherId: 'u-teacher', childIds: [YOUSEF] });
+    // The plan re-fetches: the large form disappears for the compact line.
+    expect(await screen.findByText('المعلم المسؤول: أ. سارة خالد')).toBeInTheDocument();
+    expect(screen.queryByLabelText('اختر المعلم')).not.toBeInTheDocument();
   });
 
   it('is not offered to read-only roles', async () => {

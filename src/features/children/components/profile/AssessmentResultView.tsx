@@ -36,7 +36,13 @@ function QuestionRow({ question }: { question: AssessmentResultQuestion }) {
   );
 }
 
-function CategoryRow({ category }: { category: AssessmentResultCategory }) {
+function CategoryRow({
+  category,
+  isExpanded,
+}: {
+  category: AssessmentResultCategory;
+  isExpanded: boolean;
+}) {
   // Only counts the server sent (a missing one is never shown as 0).
   const counts =
     category.totalQuestions === null || category.correctAnswers === null
@@ -46,7 +52,14 @@ function CategoryRow({ category }: { category: AssessmentResultCategory }) {
     <li className={styles.list}>
       <ProgressBar label={category.name} value={category.percentage} max={100} showLabel />
       {counts ? <p className={styles.muted}>{counts}</p> : null}
-      {category.questions.length > 0 ? (
+      {category.questions.length > 0 && isExpanded ? (
+        <ul className={styles.list} aria-label={`أسئلة ${category.name}`}>
+          {category.questions.map((question) => (
+            <QuestionRow key={question.id} question={question} />
+          ))}
+        </ul>
+      ) : null}
+      {category.questions.length > 0 && !isExpanded ? (
         <details>
           <summary>{`تفاصيل الأسئلة (${category.questions.length.toString()})`}</summary>
           <ul className={styles.list} aria-label={`أسئلة ${category.name}`}>
@@ -62,9 +75,16 @@ function CategoryRow({ category }: { category: AssessmentResultCategory }) {
 
 /**
  * The server's initial-assessment result, in neutral words (no diagnosis or interpretation).
- * Per-question details appear only when the server sends them (staff roles).
+ * Per-question details appear only when the server sends them (staff roles); `isExpanded` shows
+ * them directly (the dedicated assessment page) instead of behind «تفاصيل الأسئلة».
  */
-export function AssessmentResultView({ result }: { result: AssessmentResult }) {
+export function AssessmentResultView({
+  result,
+  isExpanded = false,
+}: {
+  result: AssessmentResult;
+  isExpanded?: boolean;
+}) {
   return (
     <>
       <ProgressBar
@@ -76,7 +96,7 @@ export function AssessmentResultView({ result }: { result: AssessmentResult }) {
       {result.categories.length > 0 ? (
         <ul className={styles.list} aria-label="النتيجة حسب التصنيف">
           {result.categories.map((category) => (
-            <CategoryRow key={category.name} category={category} />
+            <CategoryRow key={category.name} category={category} isExpanded={isExpanded} />
           ))}
         </ul>
       ) : null}

@@ -168,6 +168,30 @@ export function isMockAnswerCorrect(question: MockQuestion, optionIds: readonly 
 
 export const mockAssessmentSessions = new Map<string, MockAssessmentSession>();
 
+/** Yousef completed his initial assessment (so his plan is visible); the others have not. */
+const YOUSEF = 'c0000000-0000-4000-8000-000000000001';
+const SEEDED_SESSION_ID = 'as000000-0000-4000-8000-000000000001';
+
+function seedCompletedAssessment(): MockAssessmentSession {
+  const reading = MOCK_ASSESSMENT_QUESTIONS[MOCK_CATEGORY_IDS.reading] ?? [];
+  const [first, second] = reading;
+  const answers = new Map<string, { optionIds: string[]; isCorrect: boolean }>();
+  if (first?.options[0])
+    answers.set(first.id, { optionIds: [first.options[0].id], isCorrect: true });
+  if (second?.options[1]) {
+    answers.set(second.id, { optionIds: [second.options[1].id], isCorrect: false });
+  }
+  return {
+    id: SEEDED_SESSION_ID,
+    childId: YOUSEF,
+    sections: [{ id: MOCK_CATEGORY_IDS.reading, name: 'الحروف والقراءة', questions: reading }],
+    questions: [...reading],
+    answers,
+    completed: true,
+  };
+}
+
 registerMockTable(() => {
   mockAssessmentSessions.clear();
+  mockAssessmentSessions.set(SEEDED_SESSION_ID, seedCompletedAssessment());
 });

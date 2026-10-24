@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Feedback';
 import { Checkbox } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/Toast';
 
 import type { AdminSpecialist } from '../api/usersApi';
 import { useAdminUser, useAssignableChildren, useAssignSpecialist } from '../api/usersQueries';
@@ -29,8 +30,8 @@ export function SpecialistChildrenDialog({ specialist, onClose }: SpecialistChil
   const detail = useAdminUser(specialist.id);
   const children = useAssignableChildren();
   const assign = useAssignSpecialist();
+  const toast = useToast();
   const [selected, setSelected] = useState<string[]>([]);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const assignedIds = new Set((detail.data?.children ?? []).map((child) => child.id));
   const candidates = (children.data ?? []).filter((child) => !assignedIds.has(child.id));
@@ -42,9 +43,10 @@ export function SpecialistChildrenDialog({ specialist, onClose }: SpecialistChil
       {
         onSuccess: () => {
           setSelected([]);
-          setNotice(
-            `تم إسناد ${count.toString()} ${count === 1 ? 'طفل' : 'أطفال'} إلى ${specialist.name}.`,
+          toast.success(
+            `تم إسناد ${count.toString()} ${count === 1 ? 'طفل' : 'أطفال'} إلى ${specialist.name} بنجاح`,
           );
+          onClose();
         },
       },
     );
@@ -107,7 +109,6 @@ export function SpecialistChildrenDialog({ specialist, onClose }: SpecialistChil
             checked={selected.includes(child.id)}
             onChange={(event) => {
               const isChecked = event.currentTarget.checked;
-              setNotice(null);
               setSelected((ids) =>
                 isChecked ? [...ids, child.id] : ids.filter((id) => id !== child.id),
               );
@@ -124,7 +125,6 @@ export function SpecialistChildrenDialog({ specialist, onClose }: SpecialistChil
         {!specialist.isActive ? (
           <Alert tone="warning">هذا الحساب غير نشط، لذلك لا يمكن إسناد أطفال إليه.</Alert>
         ) : null}
-        {notice ? <Alert tone="success">{notice}</Alert> : null}
         <ApiErrorAlert error={assign.error} />
         <section aria-labelledby="assigned-children-title">
           <h3 id="assigned-children-title" className={styles.legend}>

@@ -1,7 +1,13 @@
 import { ArrowRight, UserX } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
-import { ChildHero, childHeroProgress, PlanStatGrid } from '@/components/shared/ChildDashboard';
+import {
+  AssessmentPlanGate,
+  AssessmentStatusCard,
+  ChildHero,
+  childHeroProgress,
+  PlanStatGrid,
+} from '@/components/shared/ChildDashboard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
@@ -9,6 +15,7 @@ import { Button, getButtonClassName } from '@/components/ui/Button';
 import { childFacts } from '@/features/children';
 import { TeacherNotesSection } from '@/features/feedback';
 import { ChildPlanPanel } from '@/features/training-plans';
+import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
 import { useChildPlanActivities, useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { summarizePlan } from '@/services/api/planSummary';
@@ -16,10 +23,12 @@ import { summarizePlan } from '@/services/api/planSummary';
 import styles from './ChildDashboardPage.module.css';
 
 /**
- * The teacher's view of one assigned child (client revision 2026-10, dashboard style): header with
- * the child's facts (`GET Teacher/children`) and plan progress, the plan's stat cards, the
- * activities with their saved results («ابدأ» to play in class) and the teacher's notes (add /
- * edit / delete). No overview, initial-assessment or reports for the teacher.
+ * The teacher's view of one assigned child (client revisions 2026-10, like the specialist's but
+ * read-only): header with the child's facts (`GET Teacher/children`) and plan progress, the plan's
+ * stat cards, the «التقييم الأولي» card (its details page shows categories, question types and the
+ * child's answers when the server allows the teacher to read them), the activities with their
+ * saved results and the child's answers where allowed («ابدأ» to play in class), and the teacher's
+ * notes for the specialist (add / edit / delete). No plan management and no reports.
  */
 export function TeacherChildPage() {
   const { childId = '' } = useParams();
@@ -27,7 +36,9 @@ export function TeacherChildPage() {
   const children = useChildrenForRole('Teacher');
   const child = children.data?.find((item) => item.id === childId);
   const plan = useChildPlanActivities(child?.id);
-  const summary = plan.data ? summarizePlan(plan.data) : null;
+  const assessment = useAssessmentStatus(child ? child.id : undefined);
+  const isPlanOpen = assessment.state === 'complete' || assessment.state === 'unavailable';
+  const summary = plan.data && isPlanOpen ? summarizePlan(plan.data) : null;
 
   let body;
   if (children.isPending) {
@@ -67,13 +78,17 @@ export function TeacherChildPage() {
           progress={childHeroProgress(summary)}
         />
         {summary && summary.total > 0 ? <PlanStatGrid summary={summary} /> : null}
+        <AssessmentStatusCard status={assessment} to={paths.childAssessment(child.id)} />
         <div className={styles.columns}>
           <div className={styles.main}>
-            <ChildPlanPanel
-              childId={child.id}
-              showSummary={false}
-              playTo={(activity) => paths.planActivityPlay(child.id, activity.activityId)}
-            />
+            <AssessmentPlanGate status={assessment}>
+              <ChildPlanPanel
+                childId={child.id}
+                showSummary={false}
+                showAnswers
+                playTo={(activity) => paths.planActivityPlay(child.id, activity.activityId)}
+              />
+            </AssessmentPlanGate>
           </div>
           <div className={styles.aside}>
             <TeacherNotesSection childId={child.id} />

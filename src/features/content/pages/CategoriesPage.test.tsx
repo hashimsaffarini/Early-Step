@@ -21,8 +21,91 @@ describe('CategoriesPage', () => {
     expect(
       within(categories).getByRole('heading', { name: 'الحروف والقراءة' }),
     ).toBeInTheDocument();
-    expect(within(categories).getAllByText('1 أنشطة').length).toBeGreaterThan(0);
+    const reading = within(categories).getByRole('link', { name: 'أنشطة التصنيف الحروف والقراءة' });
+    expect(await within(reading).findByText('الأنشطة: 1')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'التصنيفات' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('counts the real tests and games of each category, not the server count (client 2026-10)', async () => {
+    // Live, `Admin/categories` answered `count: 0` for categories that have activities.
+    server.use(
+      http.get(apiUrl('Admin/categories'), () =>
+        HttpResponse.json([
+          { id: 'c-mixed', name: 'تصنيف مختلط', count: 0 },
+          { id: 'c-tests', name: 'تصنيف اختبارات', count: 0 },
+          { id: 'c-empty', name: 'تصنيف فارغ', count: 0 },
+        ]),
+      ),
+      http.get(apiUrl('Admin/activities/:type'), ({ params }) =>
+        HttpResponse.json(
+          params.type === 'game'
+            ? [{ id: 'g1', title: 'لعبة', categoryId: 'c-mixed', categoryName: 'تصنيف مختلط' }]
+            : [
+                { id: 't1', title: 'اختبار 1', categoryId: 'c-mixed', categoryName: 'تصنيف مختلط' },
+                {
+                  id: 't2',
+                  title: 'اختبار 2',
+                  categoryId: 'c-tests',
+                  categoryName: 'تصنيف اختبارات',
+                },
+                {
+                  id: 't3',
+                  title: 'اختبار 3',
+                  categoryId: 'c-tests',
+                  categoryName: 'تصنيف اختبارات',
+                },
+              ],
+        ),
+      ),
+    );
+    renderContent(ADMIN_PATHS.categories);
+    const categories = await list();
+
+    const card = (name: string) =>
+      within(categories).getByRole('link', { name: `أنشطة التصنيف ${name}` });
+    expect(await within(card('تصنيف مختلط')).findByText('الأنشطة: 2')).toBeInTheDocument();
+    expect(within(card('تصنيف مختلط')).getByText('اختبارات: 1')).toBeInTheDocument();
+    expect(within(card('تصنيف مختلط')).getByText('ألعاب: 1')).toBeInTheDocument();
+    expect(within(card('تصنيف اختبارات')).getByText('الأنشطة: 2')).toBeInTheDocument();
+    expect(within(card('تصنيف فارغ')).getByText('الأنشطة: 0')).toBeInTheDocument();
+  });
+
+  it('refreshes the counts after an activity is created', async () => {
+    renderContent(ADMIN_PATHS.categories);
+    const categories = await list();
+    const memory = within(categories).getByRole('link', { name: 'أنشطة التصنيف الذاكرة والتسلسل' });
+    expect(await within(memory).findByText('ألعاب: 1')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('link', { name: 'الأنشطة والأسئلة' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'الألعاب' }));
+    await userEvent.click(
+      screen.getAllByRole('button', { name: 'إضافة لعبة' })[0] ?? document.body,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'إضافة لعبة' });
+    await userEvent.type(within(dialog).getByLabelText(/عنوان النشاط/), 'لعبة جديدة');
+    await userEvent.type(within(dialog).getByLabelText(/المعرّف المختصر/), 'new-game');
+    await userEvent.selectOptions(within(dialog).getByLabelText(/^التصنيف/), 'الذاكرة والتسلسل');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ' }));
+    await screen.findByRole('link', { name: 'لعبة جديدة' });
+
+    await userEvent.click(screen.getByRole('link', { name: 'التصنيفات' }));
+    const updated = within(await list()).getByRole('link', {
+      name: 'أنشطة التصنيف الذاكرة والتسلسل',
+    });
+    expect(await within(updated).findByText('ألعاب: 2')).toBeInTheDocument();
+  });
+
+  it('makes the whole category card a keyboard link to its activities', async () => {
+    const { router } = renderContent(ADMIN_PATHS.categories);
+    const categories = await list();
+    const link = within(categories).getByRole('link', { name: 'أنشطة التصنيف الأرقام والحساب' });
+    expect(within(link).queryByRole('button')).not.toBeInTheDocument();
+
+    link.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(router.state.location.pathname).toBe(
+      ADMIN_PATHS.categoryActivities('cat00000-0000-4000-8000-000000000002'),
+    );
   });
 
   it('validates and creates a category', async () => {

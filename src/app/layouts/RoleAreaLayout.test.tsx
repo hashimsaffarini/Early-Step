@@ -26,14 +26,23 @@ describe('RoleAreaLayout', () => {
     expect(await within(messages).findByText('4 غير مقروءة')).toBeInTheDocument();
   });
 
-  it('keeps notifications disabled (no notifications API)', async () => {
-    signInAs('Teacher');
-    renderWithRouter(routes, getAreaPaths('Teacher').dashboard);
+  it.each(['Parent', 'Teacher', 'Specialist', 'Admin'] as const)(
+    'shows no notifications icon for the %s (client revision 2026-10)',
+    async (role) => {
+      signInAs(role);
+      renderWithRouter(routes, getAreaPaths(role).dashboard);
+      await desktopNav();
+
+      expect(screen.queryByRole('button', { name: /الإشعارات/ })).not.toBeInTheDocument();
+    },
+  );
+
+  it('shows no notifications icon for the Super Admin', async () => {
+    signInAs('SuperAdmin');
+    renderWithRouter(routes, ROUTE_PATHS.superAdmin);
     await desktopNav();
 
-    for (const bell of screen.getAllByRole('button', { name: 'الإشعارات (قريباً)' })) {
-      expect(bell).toBeDisabled();
-    }
+    expect(screen.queryByRole('button', { name: /الإشعارات/ })).not.toBeInTheDocument();
   });
 
   it('does not request the unread count in the super admin area', async () => {

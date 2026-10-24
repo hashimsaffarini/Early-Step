@@ -91,6 +91,21 @@ questions and sends the answers through the same submit endpoint as 2b. Games wi
 — and every game until the plan endpoints return `slug` — use the generic player of 2b. Details:
 `docs/GAME_ENGINE.md`.
 
+### 2d. Final client revision batch (update.docx, 2026-10-24)
+
+```text
+Parent:  child page → «التقييم المبدئي» → (assessment completed) → «الخطة التدريبية» appears
+Specialist: child → «التقييم الأولي» card → assessment page (categories, questions, answers) → back
+            → teacher (form only when none, otherwise «المعلم المسؤول» + «تغيير المعلم»)
+            → plan (after the assessment) → «ملاحظات المعلم» → «التقرير» (إضافة / عرض / تعديل)
+Teacher: child → assessment card / activity results (read-only) → notes for the specialist
+Admin:   parent's page → each child's assessment result · categories → card → its activities
+Super Admin: users → «تعديل» → save → toast
+```
+
+The plan gate reads the real result endpoint; for the Parent it is not readable today (403), so the
+plan stays visible for the Parent until the backend exposes the status (`BACKEND_REQUESTS.md` #10).
+
 ## 3. Admin review and specialist assignment
 
 ```text

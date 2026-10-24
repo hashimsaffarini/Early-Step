@@ -66,6 +66,41 @@ describe('TeacherChildPage — plan-focused view (client revision 2026-10)', () 
     expect(screen.queryByText(/التقارير|التقرير/)).not.toBeInTheDocument();
   });
 
+  it('gives the teacher read-only performance context and no specialist actions', async () => {
+    renderNotes();
+    expect(await screen.findByRole('heading', { level: 1, name: 'يوسف' })).toBeInTheDocument();
+
+    // The initial-assessment card (its page shows the details the server lets the teacher read).
+    expect(await screen.findByRole('link', { name: /^التقييم الأولي:/ })).toHaveAttribute(
+      'href',
+      '/teacher/children/c0000000-0000-4000-8000-000000000001/assessment',
+    );
+    // Completed activities can open the child's answers (shown only if the server allows it).
+    const activities = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    expect(within(activities).getByText('عرض إجابات الطفل')).toBeInTheDocument();
+    // Specialist-only actions are absent.
+    expect(screen.queryByRole('button', { name: 'إضافة نشاط' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^إزالة/ })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('اختر المعلم')).not.toBeInTheDocument();
+    expect(screen.queryByText(/تقرير/)).not.toBeInTheDocument();
+  });
+
+  it('shows the assessment result to the teacher when the server allows it', async () => {
+    server.use(
+      http.get(apiUrl('initial-assessment/:childId/result'), () =>
+        HttpResponse.json({
+          childId: YOUSEF,
+          overallScore: 60,
+          categories: [{ categoryName: 'القراءة', percentage: 60 }],
+        }),
+      ),
+    );
+    renderNotes();
+
+    const card = await screen.findByRole('link', { name: /التقييم الأولي: مكتمل/ });
+    expect(card).toHaveTextContent('النتيجة العامة: 60%');
+  });
+
   it("lists the child's earlier notes from GET Teacher/children/{childId}/feedbacks", async () => {
     server.use(
       http.get(apiUrl('Teacher/children/:childId/feedbacks'), () =>

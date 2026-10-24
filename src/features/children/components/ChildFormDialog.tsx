@@ -11,6 +11,7 @@ import type { ChildSummary } from '@/services/api/childrenLists';
 
 import { useCreateChild, useUpdateChild } from '../api/childrenQueries';
 import {
+  CHILD_FORM_MESSAGES,
   childFormSchema,
   MAX_CHILD_AGE,
   MIN_CHILD_AGE,
@@ -108,7 +109,12 @@ export function ChildFormDialog({ isOpen, onClose, onSaved, child }: ChildFormDi
           )}
         </FormField>
         <div className={styles.row}>
-          <FormField label={COPY.age} error={errors.age?.message} isRequired>
+          <FormField
+            label={COPY.age}
+            hint={CHILD_FORM_MESSAGES.ageHint}
+            error={errors.age?.message}
+            isRequired
+          >
             {(field) => (
               <Input
                 {...field}
