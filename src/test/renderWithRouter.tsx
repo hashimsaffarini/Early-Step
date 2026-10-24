@@ -3,6 +3,8 @@ import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router';
 
+import { ToastProvider } from '@/components/ui/Toast';
+
 /** Fresh query client per test: no retries, no cache shared between tests. */
 export function createTestQueryClient(): QueryClient {
   return new QueryClient({
@@ -23,7 +25,9 @@ export function renderWithRouter(routes: RouteObject[], initialPath = '/', initi
     queryClient,
     ...render(
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
       </QueryClientProvider>,
     ),
   };

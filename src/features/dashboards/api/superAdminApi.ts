@@ -95,12 +95,35 @@ export async function deactivateUser(userId: string): Promise<void> {
   await httpClient.delete(`SuperAdmin/users/${encodeURIComponent(userId)}`);
 }
 
+export interface UpdateUserInput {
+  id: string;
+  fullName: string;
+  email: string | null;
+  /** Backend wire value (`معلم/ة`, `أخصائي/ة`, …), sent back exactly. */
+  roleValue: string;
+  isActive: boolean;
+}
+
+/**
+ * `PUT SuperAdmin/users/{id} { fullName, email, role, isActive }` (Swagger `UpdateUserRequest`;
+ * re-activation verified live 2026-10-15). Used for the employee edit form and re-activation.
+ */
+export async function updateUser(input: UpdateUserInput): Promise<void> {
+  await httpClient.put(`SuperAdmin/users/${encodeURIComponent(input.id)}`, {
+    fullName: input.fullName,
+    email: input.email,
+    role: input.roleValue,
+    isActive: input.isActive,
+  });
+}
+
 /** Re-activates a deactivated account, sending its own name, email and backend role back. */
 export async function reactivateUser(user: PanelUser): Promise<void> {
-  await httpClient.put(`SuperAdmin/users/${encodeURIComponent(user.id)}`, {
+  await updateUser({
+    id: user.id,
     fullName: user.name,
     email: user.email,
-    role: user.roleValue,
+    roleValue: user.roleValue,
     isActive: true,
   });
 }
@@ -139,6 +162,11 @@ export function useCreateStaffUser() {
 export function useReactivateUser() {
   const refresh = useRefreshUsers();
   return useMutation({ mutationFn: reactivateUser, onSuccess: refresh });
+}
+
+export function useUpdateUser() {
+  const refresh = useRefreshUsers();
+  return useMutation({ mutationFn: updateUser, onSuccess: refresh });
 }
 
 export function useDeactivateUser() {

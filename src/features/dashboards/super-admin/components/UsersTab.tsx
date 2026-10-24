@@ -1,4 +1,4 @@
-import { UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { Pencil, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { useState } from 'react';
 
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -8,8 +8,8 @@ import { SearchField } from '@/components/shared/SearchField';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Feedback';
 import { ConfirmDialog } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/Toast';
 import {
   ROLE_WIRE_VALUES,
   useDeactivateUser,
@@ -24,6 +24,7 @@ import type { UserRole } from '@/types/roles';
 
 import { ROLE_DISPLAY } from '../roleDisplay';
 import { CreateStaffDialog } from './CreateStaffDialog';
+import { EditStaffDialog } from './EditStaffDialog';
 
 import styles from './superAdmin.module.css';
 
@@ -35,8 +36,8 @@ const FILTERABLE_ROLES = Object.keys(ROLE_WIRE_VALUES) as UserRole[];
 /**
  * Users from `GET SuperAdmin/users?Search=&Role=` (server-side search and filter). The Super
  * Admin creates teacher / specialist accounts, deactivates accounts and re-activates them
- * (`SuperAdmin/users`). The active state is the server's `isActive`; name/email editing is not
- * offered in this panel.
+ * (`SuperAdmin/users`). The active state is the server's `isActive`. «تعديل» edits name, email,
+ * role and status (`PUT SuperAdmin/users/{id}`, client revision 2026-10).
  */
 export function UsersTab() {
   const session = useSession();
@@ -44,7 +45,8 @@ export function UsersTab() {
   const reactivate = useReactivateUser();
   const [isCreating, setIsCreating] = useState(false);
   const [toDeactivate, setToDeactivate] = useState<PanelUser | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [editing, setEditing] = useState<PanelUser | null>(null);
+  const toast = useToast();
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const search = useDebouncedValue(query.trim());
@@ -102,6 +104,19 @@ export function UsersTab() {
                   {role?.label ?? user.roleValue}
                 </Badge>
                 {!user.isActive ? <Badge tone="danger">موقوف</Badge> : null}
+                {canManage ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconStart={<Pencil aria-hidden="true" />}
+                    aria-label={`تعديل بيانات ${user.name}`}
+                    onClick={() => {
+                      setEditing(user);
+                    }}
+                  >
+                    تعديل
+                  </Button>
+                ) : null}
                 {canManage && !user.isActive ? (
                   <Button
                     variant="ghost"
@@ -113,7 +128,7 @@ export function UsersTab() {
                       deactivate.reset();
                       reactivate.mutate(user, {
                         onSuccess: () => {
-                          setNotice(`تم تفعيل حساب ${user.name}.`);
+                          toast.success(`تم تفعيل حساب ${user.name} بنجاح`);
                         },
                       });
                     }}
@@ -174,14 +189,12 @@ export function UsersTab() {
         <Button
           iconStart={<UserPlus aria-hidden="true" />}
           onClick={() => {
-            setNotice(null);
             setIsCreating(true);
           }}
         >
           إضافة موظف
         </Button>
       </div>
-      {notice ? <Alert tone="success">{notice}</Alert> : null}
       <ApiErrorAlert error={deactivate.error} />
       <ApiErrorAlert error={reactivate.error} />
       {content}
@@ -192,9 +205,21 @@ export function UsersTab() {
         }}
         onCreated={(name) => {
           setIsCreating(false);
-          setNotice(`تم إنشاء حساب ${name}.`);
+          toast.success(`تم إنشاء حساب ${name} بنجاح`);
         }}
       />
+      {editing ? (
+        <EditStaffDialog
+          user={editing}
+          onClose={() => {
+            setEditing(null);
+          }}
+          onSaved={(name) => {
+            setEditing(null);
+            toast.success(`تم تحديث بيانات ${name} بنجاح`);
+          }}
+        />
+      ) : null}
       <ConfirmDialog
         isOpen={toDeactivate !== null}
         title="إيقاف الحساب"
@@ -206,7 +231,7 @@ export function UsersTab() {
           const { id, name } = toDeactivate;
           deactivate.mutate(id, {
             onSuccess: () => {
-              setNotice(`تم إيقاف حساب ${name}.`);
+              toast.success(`تم إيقاف حساب ${name} بنجاح`);
             },
             onSettled: () => {
               setToDeactivate(null);
