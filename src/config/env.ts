@@ -1,3 +1,5 @@
+import { ConfigurationError } from './configurationError';
+
 /**
  * Typed, validated access to `import.meta.env`.
  *
@@ -20,14 +22,12 @@ function parseBaseUrl(value: string | undefined): URL {
   try {
     url = new URL(value ?? '');
   } catch {
-    throw new Error(
-      'Invalid environment configuration:\n- VITE_API_BASE_URL must be a valid absolute URL. Copy .env.example to .env and set it.',
-    );
+    throw new ConfigurationError();
   }
-  if (!url.href.endsWith('/api/')) {
-    throw new Error(
-      'Invalid environment configuration:\n- VITE_API_BASE_URL must end with "/api/" (feature paths are relative to it).',
-    );
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new ConfigurationError();
+  if (url.pathname.endsWith('/api') && !url.search && !url.hash) url.pathname += '/';
+  if (!url.pathname.endsWith('/api/') || url.search || url.hash) {
+    throw new ConfigurationError();
   }
   return url;
 }

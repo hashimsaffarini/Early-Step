@@ -1,3 +1,13 @@
+> **Frontend workaround approved 2026-10-28:** newly uploaded content images now have a temporary
+> local fallback, and missing choices may use actual previously cached content. This does not
+> repair shared static-file hosting or authorize Teacher access. See `FRONTEND_CONTENT_FALLBACKS.md`.
+
+> **2026-10-28 read-only recheck for part 4:** all five questions in the current Admin test/game
+> details had options. Seven question/option image URLs still answered 404. No production records
+> were changed. The screenshot's missing choices / misspelled prompt were not reproduced in that
+> current content. Teacher answer details must remain subject to backend authorization. See
+> `CLIENT_REVISIONS_PART4.md` for exact frontend handling.
+
 # Backend requests
 
 For the backend developer — **only what is still open**, re-verified live on 2026-10-16 against

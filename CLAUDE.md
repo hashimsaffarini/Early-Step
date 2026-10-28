@@ -30,6 +30,23 @@ Status per feature: `docs/BACKEND_INTEGRATION_STATUS.md`. Development mock mode
 (`VITE_USE_MOCKS=true`, dev only) lets you review the integrated UI without accounts.
 Next steps: `docs/IMPLEMENTATION_PLAN.md`.
 
+## Latest client revision 2026-10-28
+
+Part 4 behavior is recorded in `docs/CLIENT_REVISIONS_PART4.md` and ADR-027. Initial assessment
+starts all categories from one orange button. Specialist child files use assessment/plan tabs and
+an inline report editor; child editing remains Parent-only (explicit user confirmation). Shared
+games include `spot-it`; absent/unknown game slugs use the visual default. Editable game-level
+drafts require an explicit Admin save; never inject unsaved drafts into a child's player.
+
+## Approved temporary frontend fallbacks
+
+The client explicitly requested frontend workarounds on 2026-10-28 (ADR-029,
+`docs/FRONTEND_CONTENT_FALLBACKS.md`). Public content image blobs may be stored locally after
+acknowledged uploads, and actual question choices may be recovered from a matching local content
+snapshot. Never store admin correctness or child answers/results in that content snapshot, invent
+option ids, bypass role permissions or imply local files are available on another device. Assessment
+question checkboxes may restore acknowledged local actions, with unknown states marked mixed.
+
 ## External references
 
 | Reference        | Location                                                                                    | Role                                                                    |

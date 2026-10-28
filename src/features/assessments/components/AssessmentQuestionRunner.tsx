@@ -1,3 +1,4 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import { ArrowLeft, ArrowRight, Flag, RotateCcw, SkipForward } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -128,7 +129,7 @@ export function AssessmentQuestionRunner({
               onExit({ processed: processedUpTo(index), answered });
             }}
           >
-            العودة إلى التصنيفات
+            العودة إلى مقدمة التقييم
           </Button>
         ) : null}
       </div>
@@ -138,7 +139,12 @@ export function AssessmentQuestionRunner({
         <p ref={promptRef} tabIndex={-1} className={styles.prompt}>
           {question.text}
         </p>
-        <ServerImage path={question.imageUrl} alt="" className={styles.image} />
+        <ServerImage
+          path={question.imageUrl}
+          mediaKey={mediaKeys.question(question.id)}
+          alt=""
+          className={styles.image}
+        />
 
         {supported && type !== null ? (
           <>
@@ -151,6 +157,7 @@ export function AssessmentQuestionRunner({
                     key={option.id}
                     label={option.text}
                     imagePath={option.imageUrl}
+                    imageKey={mediaKeys.option(option.id)}
                     badge={
                       type === 'Sequence' && position >= 0 ? (position + 1).toString() : undefined
                     }
@@ -184,6 +191,11 @@ export function AssessmentQuestionRunner({
           </Alert>
         )}
 
+        {question.isLocalContent ? (
+          <Alert tone="info">
+            تُعرض آخر خيارات محفوظة لهذا السؤال على هذا المتصفح، ويُتحقق من إجابتك عند الإرسال.
+          </Alert>
+        ) : null}
         <ApiErrorAlert error={submit.error} />
 
         <div className={styles.actions}>

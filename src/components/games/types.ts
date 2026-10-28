@@ -3,12 +3,13 @@ import type { ComponentType } from 'react';
 
 import type { ChoiceQuestionType } from '@/components/players';
 
-/** The four Early Step game templates (frontend product code, not backend data). */
+/** The Early Step game templates (frontend product code, not backend data). */
 export const GAME_SLUGS = [
   'letter-hunt',
   'number-match',
   'memory-sequence',
   'focus-challenge',
+  'spot-it',
 ] as const;
 export type GameSlug = (typeof GAME_SLUGS)[number];
 

@@ -1,4 +1,6 @@
 import '@testing-library/jest-dom/vitest';
+import { clearLocalMedia } from '@/services/media/localMedia';
+import { clearQuestionContent } from '@/services/api/questionContentCache';
 
 import { resetMockDb } from '@/mocks/db';
 import { server } from '@/mocks/server';
@@ -16,8 +18,10 @@ beforeAll(() => {
     },
   });
 });
-beforeEach(() => {
+beforeEach(async () => {
   resetMockDb();
+  clearQuestionContent();
+  await clearLocalMedia();
 });
 afterEach(() => {
   server.resetHandlers();

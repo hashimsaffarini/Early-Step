@@ -1,3 +1,4 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import { ArrowRight, ChevronLeft, ClipboardList, FolderTree, Gamepad2 } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
@@ -86,6 +87,7 @@ export function CategoryActivitiesPage() {
                 <span className={styles.rowIcon} aria-hidden="true">
                   <ServerImage
                     path={activity.iconUrl}
+                    mediaKey={mediaKeys.activity(type, activity.id)}
                     alt=""
                     fallback={type === 'game' ? <Gamepad2 /> : <ClipboardList />}
                   />

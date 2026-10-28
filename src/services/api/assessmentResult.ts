@@ -1,3 +1,4 @@
+import { correctedQuestionText } from './questionContentCache';
 import { z } from 'zod';
 
 import { AppError } from '@/services/http/apiError';
@@ -99,7 +100,7 @@ export function mapAssessmentResult(dto: z.infer<typeof assessmentResultSchema>)
         correctAnswers: category.correctAnswers ?? null,
         questions: (category.questions ?? []).map((question) => ({
           id: question.questionId,
-          text: question.questionText?.trim() ?? '',
+          text: correctedQuestionText(question.questionText?.trim() ?? ''),
           type: question.questionType ?? null,
           isCorrect: question.isCorrect ?? null,
           childAnswers: (question.childAnswers ?? []).map(mapOption),

@@ -7,6 +7,8 @@ import styles from './PlanStatGrid.module.css';
 
 export interface PlanStatGridProps {
   summary: PlanSummaryFigures;
+  compact?: boolean;
+  assessmentScore?: number | undefined;
 }
 
 /**
@@ -14,13 +16,21 @@ export interface PlanStatGridProps {
  * total / completed / remaining always; correct, wrong and mean score only when the rows carry them
  * (a missing figure is hidden, never shown as 0).
  */
-export function PlanStatGrid({ summary }: PlanStatGridProps) {
+export function PlanStatGrid({ summary, compact = false, assessmentScore }: PlanStatGridProps) {
   const stats: StatCardProps[] = [
     { label: 'إجمالي الأنشطة', value: summary.total, icon: ListChecks, tone: 'primary' },
     { label: 'المكتملة', value: summary.completed, icon: CircleCheck, tone: 'success' },
     { label: 'المتبقية', value: summary.remaining, icon: Hourglass, tone: 'warning' },
   ];
-  if (summary.averageScore !== null) {
+  if (assessmentScore !== undefined) {
+    stats.unshift({
+      label: 'نتيجة التقييم المبدئي',
+      value: `${Math.round(assessmentScore).toString()}%`,
+      icon: Gauge,
+      tone: 'primary',
+    });
+  }
+  if (assessmentScore === undefined && summary.averageScore !== null) {
     stats.push({
       label: 'متوسط النتيجة',
       value: `${summary.averageScore.toString()}%`,
@@ -28,7 +38,7 @@ export function PlanStatGrid({ summary }: PlanStatGridProps) {
       tone: 'violet',
     });
   }
-  if (summary.correctAnswers !== null) {
+  if (!compact && summary.correctAnswers !== null) {
     stats.push({
       label: 'الإجابات الصحيحة',
       value: summary.correctAnswers,
@@ -36,7 +46,7 @@ export function PlanStatGrid({ summary }: PlanStatGridProps) {
       tone: 'success',
     });
   }
-  if (summary.wrongAnswers !== null) {
+  if (!compact && summary.wrongAnswers !== null) {
     stats.push({
       label: 'الإجابات الخاطئة',
       value: summary.wrongAnswers,

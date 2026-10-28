@@ -75,30 +75,11 @@
   color: var(--color-text-primary);
   font: inherit;
   text-align: center;
-  cursor: pointer;
+  cursor: default;
   transition:
     transform var(--duration-fast) ease,
     box-shadow var(--duration-fast) ease,
     border-color var(--duration-fast) ease;
-}
-
-.card:hover:not(:disabled) {
-  border-color: var(--color-primary-border-hover);
-  box-shadow: var(--shadow-card-hover);
-  transform: translateY(-2px);
-}
-
-.card:focus-visible {
-  outline: 3px solid var(--color-focus-ring);
-  outline-offset: 3px;
-}
-
-.card:disabled {
-  cursor: default;
-}
-
-.card:disabled:not(.cardDone) {
-  opacity: 0.65;
 }
 
 .cardDone {
@@ -165,23 +146,6 @@
   block-size: 1.125rem;
 }
 
-.play {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 100%;
-  min-block-size: var(--tap-target-child);
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-strong);
-  color: var(--color-text-on-dark);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-extrabold);
-}
-
-.cardDone .play {
-  background: var(--color-success-strong);
-}
-
 .playAll {
   min-block-size: var(--tap-target-child);
   font-size: var(--font-size-lg);
@@ -190,9 +154,5 @@
 @media (prefers-reduced-motion: reduce) {
   .card {
     transition: none;
-  }
-
-  .card:hover:not(:disabled) {
-    transform: none;
   }
 }

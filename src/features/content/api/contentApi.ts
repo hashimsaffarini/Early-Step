@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import { mediaKeys, saveLocalMedia, removeLocalMedia } from '@/services/media/localMedia';
+import {
+  rememberQuestionContent,
+  forgetQuestionContent,
+  forgetOptionContent,
+  correctedQuestionText,
+} from '@/services/api/questionContentCache';
 
 import { normalizeActivityType, type ActivityType } from '@/services/api/activityType';
 import { toFormData, type FormFields } from '@/services/http/formData';
@@ -130,14 +137,16 @@ function mapOption(dto: z.infer<typeof optionSchema>): QuestionOption {
 
 export function mapQuestion(dto: z.infer<typeof questionSchema>): Question {
   const options = (dto.options ?? []).map(mapOption);
-  return {
+  const question = {
     id: dto.id,
-    text: dto.questionText ?? '',
+    text: correctedQuestionText(dto.questionText ?? ''),
     imageUrl: dto.questionImageUrl ?? null,
     type: normalizeQuestionType(dto.type),
     order: dto.order ?? null,
     options: options.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
   };
+  rememberQuestionContent(question);
+  return question;
 }
 
 /* ── Categories ────────────────────────────────────────────────────── */
@@ -233,7 +242,37 @@ function activityForm(input: ActivityInput): FormData {
 }
 
 export async function createActivity(type: ActivityType, input: ActivityInput): Promise<void> {
-  await httpClient.post(CONTENT_PATHS.activities(type), activityForm(input));
+  let before: Set<string> | null = null;
+  if (input.icon)
+    await localFallback(async () => {
+      before = new Set((await fetchActivities(type)).map((activity) => activity.id));
+    });
+  const { data } = await httpClient.post<unknown>(
+    CONTENT_PATHS.activities(type),
+    activityForm(input),
+  );
+  if (input.icon)
+    await localFallback(async () => {
+      const dto = activitySchema.safeParse(data);
+      if (dto.success) {
+        await saveLocalMedia(mediaKeys.activity(type, dto.data.id), input.icon, dto.data.iconUrl);
+        return;
+      }
+      if (before === null) return;
+      const matches = (await fetchActivities(type)).filter(
+        (activity) =>
+          !before?.has(activity.id) &&
+          activity.slug === input.slug &&
+          activity.title === input.title &&
+          activity.categoryId === input.categoryId,
+      );
+      if (matches.length === 1 && matches[0])
+        await saveLocalMedia(
+          mediaKeys.activity(type, matches[0].id),
+          input.icon,
+          matches[0].iconUrl,
+        );
+    });
 }
 
 export async function updateActivity(
@@ -242,10 +281,12 @@ export async function updateActivity(
   input: ActivityInput,
 ): Promise<void> {
   await httpClient.put(CONTENT_PATHS.activity(type, id), activityForm(input));
+  await saveLocalMedia(mediaKeys.activity(type, id), input.icon);
 }
 
 export async function deleteActivity(type: ActivityType, id: string): Promise<void> {
   await httpClient.delete(CONTENT_PATHS.activity(type, id));
+  await removeLocalMedia(mediaKeys.activity(type, id));
 }
 
 /* ── Questions & options ───────────────────────────────────────────── */
@@ -281,8 +322,80 @@ export function buildQuestionForm(input: QuestionInput): FormData {
   });
 }
 
-export async function createQuestion(activityId: string, input: QuestionInput): Promise<void> {
-  await httpClient.post(CONTENT_PATHS.questions(activityId), buildQuestionForm(input));
+async function localFallback(action: () => Promise<void>): Promise<void> {
+  try {
+    await action();
+  } catch {
+    /* A successful upload remains successful if local caching cannot bind it. */
+  }
+}
+
+async function rememberQuestionImages(question: Question, input: QuestionInput): Promise<void> {
+  await saveLocalMedia(mediaKeys.question(question.id), input.image, question.imageUrl);
+  await Promise.all(
+    question.options.map(async (option) => {
+      const matches = input.options.filter(
+        (candidate) =>
+          candidate.text === option.text &&
+          (input.type === 'Sequence'
+            ? candidate.correctOrder === option.correctOrder
+            : candidate.isCorrect === option.isCorrect),
+      );
+      let source: OptionInput | undefined;
+      if (option.order !== null && option.order > 0) {
+        const ordered = input.options[option.order - 1];
+        if (ordered && matches.includes(ordered)) source = ordered;
+      }
+      // When the backend discarded Order, duplicate indistinguishable choices cannot be safely
+      // paired with different image files. Their individual editor still has an exact option id.
+      if (!source && matches.length === 1) source = matches[0];
+      if (source) await saveLocalMedia(mediaKeys.option(option.id), source.image, option.imageUrl);
+    }),
+  );
+}
+
+export async function createQuestion(
+  activityId: string,
+  input: QuestionInput,
+  activityType: ActivityType = 'test',
+): Promise<void> {
+  const hasImages = input.image !== null || input.options.some((option) => option.image !== null);
+  let before: Set<string> | null = null;
+  if (hasImages)
+    await localFallback(async () => {
+      before = new Set(
+        (await fetchActivity(activityType, activityId)).questions.map((question) => question.id),
+      );
+    });
+  const { data } = await httpClient.post<unknown>(
+    CONTENT_PATHS.questions(activityId),
+    buildQuestionForm(input),
+  );
+  if (hasImages)
+    await localFallback(async () => {
+      const detail = activityDetailSchema.safeParse(data);
+      const single = questionSchema.safeParse(data);
+      let questions: Question[];
+      if (detail.success && Array.isArray(detail.data.questions) && before !== null)
+        questions = detail.data.questions.map(mapQuestion);
+      else if (
+        single.success &&
+        typeof single.data.questionText === 'string' &&
+        Array.isArray(single.data.options)
+      )
+        questions = [mapQuestion(single.data)];
+      else if (before !== null)
+        questions = (await fetchActivity(activityType, activityId)).questions;
+      else return;
+      const matches = questions.filter(
+        (question) =>
+          !before?.has(question.id) &&
+          question.text === correctedQuestionText(input.text) &&
+          question.type === input.type &&
+          question.options.length === input.options.length,
+      );
+      if (matches.length === 1 && matches[0]) await rememberQuestionImages(matches[0], input);
+    });
 }
 
 export async function fetchQuestion(questionId: string): Promise<Question> {
@@ -304,10 +417,13 @@ export async function updateQuestionInfo(
     CONTENT_PATHS.questionInfo(questionId),
     toFormData({ QuestionText: input.text, QuestionImage: input.image, Type: input.type }),
   );
+  await saveLocalMedia(mediaKeys.question(questionId), input.image);
 }
 
 export async function deleteQuestion(questionId: string): Promise<void> {
   await httpClient.delete(CONTENT_PATHS.question(questionId));
+  forgetQuestionContent(questionId);
+  await removeLocalMedia(mediaKeys.question(questionId));
 }
 
 export interface OptionUpdateInput {
@@ -329,14 +445,18 @@ export async function updateOption(optionId: string, input: OptionUpdateInput): 
       CorrectOrder: input.correctOrder,
     }),
   );
+  await saveLocalMedia(mediaKeys.option(optionId), input.image);
 }
 
 export async function deleteOption(optionId: string): Promise<void> {
   await httpClient.delete(CONTENT_PATHS.option(optionId));
+  forgetOptionContent(optionId);
+  await removeLocalMedia(mediaKeys.option(optionId));
 }
 
 export async function deleteAllOptions(questionId: string): Promise<void> {
   await httpClient.delete(CONTENT_PATHS.questionOptions(questionId));
+  forgetQuestionContent(questionId);
 }
 
 /* ── Initial-assessment composition ────────────────────────────────── */

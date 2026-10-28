@@ -37,8 +37,7 @@ Requirements: Node.js **>= 20.17** (see `.nvmrc`) and npm.
 
 ```bash
 npm install
-cp .env.example .env   # VITE_API_BASE_URL=https://earlystep22.runasp.net/api/
-npm run dev            # http://localhost:5173 — live backend
+npm run dev            # creates .env from .env.example on first start; then opens Vite
 ```
 
 | Variable            | Description                                                                                   |
@@ -68,6 +67,26 @@ Push to `main` → GitHub Actions (`.github/workflows/deploy-pages.yml`) runs `n
 `npm run validate` (which builds `dist/`) → deploys `dist/` to GitHub Pages. One-time setup:
 **Settings → Pages → Build and deployment → Source: GitHub Actions**. Details:
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+## Local login / registration troubleshooting
+
+Run `npm install` and `npm run dev` **from the project folder**, then open the Local URL printed
+by Vite (usually `http://localhost:5173`). Do not use VS Code Live Server for the source app.
+
+`.env` is deliberately excluded from Git. On a fresh clone, `npm run dev` now creates it from the
+public `.env.example` defaults, without overwriting an existing `.env` or a terminal-provided API URL.
+If you start Vite directly, copy `.env.example` to `.env` yourself. After changing environment files,
+stop and restart the dev server. The API URL must point to the backend and end in `/api/`
+(a missing final slash is normalized).
+
+A missing/invalid API configuration fails **before any HTTP request**. Previously this became the
+same generic “حدث خطأ غير متوقع” alert on login and registration, with no HTTP status in Network.
+It now gives an actionable configuration message. A caught form error does not necessarily print
+anything in Console; inspect Network → Fetch/XHR for actual HTTP responses.
+
+Read-only recheck 2026-10-28: Parent and Admin login plus `Auth/me` returned 200; CORS preflights
+for login/register permitted localhost:5173, 127.0.0.1:5173 and localhost:5500. Registration was not
+submitted during this check. Individual account/data failures still need their actual response.
 
 ## Known backend issue
 

@@ -181,7 +181,7 @@ describe('ActivitiesPage', () => {
   });
 
   describe('game templates (client revision 2026-10)', () => {
-    it('lists the four templates and creates a game whose Slug carries the template', async () => {
+    it('lists the game templates and creates a game whose Slug carries the template', async () => {
       let received: FormData | undefined;
       server.use(
         http.post(apiUrl('Admin/activities/:type'), async ({ request, params }) => {
@@ -193,7 +193,7 @@ describe('ActivitiesPage', () => {
       renderContent(`${ADMIN_PATHS.activities}?type=game`);
 
       const templates = await screen.findByRole('list', { name: 'قوالب الألعاب' });
-      expect(within(templates).getAllByRole('listitem')).toHaveLength(4);
+      expect(within(templates).getAllByRole('listitem')).toHaveLength(5);
       await userEvent.click(
         within(templates).getByRole('button', { name: 'إنشاء لعبة من قالب صيد الحروف' }),
       );

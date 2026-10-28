@@ -35,65 +35,57 @@ function optionsAfter(container: HTMLElement, label: string): string[] {
     .map((item) => item.textContent);
 }
 
-describe('SpecialistChildPage — dashboard (client revisions 2026-10)', () => {
-  it('shows the child, the plan server progress and every real figure as stat cards', async () => {
+describe('Specialist child file — part 4', () => {
+  const openPlan = async () =>
+    userEvent.click(await screen.findByRole('tab', { name: 'الخطة التدريبية' }));
+
+  it('opens the initial assessment tab with real category scores and editable report', async () => {
     renderPage();
     await heading('يوسف');
+    expect(screen.getByRole('tab', { name: 'التقييم المبدئي' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    const table = await screen.findByRole('table', { name: 'النتيجة العامة: 50%' });
+    expect(within(table).getByText('الحروف والقراءة')).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'ملخص الخطة التدريبية' })).not.toBeInTheDocument();
+    expect(await screen.findByLabelText(/عنوان التقرير/)).toHaveValue('تقرير متابعة');
+    expect(screen.getByRole('button', { name: 'حفظ التقرير' })).toBeDisabled();
+  });
 
-    const facts = screen.getByRole('list', { name: 'بيانات الطفل' });
-    expect(within(facts).getByText(/^ولي الأمر:/)).toBeInTheDocument();
-    expect(await within(facts).findByText('المعلم: أ. سارة خالد')).toBeInTheDocument();
-    expect(
-      await screen.findByRole('progressbar', { name: 'نسبة إنجاز الخطة التدريبية' }),
-    ).toHaveAttribute('aria-valuenow', '50');
+  it('keeps teacher assignment, results and plan actions in the training-plan tab', async () => {
+    renderPage();
+    await heading('يوسف');
+    await openPlan();
+    const table = await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
+    expect(within(table).getByText('عرض إجابات الطفل')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'إضافة نشاط' })).toBeInTheDocument();
+    expect(screen.getByText('المعلم المسؤول: أ. سارة خالد')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^ابدأ:/ })).not.toBeInTheDocument();
     const stats = screen.getByRole('list', { name: 'ملخص الخطة التدريبية' });
     expect(statValue(stats, 'إجمالي الأنشطة')).toBe('2');
     expect(statValue(stats, 'متوسط النتيجة')).toBe('75%');
-    expect(statValue(stats, 'الإجابات الصحيحة')).toBe('3');
-    expect(statValue(stats, 'الإجابات الخاطئة')).toBe('1');
   });
 
-  it('keeps the plan workflow: compact teacher line, results, add activity, no play links', async () => {
-    renderPage();
-    await heading('يوسف');
-
-    const activities = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
-    expect(within(activities).getByText('عرض إجابات الطفل')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'إضافة نشاط' })).toBeInTheDocument();
-    expect(screen.getByText('المعلم المسؤول: أ. سارة خالد')).toBeInTheDocument();
-    expect(screen.queryByLabelText('اختر المعلم')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^ابدأ:/ })).not.toBeInTheDocument();
-  });
-
-  it('hides the plan until the initial assessment is completed (real result endpoint)', async () => {
+  it('gates the training plan until assessment completion', async () => {
     renderPage(NOUR);
     await heading('نور');
-
+    await openPlan();
     expect(await screen.findByText(PLAN_AFTER_ASSESSMENT)).toBeInTheDocument();
-    expect(screen.queryByRole('list', { name: 'أنشطة الخطة التدريبية' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'إضافة نشاط' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('list', { name: 'ملخص الخطة التدريبية' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /التقييم الأولي: لم يكتمل/ })).toBeInTheDocument();
   });
 
-  it('shows the initial assessment as a compact card that opens its own page', async () => {
+  it('opens the full assessment details from the initial tab', async () => {
     const { router } = renderPage();
     await heading('يوسف');
-
-    const card = await screen.findByRole('link', { name: /التقييم الأولي: مكتمل/ });
-    expect(card).toHaveAttribute('href', paths.childAssessment(YOUSEF));
-    expect(card).toHaveTextContent('النتيجة العامة: 50%');
-    // The details are not embedded in the dashboard.
-    expect(screen.queryByRole('list', { name: 'النتيجة حسب التصنيف' })).not.toBeInTheDocument();
-
-    await userEvent.click(card);
+    await userEvent.click(await screen.findByRole('link', { name: 'عرض التقييم كاملاً' }));
     expect(
       await screen.findByRole('heading', { level: 1, name: 'التقييم الأولي' }),
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe(paths.childAssessment(YOUSEF));
   });
 
-  it('lists the teacher notes read-only and the child report with view / edit links', async () => {
+  it('shows the teacher feedback read-only inside the plan tab', async () => {
     server.use(
       http.get(apiUrl('Teacher/children/:childId/feedbacks'), () =>
         HttpResponse.json([{ id: 'n-1', content: 'يتحسّن في الحروف', createdAt: '2026-10-02' }]),
@@ -101,34 +93,84 @@ describe('SpecialistChildPage — dashboard (client revisions 2026-10)', () => {
     );
     renderPage();
     await heading('يوسف');
-
+    await openPlan();
     const notes = screen.getByRole('region', { name: 'ملاحظات المعلم' });
     expect(await within(notes).findByText('يتحسّن في الحروف')).toBeInTheDocument();
     expect(within(notes).queryByRole('button')).not.toBeInTheDocument();
-    const report = screen.getByRole('region', { name: 'التقرير' });
-    expect(await within(report).findByRole('link', { name: 'عرض التقرير' })).toHaveAttribute(
-      'href',
-      paths.reportDetail('r0000000-0000-4000-8000-000000000001'),
-    );
-    expect(within(report).getByRole('link', { name: 'تعديل التقرير' })).toBeInTheDocument();
   });
 
-  it('offers «إضافة تقرير» for a child without a report (the specialist writes it)', async () => {
+  it('saves edits to the existing report with the real report fields', async () => {
+    let saved: FormData | null = null;
+    server.use(
+      http.put(apiUrl('specialist/:reportId'), async ({ request }) => {
+        saved = await request.formData();
+        return HttpResponse.json({ message: 'تم الحفظ' });
+      }),
+    );
+    renderPage();
+    await heading('يوسف');
+    const title = await screen.findByLabelText(/عنوان التقرير/);
+    await userEvent.clear(title);
+    await userEvent.type(title, 'تقرير محدث');
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ التقرير' }));
+    expect(await screen.findByText('تم حفظ التقرير بنجاح')).toBeInTheDocument();
+    expect(saved).not.toBeNull();
+    expect((saved as FormData | null)?.get('Title')).toBe('تقرير محدث');
+  });
+
+  it('creates a report for the selected child without leaving its file', async () => {
+    let saved: unknown;
+    server.use(
+      http.post(apiUrl('specialist/CreateReport'), async ({ request }) => {
+        saved = await request.json();
+        return HttpResponse.json({});
+      }),
+    );
     renderPage(SALMA);
     await heading('سلمى');
-
-    const report = screen.getByRole('region', { name: 'التقرير' });
-    expect(await within(report).findByText('لا يوجد تقرير لهذا الطفل بعد.')).toBeInTheDocument();
-    expect(within(report).getByRole('link', { name: 'إضافة تقرير' })).toHaveAttribute(
-      'href',
-      `${paths.reportCreate}?childId=${SALMA}`,
-    );
+    await userEvent.type(await screen.findByLabelText(/عنوان التقرير/), 'تقرير جديد');
+    await userEvent.type(screen.getByLabelText(/جوانب تحتاج إلى دعم/), 'تمييز الحروف');
+    await userEvent.type(screen.getByLabelText(/التوصيات/), 'قراءة قصة يومياً');
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ التقرير' }));
+    expect(await screen.findByText('تم حفظ التقرير بنجاح')).toBeInTheDocument();
+    expect(saved).toEqual({
+      childId: SALMA,
+      title: 'تقرير جديد',
+      weaknesses: 'تمييز الحروف',
+      recommendations: 'قراءة قصة يومياً',
+    });
   });
 
-  it('opens the old plan link on the child page', async () => {
+  it('preserves the report draft when saving fails', async () => {
+    server.use(
+      http.put(apiUrl('specialist/:reportId'), () =>
+        HttpResponse.json({ message: 'تعذّر الحفظ' }, { status: 400 }),
+      ),
+    );
+    renderPage();
+    await heading('يوسف');
+    const title = await screen.findByLabelText(/عنوان التقرير/);
+    await userEvent.clear(title);
+    await userEvent.type(title, 'مسودة التقرير');
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ التقرير' }));
+    expect(await screen.findByText('تعذّر الحفظ')).toBeInTheDocument();
+    expect(title).toHaveValue('مسودة التقرير');
+  });
+
+  it('preserves an unsaved report when moving between the two tabs', async () => {
+    renderPage();
+    await heading('يوسف');
+    const title = await screen.findByLabelText(/عنوان التقرير/);
+    await userEvent.clear(title);
+    await userEvent.type(title, 'مسودة لم تحفظ');
+    await openPlan();
+    await userEvent.click(screen.getByRole('tab', { name: 'التقييم المبدئي' }));
+    expect(screen.getByLabelText(/عنوان التقرير/)).toHaveValue('مسودة لم تحفظ');
+  });
+
+  it('opens legacy plan links on the child file', async () => {
     signInAs('Specialist');
     const { router } = renderWithRouter(routes, paths.childPlans(YOUSEF));
-
     await heading('يوسف');
     expect(router.state.location.pathname).toBe(paths.childProfile(YOUSEF));
   });

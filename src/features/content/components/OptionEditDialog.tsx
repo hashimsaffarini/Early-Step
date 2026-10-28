@@ -79,6 +79,7 @@ export function OptionEditDialog({ option, position, onClose }: OptionEditDialog
               value={field.value}
               onChange={field.onChange}
               existingPath={option.imageUrl}
+              mediaKey={`option:${option.id}`}
               error={fieldState.error?.message}
             />
           )}

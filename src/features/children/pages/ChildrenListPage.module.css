@@ -23,3 +23,12 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+.bannerArt {
+  inline-size: clamp(6rem, 22vw, 12rem);
+  block-size: clamp(5rem, 15vw, 8rem);
+  object-fit: cover;
+  border-radius: var(--radius-xl);
+
+  flex-shrink: 0;
+}

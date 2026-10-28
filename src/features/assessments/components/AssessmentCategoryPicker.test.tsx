@@ -33,34 +33,20 @@ function renderPicker(overrides: Partial<AssessmentCategoryPickerProps> = {}) {
 }
 
 describe('AssessmentCategoryPicker', () => {
-  it('is keyboard operable: each card is a native button reached with Tab', async () => {
+  it('offers one keyboard start action for the whole assessment; categories are informational', async () => {
     const props = renderPicker();
-    const list = screen.getByRole('list', { name: 'اختر لعبة أو تصنيفاً:' });
-
-    await userEvent.tab();
-    expect(within(list).getByRole('button', { name: 'العب «تصنيف أ»' })).toHaveFocus();
-    await userEvent.keyboard('{Enter}');
-    expect(props.onSelect).toHaveBeenCalledWith({
-      kind: 'category',
-      category: category('k1', 'تصنيف أ'),
-    });
-
-    await userEvent.tab();
+    const list = screen.getByRole('list', { name: 'تصنيفات التقييم المبدئي' });
+    expect(within(list).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(list).getByText('تصنيف أ')).toBeInTheDocument();
     await userEvent.tab();
     expect(screen.getByRole('button', { name: 'العب الكل دفعة واحدة' })).toHaveFocus();
-    await userEvent.keyboard(' ');
-    expect(props.onSelect).toHaveBeenLastCalledWith({ kind: 'all' });
+    await userEvent.keyboard('{Enter}');
+    expect(props.onSelect).toHaveBeenCalledExactlyOnceWith({ kind: 'all' });
   });
 
-  it('locks every card while a start is in flight', () => {
-    renderPicker({ pendingKey: 'k2' });
-
-    expect(screen.getByRole('button', { name: 'العب «تصنيف ب»' })).toHaveAttribute(
-      'aria-busy',
-      'true',
-    );
-    expect(screen.getByRole('button', { name: 'العب «تصنيف أ»' })).toBeDisabled();
-    expect(screen.getByText('جارٍ البدء…')).toBeInTheDocument();
+  it('prevents another start while the whole assessment is starting', () => {
+    renderPicker({ pendingKey: 'all' });
+    expect(screen.getByRole('button')).toBeDisabled();
   });
 
   it('lays cards out in two shrinkable columns, one on very narrow screens, RTL-safe', () => {

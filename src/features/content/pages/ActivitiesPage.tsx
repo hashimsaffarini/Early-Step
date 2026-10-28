@@ -1,3 +1,4 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import { FolderTree, Gamepad2, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -212,6 +213,7 @@ export function ActivitiesPage() {
                       <span className={styles.rowIcon} aria-hidden="true">
                         <ServerImage
                           path={activity.iconUrl}
+                          mediaKey={mediaKeys.activity(type, activity.id)}
                           alt=""
                           fallback={type === 'game' ? <Gamepad2 /> : <ListChecks />}
                         />

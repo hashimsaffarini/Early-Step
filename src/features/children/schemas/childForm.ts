@@ -1,9 +1,8 @@
 import { z } from 'zod';
+import { MIN_CHILD_AGE, MAX_CHILD_AGE } from '@/constants/children';
+export { MIN_CHILD_AGE, MAX_CHILD_AGE } from '@/constants/children';
 
 const MIN_NAME_LENGTH = 2;
-/** Early Step children are 2 to 10 years old (client revision 2026-10, replaces 4–10). */
-export const MIN_CHILD_AGE = 2;
-export const MAX_CHILD_AGE = 10;
 
 export const CHILD_FORM_MESSAGES = {
   nameRequired: 'اسم الطفل مطلوب',

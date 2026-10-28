@@ -1,0 +1,96 @@
+.game {
+  display: grid;
+  gap: var(--space-5);
+}
+.mission {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  color: var(--color-text-on-dark);
+  background: var(--gradient-brand);
+  border-radius: var(--radius-xl);
+}
+.mission strong {
+  font-size: var(--font-size-xl);
+  flex: 1;
+}
+.mission span {
+  font-weight: var(--font-weight-bold);
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-4);
+  margin: 0;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+}
+.tile {
+  display: grid;
+  place-items: center;
+  gap: var(--space-2);
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 1;
+  padding: var(--space-3);
+  border: 2px solid transparent;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  transition:
+    transform var(--duration-fast),
+    border-color var(--duration-fast);
+}
+.tile:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  transform: translateY(calc(-1 * var(--space-1)));
+}
+.tile:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+.selected {
+  border-color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
+}
+.symbol {
+  font-size: var(--font-size-3xl);
+  overflow-wrap: anywhere;
+  max-inline-size: 100%;
+}
+.label {
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+.image {
+  inline-size: 100%;
+  max-block-size: var(--tap-target-child);
+  object-fit: contain;
+}
+.mark {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
+  color: var(--color-primary-strong);
+  font-weight: var(--font-weight-black);
+}
+@media (min-width: 40rem) {
+  .board {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile {
+    transition: none;
+  }
+  .tile:hover:not(:disabled) {
+    transform: none;
+  }
+}

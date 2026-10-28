@@ -1,0 +1,68 @@
+.root {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+.filters,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  text-align: start;
+}
+.table th,
+.table td {
+  padding: var(--space-4);
+  border-block-end: 1px solid var(--color-border);
+  text-align: start;
+}
+.table thead {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.table tbody tr:last-child > * {
+  border-block-end: 0;
+}
+.activity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: var(--tap-target-child);
+}
+.activity svg,
+.answerIcon svg {
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
+  flex-shrink: 0;
+  color: var(--color-primary-strong);
+}
+.meta {
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--color-text-secondary);
+}
+.details {
+  background: var(--color-primary-soft);
+}
+.empty {
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+.caption {
+  padding: var(--space-3);
+  text-align: start;
+  font-weight: var(--font-weight-bold);
+}

@@ -21,6 +21,7 @@ export interface ChildHeroProgress {
 
 export interface ChildHeroProps {
   name: string;
+  tone?: 'brand' | 'soft';
   /** Short context line above the name (e.g. "ملف الطفل"). */
   eyebrow?: string;
   /** Real child facts only (age, gender, parent, …) — missing ones are simply left out. */
@@ -35,9 +36,16 @@ export interface ChildHeroProps {
  * Specialist child pages): brand cover band, avatar, name, fact chips, actions and — when the plan
  * has activities — its completion with the shared progress bar.
  */
-export function ChildHero({ name, eyebrow, facts, progress, actions }: ChildHeroProps) {
+export function ChildHero({
+  name,
+  eyebrow,
+  facts,
+  progress,
+  actions,
+  tone = 'brand',
+}: ChildHeroProps) {
   return (
-    <header className={styles.hero}>
+    <header className={styles.hero} data-tone={tone}>
       <div className={styles.cover} aria-hidden="true" />
       <div className={styles.body}>
         <Avatar name={name} size="xl" shape="circle" className={styles.avatar} />

@@ -1,9 +1,10 @@
 import { ArrowRight, UserX } from 'lucide-react';
+import { useState } from 'react';
+import { Tabs } from '@/components/ui/Tabs';
 import { Link, useParams } from 'react-router';
 
 import {
   AssessmentPlanGate,
-  AssessmentStatusCard,
   ChildHero,
   childHeroProgress,
   PlanStatGrid,
@@ -12,8 +13,8 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { Button, getButtonClassName } from '@/components/ui/Button';
-import { childFacts, TeacherFeedbackPanel } from '@/features/children';
-import { ChildReportPanel } from '@/features/reports';
+import { AssessmentOverview, childFacts, TeacherFeedbackPanel } from '@/features/children';
+import { ChildReportEditor } from '@/features/reports';
 import { SpecialistPlanEditor, useSpecialistPlan } from '@/features/training-plans';
 import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
 import { useChildrenForRole } from '@/hooks/api/childResources';
@@ -23,15 +24,13 @@ import { summarizePlan } from '@/services/api/planSummary';
 import styles from './ChildDashboardPage.module.css';
 
 /**
- * The specialist's child dashboard (client revisions 2026-10, latest request wins): header with the
- * child's facts (`GET specialist/children`, the teacher from the plan) and the plan's server
- * progress, the plan's stat cards (`TrainingPlan/specialist/children/{id}`: results included), the
- * «التقييم الأولي» card that opens the dedicated assessment page, the plan (teacher, add / remove
- * activities and games, the child's answers) — only once the initial assessment is completed —
- * then the teacher's notes and the child's report (the specialist writes it).
+ * Part 4 specialist child file: initial-assessment / plan tabs, server category results and an
+ * inline report editor. Plan editing and teacher feedback remain in the plan tab. Tab content
+ * stays mounted so a report draft survives switching tabs. Child-data editing is Parent-only.
  */
 export function SpecialistChildPage() {
   const { childId = '' } = useParams();
+  const [tab, setTab] = useState<'assessment' | 'plan'>('assessment');
   const { paths } = useRoleArea();
   const children = useChildrenForRole('Specialist');
   const child = children.data?.find((item) => item.id === childId);
@@ -82,22 +81,31 @@ export function SpecialistChildPage() {
           })}
           progress={childHeroProgress(summary)}
         />
-        {summary && summary.total > 0 ? <PlanStatGrid summary={summary} /> : null}
-        <AssessmentStatusCard status={assessment} to={paths.childAssessment(child.id)} />
-        <div className={styles.columns}>
-          <div className={styles.main}>
+        <Tabs
+          className={styles.fileTabs}
+          label="ملف الطفل"
+          items={[
+            { value: 'assessment', label: 'التقييم المبدئي' },
+            { value: 'plan', label: 'الخطة التدريبية' },
+          ]}
+          value={tab}
+          onChange={setTab}
+        >
+          <div className={styles.main} hidden={tab !== 'assessment'}>
+            <AssessmentOverview status={assessment} detailsTo={paths.childAssessment(child.id)} />
+            <ChildReportEditor childId={child.id} />
+          </div>
+          <div className={styles.main} hidden={tab !== 'plan'}>
+            {summary && summary.total > 0 ? <PlanStatGrid summary={summary} compact /> : null}
             <AssessmentPlanGate status={assessment}>
               <SpecialistPlanEditor
                 child={{ id: child.id, name: child.fullName, teacherName: child.teacherName }}
                 showSummary={false}
               />
             </AssessmentPlanGate>
-          </div>
-          <div className={styles.aside}>
             <TeacherFeedbackPanel childId={child.id} />
-            <ChildReportPanel childId={child.id} />
           </div>
-        </div>
+        </Tabs>
       </>
     );
   }

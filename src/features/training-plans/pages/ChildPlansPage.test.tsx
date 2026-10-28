@@ -46,10 +46,10 @@ describe('ChildPlansPage — read-only roles', () => {
   it('shows the parent the plan activities, their status and real progress', async () => {
     renderPlans('Parent', YOUSEF);
 
-    const list = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    const list = await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
     expect(screen.getByRole('heading', { level: 1, name: 'الخطة التدريبية' })).toBeInTheDocument();
     expect(screen.getByText('للطفل: يوسف')).toBeInTheDocument();
-    expect(list.querySelectorAll(':scope > li')).toHaveLength(2);
+    expect(list.querySelectorAll('tbody > tr > th[scope="row"]')).toHaveLength(2);
     expect(within(list).getByText('مكتمل')).toBeInTheDocument();
     expect(within(list).getByText('لم يكتمل بعد')).toBeInTheDocument();
     // The live child-facing list has no answer counts (verified) — none are shown.
@@ -116,7 +116,7 @@ describe('ChildPlansPage — specialist', () => {
       }
     });
     renderPlans('Specialist', YOUSEF);
-    await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
 
     await userEvent.click(screen.getByRole('button', { name: 'إضافة نشاط' }));
     const dialog = await screen.findByRole('dialog', { name: 'إضافة نشاط إلى الخطة' });
@@ -129,10 +129,10 @@ describe('ChildPlansPage — specialist', () => {
       await within(dialog).findByText('تمت إضافة «اختبار الذاكرة القصيرة» إلى الخطة.'),
     ).toBeInTheDocument();
     expect(body).toEqual({ activityId: 'a0000000-0000-4000-8000-000000000003' });
-    const list = screen.getByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    const list = screen.getByRole('table', { name: 'أنشطة الخطة التدريبية' });
     await waitFor(() => {
       // Direct items only (each completed activity also lists its result figures).
-      expect(list.querySelectorAll(':scope > li')).toHaveLength(3);
+      expect(list.querySelectorAll('tbody > tr > th[scope="row"]')).toHaveLength(3);
     });
     server.events.removeAllListeners();
   });
@@ -171,7 +171,7 @@ describe('ChildPlansPage — specialist', () => {
       ),
     );
     renderPlans('Specialist', YOUSEF);
-    await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
 
     await userEvent.click(screen.getByRole('button', { name: 'إضافة نشاط' }));
     const dialog = await screen.findByRole('dialog', { name: 'إضافة نشاط إلى الخطة' });
@@ -189,7 +189,7 @@ describe('ChildPlansPage — specialist', () => {
 
   it('lists games in the second tab', async () => {
     renderPlans('Specialist', YOUSEF);
-    await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
 
     await userEvent.click(screen.getByRole('button', { name: 'إضافة نشاط' }));
     const dialog = await screen.findByRole('dialog', { name: 'إضافة نشاط إلى الخطة' });
@@ -205,7 +205,7 @@ describe('ChildPlansPage — specialist', () => {
       if (request.method === 'DELETE') deleted.push(new URL(request.url).pathname);
     });
     renderPlans('Specialist', YOUSEF);
-    await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
 
     await userEvent.click(screen.getByRole('button', { name: 'إزالة «اختبار الأعداد» من الخطة' }));
     let dialog = screen.getByRole('dialog', { name: 'إزالة النشاط من الخطة' });
@@ -261,13 +261,11 @@ describe('ChildPlansPage — results (specialist)', () => {
     );
     renderPlans('Specialist', YOUSEF);
 
-    const list = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
-    const result = within(list).getByRole('list', { name: 'نتيجة «اختبار الحروف»' });
-    expect(
-      within(result)
-        .getAllByRole('listitem')
-        .map((item) => item.textContent),
-    ).toEqual(['النتيجة75%', 'الصحيحة3', 'الخاطئة1']);
+    const list = await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
+    const row = within(list).getByRole('rowheader', { name: 'اختبار الحروف' }).closest('tr');
+    if (!row) throw new Error('activity row missing');
+    expect(within(row).getByText('75%')).toBeInTheDocument();
+    expect(within(row).getByText('3 إجابات صحيحة')).toBeInTheDocument();
     expect(screen.getByRole('progressbar', { name: 'نسبة إنجاز الخطة' })).toHaveAttribute(
       'aria-valuenow',
       '50',
@@ -388,7 +386,7 @@ describe('ChildPlansPage — teacher assignment (specialist)', () => {
   it('is not offered to read-only roles', async () => {
     renderPlans('Parent', YOUSEF);
 
-    await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
     expect(screen.queryByLabelText('اختر المعلم')).not.toBeInTheDocument();
   });
 });

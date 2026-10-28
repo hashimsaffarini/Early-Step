@@ -1,3 +1,4 @@
+import { rememberAssessmentActions } from './assessmentSelectionCache';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { ActivityType } from '@/services/api/activityType';
@@ -129,8 +130,16 @@ export const useDeleteActivity = () =>
   );
 
 export const useCreateQuestion = () =>
-  useContentMutation(({ activityId, input }: { activityId: string; input: QuestionInput }) =>
-    createQuestion(activityId, input),
+  useContentMutation(
+    ({
+      activityId,
+      input,
+      activityType,
+    }: {
+      activityId: string;
+      input: QuestionInput;
+      activityType?: ActivityType | undefined;
+    }) => createQuestion(activityId, input, activityType),
   );
 export const useUpdateQuestionInfo = () =>
   useContentMutation(({ id, input }: { id: string; input: QuestionInfoInput }) =>
@@ -171,6 +180,25 @@ export function useSaveCorrectAnswers() {
       for (const step of planCorrectAnswerUpdates(question, choice)) {
         await updateOption(step.optionId, step.input);
       }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.content.all }),
+  });
+}
+
+/** Batch include uses the documented questionIds payload; removals are acknowledged one by one. */
+export function useSetAssessmentQuestions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ids, include }: { ids: string[]; include: boolean }) => {
+      if (ids.length === 0) return;
+      if (include) {
+        await addQuestionsToAssessment(ids);
+        rememberAssessmentActions(ids, true);
+      } else
+        for (const id of ids) {
+          await removeQuestionFromAssessment(id);
+          rememberAssessmentActions([id], false);
+        }
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.content.all }),
   });

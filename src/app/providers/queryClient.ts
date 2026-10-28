@@ -8,7 +8,7 @@ const MAX_QUERY_RETRIES = 2;
 
 /** Errors that will not succeed on retry (client errors, auth, cancellation). */
 function isRetryable(error: AppError): boolean {
-  if (error.kind === 'canceled') return false;
+  if (error.kind === 'canceled' || error.kind === 'configuration') return false;
   if (error.status === undefined) return true;
   return error.status >= HTTP_STATUS.INTERNAL_SERVER_ERROR;
 }

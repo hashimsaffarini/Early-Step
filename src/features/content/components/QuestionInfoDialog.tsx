@@ -74,6 +74,7 @@ export function QuestionInfoDialog({ question, onClose }: QuestionInfoDialogProp
               value={field.value}
               onChange={field.onChange}
               existingPath={question.imageUrl}
+              mediaKey={`question:${question.id}`}
               error={fieldState.error?.message}
             />
           )}

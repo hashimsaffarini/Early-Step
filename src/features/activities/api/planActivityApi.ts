@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
+import {
+  correctedQuestionText,
+  recalledQuestionContent,
+  rememberQuestionContent,
+} from '@/services/api/questionContentCache';
 
 import {
   toChoiceQuestionType,
@@ -63,17 +68,30 @@ export function parsePlanActivityDetail(data: unknown): PlanActivityDetail {
   const parsed = detailSchema.parse(data);
   return {
     activity: mapPlanActivity(parsed),
-    questions: (parsed.questions ?? []).map((question) => ({
-      id: question.questionId,
-      text: question.questionText ?? '',
-      imageUrl: question.questionImageUrl ?? null,
-      type: toChoiceQuestionType(question.type),
-      options: (question.options ?? []).map((option) => ({
+    questions: (parsed.questions ?? []).map((question) => {
+      const type = toChoiceQuestionType(question.type);
+      const cached = recalledQuestionContent(question.questionId);
+      const supplied = (question.options ?? []).map((option) => ({
         id: option.id,
         text: option.optionText ?? '',
         imageUrl: option.optionImageUrl ?? null,
-      })),
-    })),
+      }));
+      const result: PlanQuestion = {
+        id: question.questionId,
+        text: correctedQuestionText(question.questionText ?? ''),
+        imageUrl: question.questionImageUrl ?? null,
+        type,
+        options:
+          supplied.length > 0
+            ? supplied
+            : cached?.type === type &&
+                cached.text === correctedQuestionText(question.questionText ?? '')
+              ? cached.options
+              : [],
+      };
+      if (supplied.length > 0) rememberQuestionContent(result);
+      return result;
+    }),
   };
 }
 

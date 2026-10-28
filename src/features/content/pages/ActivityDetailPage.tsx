@@ -1,3 +1,6 @@
+import { mediaKeys } from '@/services/media/localMedia';
+import { resolveGameTemplate } from '@/components/games';
+import { gameLevelDraft } from '../components/gameLevelDrafts';
 import { ArrowRight, Gamepad2, ListChecks, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
@@ -15,6 +18,7 @@ import { useActivity } from '../api/contentQueries';
 import styles from '../components/content.module.css';
 import { ContentPage } from '../components/ContentPage';
 import { QuestionCard } from '../components/QuestionCard';
+import { GamePreviewDialog } from '../components/GamePreviewDialog';
 import { GameTemplatePanel } from '../components/GameTemplatePanel';
 import { QuestionFormDialog } from '../components/QuestionFormDialog';
 import { QueryStatus } from '../components/QueryStatus';
@@ -26,6 +30,8 @@ export function ActivityDetailPage() {
   const type = normalizeActivityType(activityType);
   const activityQuery = useActivity(type, activityId);
   const [isAdding, setIsAdding] = useState(false);
+  const [useDraft, setUseDraft] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const listPath = `${ADMIN_PATHS.activities}?type=${type ?? 'test'}`;
   const backLink = (
     <Link to={listPath} className={getButtonClassName({ variant: 'ghost', size: 'sm' })}>
@@ -66,6 +72,7 @@ export function ActivityDetailPage() {
             <span className={styles.detailIcon}>
               <ServerImage
                 path={activity.iconUrl}
+                mediaKey={mediaKeys.activity(type, activity.id)}
                 alt={`أيقونة ${activity.title || 'النشاط'}`}
                 fallback={
                   type === 'game' ? (
@@ -105,9 +112,49 @@ export function ActivityDetailPage() {
             </div>
           </Card>
           {type === 'game' ? (
-            <GameTemplatePanel slug={activity.slug} questions={activity.questions} />
+            <>
+              <GameTemplatePanel slug={activity.slug} questions={activity.questions} />
+              <Button
+                variant="outline"
+                iconStart={<Gamepad2 aria-hidden="true" />}
+                onClick={() => {
+                  setIsPreviewing(true);
+                }}
+              >
+                معاينة اللعبة
+              </Button>
+              {isPreviewing ? (
+                <GamePreviewDialog
+                  activity={activity}
+                  onClose={() => {
+                    setIsPreviewing(false);
+                  }}
+                />
+              ) : null}
+            </>
           ) : null}
 
+          {type === 'game' ? (
+            <Card className={styles.templatePanel}>
+              <div className={styles.rowMain}>
+                <h2 className={styles.rowTitle}>محتوى اللعبة</h2>
+                <p className={styles.muted}>
+                  أضف مستويات بالصور أو الرموز. يمكنك البدء بمستوى جاهز، وتعديل محتواه وصوره قبل
+                  حفظه.
+                </p>
+              </div>
+              <Button
+                variant="soft"
+                iconStart={<Gamepad2 aria-hidden="true" />}
+                onClick={() => {
+                  setUseDraft(true);
+                  setIsAdding(true);
+                }}
+              >
+                إضافة مستوى جاهز
+              </Button>
+            </Card>
+          ) : null}
           <div className={styles.toolbar}>
             <h2
               className={styles.rowTitle}
@@ -115,6 +162,7 @@ export function ActivityDetailPage() {
             <Button
               iconStart={<Plus aria-hidden="true" />}
               onClick={() => {
+                setUseDraft(false);
                 setIsAdding(true);
               }}
             >
@@ -133,6 +181,11 @@ export function ActivityDetailPage() {
           {isAdding ? (
             <QuestionFormDialog
               activityId={activity.id}
+              activityType={type}
+              isGameLevel={type === 'game'}
+              initialValues={
+                useDraft ? gameLevelDraft(resolveGameTemplate(activity.slug)?.slug) : undefined
+              }
               onClose={() => {
                 setIsAdding(false);
               }}

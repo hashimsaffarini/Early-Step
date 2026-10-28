@@ -1,3 +1,4 @@
+import { rememberQuestionContent } from '@/services/api/questionContentCache';
 import { parseCategoriesResponse, parseStartResponse } from './assessmentApi';
 
 describe('parseStartResponse (live contract 2026-10-14)', () => {
@@ -65,5 +66,57 @@ describe('parseCategoriesResponse (live contract 2026-10-16)', () => {
 
   it('rejects an unexpected shape', () => {
     expect(() => parseCategoriesResponse([{ id: 'a' }])).toThrow();
+  });
+});
+
+describe('missing options with a previously observed local copy', () => {
+  it('restores the real choice ids instead of inventing choices', () => {
+    rememberQuestionContent({
+      id: 'q-real',
+      text: 'ما الحرف الأول؟',
+      type: 'SingleChoice',
+      imageUrl: null,
+      options: [
+        { id: 'real-d', text: 'د', imageUrl: null },
+        { id: 'real-b', text: 'ب', imageUrl: null },
+      ],
+    });
+    const result = parseStartResponse({
+      assessmentId: 'as-1',
+      categories: [
+        {
+          name: 'القراءة',
+          questions: [
+            { id: 'q-real', questionText: 'ما الحرف الأول؟', type: 'SingleChoice', options: [] },
+          ],
+        },
+      ],
+    });
+    expect(result.questions[0]?.options.map((option) => option.id)).toEqual(['real-d', 'real-b']);
+    expect(result.questions[0]?.isLocalContent).toBe(true);
+  });
+  it('prefers current server options and never reuses another question or another type', () => {
+    rememberQuestionContent({
+      id: 'q-real',
+      text: 'سؤال',
+      type: 'SingleChoice',
+      imageUrl: null,
+      options: [{ id: 'old', text: 'قديم', imageUrl: null }],
+    });
+    const parsed = parseStartResponse({
+      assessmentId: 'as-1',
+      categories: [
+        {
+          questions: [
+            { id: 'q-real', type: 'SingleChoice', options: [{ id: 'new', optionText: 'جديد' }] },
+            { id: 'other', type: 'SingleChoice', options: [] },
+            { id: 'q-real', type: 'Sequence', options: [] },
+          ],
+        },
+      ],
+    });
+    expect(parsed.questions.map((question) => question.options.map((option) => option.id))).toEqual(
+      [['new'], [], []],
+    );
   });
 });

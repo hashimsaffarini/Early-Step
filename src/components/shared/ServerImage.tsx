@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react';
 
+import { useLocalMedia } from '@/hooks/useLocalMedia';
 import { resolveMediaUrl } from '@/services/api/mediaUrl';
 
 export interface ServerImageProps {
   path: string | null;
+  mediaKey?: string | undefined;
   alt: string;
   className?: string | undefined;
   /** Neutral placeholder when the server sent no image or it failed to load. */
@@ -14,10 +16,12 @@ export interface ServerImageProps {
  * Server-relative image (`/uploads/...`, resolved against the API host). When the field is null or
  * the image fails to load, renders `fallback` (default: nothing) — never an invented image.
  */
-export function ServerImage({ path, alt, className, fallback = null }: ServerImageProps) {
-  const [failed, setFailed] = useState(false);
-  const src = resolveMediaUrl(path);
-  if (!src || failed) return fallback;
+export function ServerImage({ path, alt, className, fallback = null, mediaKey }: ServerImageProps) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const remote = resolveMediaUrl(path);
+  const local = useLocalMedia(mediaKey, path);
+  const src = remote && failedSrc !== remote ? remote : local;
+  if (!src || failedSrc === src) return fallback;
   return (
     <img
       src={src}
@@ -25,7 +29,7 @@ export function ServerImage({ path, alt, className, fallback = null }: ServerIma
       className={className}
       loading="lazy"
       onError={() => {
-        setFailed(true);
+        setFailedSrc(src);
       }}
     />
   );
@@ -35,4 +39,5 @@ export function ServerImage({ path, alt, className, fallback = null }: ServerIma
  * Admin notice for an image the server has a path for but does not serve (live 2026-10-16: every
  * `/uploads/...` file answers 404 — BACKEND_REQUESTS). The upload itself was saved.
  */
-export const IMAGE_NOT_SERVED = 'الصورة محفوظة لكن الخادم لا يعرضها حالياً.';
+export const IMAGE_NOT_SERVED =
+  'الصورة غير متاحة على الخادم ولا توجد نسخة محلية منها. أعد اختيار الملف الأصلي وحفظه لعرضه على هذا المتصفح.';

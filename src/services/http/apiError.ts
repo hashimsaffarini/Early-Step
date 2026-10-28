@@ -1,9 +1,11 @@
 import { isAxiosError, isCancel } from 'axios';
+import { ConfigurationError } from '@/config/configurationError';
 
 import { HTTP_STATUS } from '@/services/http/httpStatus';
 
 /** How the request failed — lets UI branch without inspecting raw errors. */
-export type AppErrorKind = 'http' | 'network' | 'timeout' | 'canceled' | 'unknown';
+export type AppErrorKind =
+  'http' | 'network' | 'timeout' | 'canceled' | 'configuration' | 'unknown';
 
 export interface AppErrorOptions {
   kind: AppErrorKind;
@@ -102,6 +104,9 @@ function messageForStatus(status: number): string {
 /** Converts anything thrown during a request into an `AppError`. */
 export function normalizeError(error: unknown): AppError {
   if (isAppError(error)) return error;
+  if (error instanceof ConfigurationError) {
+    return new AppError(error.message, { kind: 'configuration', code: error.code, cause: error });
+  }
 
   if (isCancel(error)) {
     return new AppError(FALLBACK_MESSAGES.canceled, { kind: 'canceled', cause: error });

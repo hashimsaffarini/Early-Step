@@ -1,3 +1,4 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import { ServerImage } from '@/components/shared/ServerImage';
 
 import styles from './AnswerOptionList.module.css';
@@ -28,9 +29,10 @@ export function AnswerOptionList({ label, options, isOrdered = false }: AnswerOp
       <List className={styles.options}>
         {options.map((option, index) => (
           <li key={option.id ?? index} className={styles.option}>
-            {option.imageUrl ? (
+            {option.imageUrl || option.id ? (
               <ServerImage
                 path={option.imageUrl}
+                mediaKey={option.id ? mediaKeys.option(option.id) : undefined}
                 alt={option.text ? '' : 'صورة الإجابة'}
                 className={styles.image}
               />

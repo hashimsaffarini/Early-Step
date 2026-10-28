@@ -1,6 +1,6 @@
-# Game engine — four Early Step games (client revision 2026-10)
+# Game engine — Early Step games (client revision 2026-10)
 
-Early Step ships four reusable, child-friendly **game engines**. They are frontend product code;
+Early Step ships five reusable, child-friendly **game engines**. They are frontend product code;
 every game the child plays is a **real backend Activity of type `game`**: its title, icon, questions,
 options and saved result come from the API. Nothing about a child's game (assignment, answers,
 score, completion) is invented or stored only in the browser.
@@ -17,14 +17,14 @@ Admin creates a game Activity (template saved in `Slug`) → adds its questions
 `src/components/games/` (shared layer — both the Admin content feature and the activities player
 use it, and features never import each other):
 
-| File                                                                    | Role                                                                                  |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `types.ts`                                                              | `GameSlug`, `GameTemplate`, `GameQuestion`, `ChallengeProps`                          |
-| `registry.ts`                                                           | `GAME_TEMPLATES`, `resolveGameTemplate(slug)`, `buildGameSlug`, `engineFor`           |
-| `shared/GameStage.tsx`                                                  | One game look: identity band, progress, the real question (text + image), instruction |
-| `shared/GameOptionCard.tsx`                                             | Big colourful option card (native button; server image or text; selected / order)     |
-| `shared/GameChallenge.tsx`                                              | Renders one question with the right engine                                            |
-| `letter-hunt/`, `number-match/`, `memory-sequence/`, `focus-challenge/` | The four engines (one question each)                                                  |
+| File                                                                                | Role                                                                                  |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `types.ts`                                                                          | `GameSlug`, `GameTemplate`, `GameQuestion`, `ChallengeProps`                          |
+| `registry.ts`                                                                       | `GAME_TEMPLATES`, `resolveGameTemplate(slug)`, `buildGameSlug`, `engineFor`           |
+| `shared/GameStage.tsx`                                                              | One game look: identity band, progress, the real question (text + image), instruction |
+| `shared/GameOptionCard.tsx`                                                         | Big colourful option card (native button; server image or text; selected / order)     |
+| `shared/GameChallenge.tsx`                                                          | Renders one question with the right engine                                            |
+| `letter-hunt/`, `number-match/`, `memory-sequence/`, `focus-challenge/`, `spot-it/` | The five engines (one level each)                                                     |
 
 The registry holds only template metadata (slug, Arabic name, purpose, description, instruction,
 compatible question types, icon, tone, engine). No student data, no activities.
@@ -32,20 +32,26 @@ compatible question types, icon, tone, engine). No student data, no activities.
 The runner is `features/activities/components/PlanGameRun.tsx`; the routing decision is in
 `PlanActivityPlayerPage`.
 
-## 2. The four games
+## 2. The game templates
 
-| Slug              | Arabic name  | Purpose           | Question type | Interaction                                                                               | Answer sent                    |
-| ----------------- | ------------ | ----------------- | ------------- | ----------------------------------------------------------------------------------------- | ------------------------------ |
-| `letter-hunt`     | صيد الحروف   | الحروف والقراءة   | SingleChoice  | Big letter cards; tap one (replaces the choice)                                           | `selectedOptionId`             |
-| `number-match`    | طابق الرقم   | الأرقام والحساب   | SingleChoice  | Large round number cards (the server's options — nothing counted or invented)             | `selectedOptionId`             |
-| `memory-sequence` | تحدي الذاكرة | الذاكرة والتسلسل  | Sequence      | Tap-to-order (no drag needed): numbered badges + «ترتيبك» slots, «تراجع», «إعادة الترتيب» | `orderedOptionIds` (tap order) |
-| `focus-challenge` | تحدي التركيز | التركيز والانتباه | MultiSelect   | Grid of cards to select / unselect, counter «اخترت n من m», «مسح الاختيار»                | `selectedOptionIds`            |
+| Slug              | Arabic name  | Purpose           | Question type              | Interaction                                                                               | Answer sent                    |
+| ----------------- | ------------ | ----------------- | -------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------ |
+| `spot-it`         | ابحث وجِد!   | البحث البصري      | SingleChoice / MultiSelect | Visual search board; select the real target tiles                                         | Existing choice answer         |
+| `letter-hunt`     | صيد الحروف   | الحروف والقراءة   | SingleChoice               | Big letter cards; tap one (replaces the choice)                                           | `selectedOptionId`             |
+| `number-match`    | طابق الرقم   | الأرقام والحساب   | SingleChoice               | Large round number cards (the server's options — nothing counted or invented)             | `selectedOptionId`             |
+| `memory-sequence` | تحدي الذاكرة | الذاكرة والتسلسل  | Sequence                   | Tap-to-order (no drag needed): numbered badges + «ترتيبك» slots, «تراجع», «إعادة الترتيب» | `orderedOptionIds` (tap order) |
+| `focus-challenge` | تحدي التركيز | التركيز والانتباه | MultiSelect                | Grid of cards to select / unselect, counter «اخترت n من m», «مسح الاختيار»                | `selectedOptionIds`            |
 
 Correctness is never decided on the device: the server scores the submission. Option images are
 shown when the server sends them; a missing or failing image falls back to the option text (or
 «الخيار n») — never a broken image. All cards are native buttons (keyboard, focus ring,
 `aria-pressed`, Arabic labels), motion respects `prefers-reduced-motion`, layout uses logical CSS
 properties (RTL) and two shrinkable columns on phones.
+
+**Visual search.** `spot-it` renders one real option per tile, including repeated picture labels
+with distinct backend ids. SingleChoice and MultiSelect are supported; selected tiles indicate
+selection, not correctness. No timer, target count, score or reward is invented. The video
+reference is reproduced as a visual search interaction over Admin-authored content.
 
 **Mixed questions.** A question whose type is not the template's own type is played with the engine
 made for that type (SingleChoice → letter cards, Sequence → memory, MultiSelect → focus), so every
@@ -62,7 +68,7 @@ Questions are never rewritten.
 - **Reading it in the player (missing):** the live Training Plan endpoints the Parent / Teacher
   player uses (`GET TrainingPlan/children/{id}/activities[/{activityId}]`, verified 2026-10-15)
   do **not** return `slug`. The app already reads an optional `slug` there; **until the backend
-  adds it, game activities open in the generic player** (they keep working). Backend request:
+  adds it, game activities use the visual-search default (ordering for Sequence)** (they keep working). Backend request:
   return the activity `slug` on the Training Plan activity responses (and optionally on
   `available-activities`).
 - **Answers:** `toChoiceAnswer` (shared with the generic player and the initial assessment).
@@ -76,11 +82,11 @@ Questions are never rewritten.
 Same route as before (no new URL, no extra ids exposed):
 `/{parent|teacher}/children/:childId/activities/:activityId/play`.
 
-| Activity                             | Player                     |
-| ------------------------------------ | -------------------------- |
-| type ≠ game                          | generic activity player    |
-| game, known slug (`letter-hunt[-…]`) | the template's game engine |
-| game, unknown slug or no slug        | generic activity player    |
+| Activity                             | Player                          |
+| ------------------------------------ | ------------------------------- |
+| type ≠ game                          | generic activity player         |
+| game, known slug (`letter-hunt[-…]`) | the template's game engine      |
+| game, unknown slug or no slug        | visual search / ordering engine |
 
 An activity completed before the page opened shows «أُنجز هذا النشاط» (one attempt). After this
 session's submission the completion screen stays and shows the saved result **only with what the
@@ -94,9 +100,10 @@ reload: the browser's prompt). Temporary per-question state lives in component s
 
 الأنشطة والأسئلة → الألعاب:
 
-- «قوالب الألعاب»: the four templates (name, purpose, question types) with «إنشاء لعبة» — an
+- «قوالب الألعاب»: the game templates (name, purpose, question types) with «إنشاء لعبة» — an
   explicit action that opens the normal form with the template chosen. Nothing is created
-  automatically and no starter content is injected.
+  automatically. «إضافة مستوى جاهز» opens an editable level draft: the Admin reviews and saves
+  real questions/options. «معاينة اللعبة» previews saved content without recording results.
 - «إضافة لعبة» / edit: «نوع اللعبة» (or «بدون قالب (المشغّل العام)»); the chosen template shows its
   purpose, description and compatible question types; the slug follows the template (a suffix is
   kept when switching) and a slug that does not start with the template is rejected in Arabic.
@@ -117,6 +124,6 @@ accepts the Parent only; a Teacher submission shows the server's error.
 
 ## 8. Mock mode
 
-Mock mode (development only) gives the child «نور» four game rows (one per template) whose
+Mock mode (development only) gives the child «نور» four original game rows whose
 child-facing detail includes the requested `slug`, so the engines can be reviewed end to end. This
 mock field is marked as a requested backend field; production never uses mock data.

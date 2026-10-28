@@ -1,3 +1,4 @@
+import { correctedQuestionText } from '@/services/api/questionContentCache';
 import { z } from 'zod';
 
 import { normalizeActivityType, type ActivityType } from '@/services/api/activityType';
@@ -231,7 +232,7 @@ export async function fetchPlanActivityResult(
     activity: mapPlanActivity(dto),
     questions: (dto.questions ?? []).map((question) => ({
       id: question.questionId,
-      text: question.questionText?.trim() ?? '',
+      text: correctedQuestionText(question.questionText?.trim() ?? ''),
       type: question.type ?? null,
       imageUrl: question.questionImageUrl ?? null,
       selected: (question.selectedOptions ?? []).map((option) => ({

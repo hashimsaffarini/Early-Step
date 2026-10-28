@@ -624,3 +624,65 @@ from the plan activity's `slug` when the server sends it, and otherwise keeps th
 **Consequences.** No backend contract change for saving; reading needs the backend to return `slug`
 on the Training Plan activity responses (`BACKEND_REQUESTS.md` #9). Until then live games use the
 generic player. Details: `docs/GAME_ENGINE.md`.
+
+## ADR-027 — Part 4 child files and visual-search games
+
+**Date:** 2026-10-28 · **Status:** Accepted by the client request
+
+The part 4 document replaces per-category assessment starts with one all-category start. Specialist
+child files use initial-assessment / plan tabs and an inline editor over the report's existing three
+fields. Teacher history uses a shared activity table; app-level composition keeps feature boundaries.
+Initial results are shown by their actual API category grouping, with no invented activity results.
+
+A fifth shared game engine, `spot-it`, presents real options as a visual-search board. Games without
+usable template metadata use this default (Sequence still uses the ordering engine), replacing the
+previous generic fallback in ADR-026. Editable authoring drafts provide requested game content only
+through an explicit Admin save; no player content, correctness, score or completion is fabricated.
+The saved-content preview performs no mutations. Unknown question membership stays unknown.
+
+Child-data editing remains Parent-only, explicitly confirmed by the user. Live image 404s and Teacher
+answer permissions remain backend issues. Details and requirement mapping: `CLIENT_REVISIONS_PART4.md`.
+
+## ADR-028 — Initialize public local configuration and preserve configuration failures
+
+**Date:** 2026-10-28 · **Status:** Accepted
+
+A fresh GitHub checkout has no gitignored `.env`. Lazy environment validation previously threw a
+plain Error inside the Axios request interceptor; error normalization replaced it with the generic
+unknown-error message before any network request. Login and registration therefore appeared to
+fail without an HTTP status.
+
+`npm run dev` now initializes `.env` from the public template only when no `.env` or terminal API
+URL exists. It never replaces a student's existing file. Environment validation uses a dedicated
+ConfigurationError, mapped to an actionable AppError with kind `configuration`; arbitrary unknown
+errors still keep the safe generic message. `/api` is normalized to `/api/`; non-HTTP URLs or a base
+URL with a query/hash are rejected. Production retains a nontechnical configuration-failure message.
+No credentials or backend defaults are hardcoded into the HTTP client, and production builds still
+use their supplied environment values. Registration is not probed by creating real accounts.
+
+## ADR-029 — Client-approved temporary frontend content fallbacks
+
+**Date:** 2026-10-28 · **Status:** Accepted by explicit client request
+
+The client requested that public uploaded content images display immediately without waiting for
+backend static-file repair, and asked for every feasible frontend fix. This supersedes the earlier
+choice to show only a missing-image notice when the image server returns 404.
+
+After an acknowledged upload, the original image blob is stored under the real entity id and,
+when known, its server URL. Shared image rendering uses this copy when the server image fails or
+has no path. CacheStorage persists blobs across reloads on HTTPS/localhost; memory supports the
+current visit if persistent storage is denied. The cache is scoped to the API URL, expires after
+seven days, and keeps at most 64 entries. It is local to the browser and website origin, not a
+replacement for shared hosting. Existing missing images with no local original must be selected
+again. Only content images are involved; authentication and child answers/results are not cached.
+A failed API upload never replaces a previous local copy or turns into a successful mutation.
+
+Missing question choices may use a previously observed real content snapshot only when question
+id, text and type match. Correctness and other admin-only fields are stripped. Fresh server choices
+win, explicit deletes invalidate snapshots, and official answer submission remains server-controlled.
+No synthetic option ids or fabricated child results are introduced. The reported missing-راء phrase
+«تّب الحروف التالية لتكوين كلمة» is corrected for display without changing question/option ids.
+
+Initial-assessment question controls support batch include/removal using existing endpoints. Only
+acknowledged changes are remembered locally. Mixed checkboxes denote unknown/partial states, and
+the UI labels this as local history rather than claiming a global backend membership read.

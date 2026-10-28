@@ -2,6 +2,7 @@ import { Brain, Hash, ScanSearch, Type } from 'lucide-react';
 
 import type { ChoiceQuestionType } from '@/components/players';
 
+import { SpotIt } from './spot-it/SpotIt';
 import { FocusChallenge } from './focus-challenge/FocusChallenge';
 import { LetterHunt } from './letter-hunt/LetterHunt';
 import { MemorySequence } from './memory-sequence/MemorySequence';
@@ -13,6 +14,17 @@ import { GAME_SLUGS, type ChallengeProps, type GameSlug, type GameTemplate } fro
  * activity, its questions, options and the saved result always come from the backend.
  */
 export const GAME_TEMPLATES: Readonly<Record<GameSlug, GameTemplate>> = {
+  'spot-it': {
+    slug: 'spot-it',
+    name: 'ابحث وجِد!',
+    purpose: 'البحث البصري والتركيز',
+    description: 'لوحة صور ورموز: يبحث الطفل عن العناصر المطلوبة ويختارها بالضغط عليها.',
+    instruction: 'ابحث عن العناصر المطلوبة في اللوحة، ثم اضغط «التالي».',
+    questionTypes: ['SingleChoice', 'MultiSelect'],
+    icon: ScanSearch,
+    tone: 'attention',
+    Challenge: SpotIt,
+  },
   'letter-hunt': {
     slug: 'letter-hunt',
     name: 'صيد الحروف',

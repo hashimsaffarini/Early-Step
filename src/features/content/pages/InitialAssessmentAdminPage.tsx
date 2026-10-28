@@ -1,6 +1,5 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import {
-  CircleCheck,
-  CircleDashed,
   CircleMinus,
   CirclePlus,
   ClipboardCheck,
@@ -24,19 +23,22 @@ import {
   useCategories,
   useCategoryQuestions,
   useToggleAssessmentCategory,
-  useToggleAssessmentQuestion,
+  useSetAssessmentQuestions,
 } from '../api/contentQueries';
 import styles from '../components/content.module.css';
+import { AssessmentCategoryBrowser } from '../components/AssessmentCategoryBrowser';
 import { ContentPage } from '../components/ContentPage';
 import { QueryStatus } from '../components/QueryStatus';
 import { ACTIVITY_TYPE_SINGULAR, QUESTION_TYPE_LABELS, type Category } from '../types';
 
-type QuestionAction = 'added' | 'removed';
-type QuestionActions = Record<string, QuestionAction>;
+import { readAssessmentActions, type QuestionActions } from '../api/assessmentSelectionCache';
+import { AssessmentMembershipCheckbox } from '../components/AssessmentMembershipCheckbox';
 
 interface QuestionActionsProps {
   actions: QuestionActions;
   onToggle: (questionId: string, include: boolean) => void;
+  onToggleGroup: (ids: string[], include: boolean) => void;
+  pending: boolean;
 }
 
 /**
@@ -47,6 +49,8 @@ function CategoryQuestions({
   category,
   actions,
   onToggle,
+  onToggleGroup,
+  pending,
 }: { category: Category } & QuestionActionsProps) {
   const query = useCategoryQuestions(category.id);
   const groups = query.data ?? [];
@@ -70,6 +74,7 @@ function CategoryQuestions({
             <span className={styles.treeIcon} aria-hidden="true">
               <ServerImage
                 path={group.activity.iconUrl}
+                mediaKey={mediaKeys.activity(group.activity.type ?? '', group.activity.id)}
                 alt=""
                 fallback={group.activity.type === 'game' ? <Gamepad2 /> : <ClipboardList />}
               />
@@ -82,6 +87,28 @@ function CategoryQuestions({
             </span>
             <span className={styles.muted}>{`(${group.questions.length.toString()} أسئلة)`}</span>
           </h4>
+          <AssessmentMembershipCheckbox
+            label={`تضمين جميع أسئلة ${group.activity.title}`}
+            value={
+              group.questions.every((question) => actions[question.id] === 'added')
+                ? true
+                : group.questions.every((question) => actions[question.id] === 'removed')
+                  ? false
+                  : null
+            }
+            disabled={
+              pending ||
+              group.questions.some(
+                (question) => question.options.length === 0 || question.type === null,
+              )
+            }
+            onChange={(include) => {
+              onToggleGroup(
+                group.questions.map((question) => question.id),
+                include,
+              );
+            }}
+          />
           <ol className={styles.questionList}>
             {group.questions.map((question, index) => {
               const label = question.text || `السؤال ${(index + 1).toString()}`;
@@ -91,10 +118,20 @@ function CategoryQuestions({
                   <span className={styles.questionNumber} aria-hidden="true">
                     {(index + 1).toString()}
                   </span>
+                  <AssessmentMembershipCheckbox
+                    compact
+                    label={`تضمين السؤال: ${label}`}
+                    value={action ? action === 'added' : null}
+                    disabled={pending || question.options.length === 0 || question.type === null}
+                    onChange={(include) => {
+                      onToggle(question.id, include);
+                    }}
+                  />
                   {question.imageUrl ? (
                     <span className={styles.questionThumb}>
                       <ServerImage
                         path={question.imageUrl}
+                        mediaKey={mediaKeys.question(question.id)}
                         alt={`صورة السؤال ${(index + 1).toString()}`}
                         fallback={<ImageIcon aria-hidden="true" />}
                       />
@@ -108,8 +145,8 @@ function CategoryQuestions({
                     {action ? (
                       <p className={styles.muted} role="status">
                         {action === 'added'
-                          ? 'أُضيف إلى التقييم في هذه الجلسة.'
-                          : 'أُزيل من التقييم في هذه الجلسة.'}
+                          ? 'آخر إجراء محفوظ على هذا المتصفح: إضافة إلى التقييم.'
+                          : 'آخر إجراء محفوظ على هذا المتصفح: إزالة من التقييم.'}
                       </p>
                     ) : null}
                   </div>
@@ -160,8 +197,8 @@ export function InitialAssessmentAdminPage() {
   const categoriesQuery = useCategories();
   const memberIds = useAssessmentCategoryIds();
   const toggleCategory = useToggleAssessmentCategory();
-  const toggleQuestion = useToggleAssessmentQuestion();
-  const [questionActions, setQuestionActions] = useState<QuestionActions>({});
+  const toggleQuestion = useSetAssessmentQuestions();
+  const [questionActions, setQuestionActions] = useState<QuestionActions>(readAssessmentActions);
 
   const memberSet = new Set(memberIds.data ?? []);
   const categories = categoriesQuery.data ?? [];
@@ -173,18 +210,18 @@ export function InitialAssessmentAdminPage() {
     void memberIds.refetch();
   };
 
-  const runQuestion = (questionId: string, include: boolean) => {
+  const runQuestions = (ids: string[], include: boolean) => {
     toggleQuestion.mutate(
-      { id: questionId, include },
+      { ids, include },
       {
-        onSuccess: () => {
-          setQuestionActions((current) => ({
-            ...current,
-            [questionId]: include ? 'added' : 'removed',
-          }));
+        onSettled: () => {
+          setQuestionActions(readAssessmentActions());
         },
       },
     );
+  };
+  const runQuestion = (id: string, include: boolean) => {
+    runQuestions([id], include);
   };
 
   const categoryButton = (category: Category) => {
@@ -239,7 +276,8 @@ export function InitialAssessmentAdminPage() {
           <>
             <Alert tone="info">
               لا توفّر الواجهة البرمجية قائمة بالأسئلة المضافة حالياً إلى التقييم، لذا تظهر حالة
-              السؤال فقط للإجراءات التي نفّذتها في هذه الجلسة.
+              السؤال من آخر الإجراءات المحفوظة على هذا المتصفح. قد تختلف عن تعديلات الأجهزة الأخرى؛
+              علامة الاختيار الجزئي تعني أن الحالة غير مؤكدة.
             </Alert>
             <ol className={styles.tree} aria-label="تصنيفات التقييم المبدئي">
               {inAssessment.map((category, index) => (
@@ -258,6 +296,8 @@ export function InitialAssessmentAdminPage() {
                     category={category}
                     actions={questionActions}
                     onToggle={runQuestion}
+                    onToggleGroup={runQuestions}
+                    pending={toggleQuestion.isPending}
                   />
                 </li>
               ))}
@@ -280,34 +320,14 @@ export function InitialAssessmentAdminPage() {
           onRetry={retry}
         />
         {!isLoading && !loadError && categories.length > 0 ? (
-          <ul className={styles.list} aria-label="كل التصنيفات">
-            {categories.map((category) => {
-              const isMember = memberSet.has(category.id);
-              return (
-                <li key={category.id} className={styles.row}>
-                  <span className={styles.rowIcon} aria-hidden="true">
-                    <FolderTree />
-                  </span>
-                  <div className={styles.rowMain}>
-                    <h3 className={styles.rowTitle}>{category.name}</h3>
-                    <ul className={styles.meta}>
-                      <li>
-                        <Badge tone={isMember ? 'success' : 'neutral'}>
-                          {isMember ? (
-                            <CircleCheck aria-hidden="true" size={14} />
-                          ) : (
-                            <CircleDashed aria-hidden="true" size={14} />
-                          )}
-                          {isMember ? 'ضمن التقييم' : 'غير مضاف'}
-                        </Badge>
-                      </li>
-                    </ul>
-                  </div>
-                  <div className={styles.actions}>{categoryButton(category)}</div>
-                </li>
-              );
-            })}
-          </ul>
+          <AssessmentCategoryBrowser
+            categories={categories}
+            memberIds={memberSet}
+            pending={toggleCategory.isPending}
+            onToggle={(id, include) => {
+              toggleCategory.mutate({ id, include });
+            }}
+          />
         ) : null}
       </section>
     </ContentPage>

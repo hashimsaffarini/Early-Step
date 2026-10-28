@@ -23,6 +23,7 @@ export interface AnswerTileProps extends Omit<
   emoji?: string | undefined;
   /** Option picture from the server (`/uploads/...`); hidden if it cannot be loaded. */
   imagePath?: string | null | undefined;
+  imageKey?: string | undefined;
   /** Arabic letter badge (أ ب ج د) — test player style. */
   badge?: string | undefined;
   state?: AnswerTileState;
@@ -37,6 +38,7 @@ export function AnswerTile({
   label,
   emoji,
   imagePath,
+  imageKey,
   badge,
   state = 'idle',
   layout = 'stack',
@@ -66,9 +68,10 @@ export function AnswerTile({
           {emoji}
         </span>
       ) : null}
-      {imagePath ? (
+      {imagePath || imageKey ? (
         <ServerImage
-          path={imagePath}
+          path={imagePath ?? null}
+          mediaKey={imageKey}
           alt={label ? '' : 'صورة الإجابة'}
           className={styles.image}
           fallback={label ? null : <span className={styles.label}>صورة غير متاحة</span>}

@@ -1,3 +1,4 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import { Gamepad2, ListChecks, Plus } from 'lucide-react';
 import { useState } from 'react';
 
@@ -78,6 +79,7 @@ export function AssignActivityDialog({
             <span className={styles.itemIcon} aria-hidden="true">
               <ServerImage
                 path={item.iconUrl}
+                mediaKey={mediaKeys.activity(type, item.id)}
                 alt=""
                 className={styles.itemIconImage}
                 fallback={type === 'game' ? <Gamepad2 /> : <ListChecks />}

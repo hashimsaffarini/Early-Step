@@ -1,3 +1,4 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import { ChevronLeft, CircleCheck, Clock, Gamepad2, ListChecks, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -14,6 +15,7 @@ const TYPE_LABEL = { test: 'اختبار', game: 'لعبة' } as const;
 
 export interface PlanActivityListProps {
   activities: readonly PlanActivity[];
+  onSelectResult?: ((activity: PlanActivity) => void) | undefined;
   /**
    * Specialist only: remove an activity (by its catalogue `activityId`). Completed activities
    * keep their results and cannot be removed (product rule, 2026-10-14).
@@ -71,6 +73,7 @@ export function PlanActivityList({
             >
               <ServerImage
                 path={activity.iconUrl}
+                mediaKey={mediaKeys.activity(activity.type ?? '', activity.activityId)}
                 alt=""
                 className={styles.iconImage}
                 fallback={activity.type === 'game' ? <Gamepad2 /> : <ListChecks />}

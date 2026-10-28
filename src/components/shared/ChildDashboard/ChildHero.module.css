@@ -1,155 +1,117 @@
 .hero {
-  overflow: hidden;
-  border: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  align-items: center;
+  padding: var(--space-6);
   border-radius: var(--radius-xl);
-  background: var(--color-surface);
+  background: var(--gradient-brand);
+  color: var(--color-text-on-dark);
   box-shadow: var(--shadow-card);
 }
-
-/* Brand band behind the avatar (decorative). */
 .cover {
-  block-size: 5.5rem;
-  background: var(--gradient-brand);
+  display: none;
 }
-
 .body {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  flex: 1;
   gap: var(--space-4);
-  padding-inline: var(--space-5);
-  padding-block-end: var(--space-5);
-  text-align: center;
+  min-inline-size: 0;
+  flex-wrap: wrap;
 }
-
-@media (min-width: 48rem) {
-  .body {
-    flex-direction: row;
-    align-items: flex-end;
-    padding-inline: var(--space-8);
-    text-align: start;
-  }
-}
-
 .avatar {
   flex-shrink: 0;
-  margin-block-start: -3rem;
-  border: 4px solid var(--color-surface);
-  box-shadow: var(--shadow-raised);
+  border: 3px solid var(--color-glass-strong);
 }
-
 .identity {
-  display: flex;
   flex: 1;
-  flex-direction: column;
-  gap: var(--space-2);
   min-inline-size: 0;
 }
-
-.eyebrow {
+.eyebrow,
+.name,
+.progressText,
+.progressTitle {
   margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
 }
-
+.eyebrow {
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+}
 .name {
-  margin: 0;
   font-family: var(--font-family-display);
   font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-black);
-  line-height: var(--line-height-tight);
-  color: var(--color-text-primary);
   overflow-wrap: anywhere;
 }
-
 .facts {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: var(--space-2);
-  margin: 0;
   padding: 0;
+  margin: var(--space-2) 0 0;
   list-style: none;
 }
-
-@media (min-width: 48rem) {
-  .facts {
-    justify-content: flex-start;
-  }
-}
-
 .fact {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding-block: var(--space-1);
-  padding-inline: var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-soft-text);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass);
 }
-
 .fact svg {
+  inline-size: var(--space-4);
+  block-size: var(--space-4);
   flex-shrink: 0;
-  inline-size: 1rem;
-  block-size: 1rem;
 }
-
 .actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: var(--space-2);
 }
-
-@media (min-width: 48rem) {
-  .actions {
-    justify-content: flex-end;
-  }
-}
-
 .progress {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: var(--space-2);
-  padding: var(--space-5);
-  border-block-start: 1px solid var(--color-border);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  color: var(--color-text-primary);
+  flex: 1;
+  min-inline-size: min(100%, 14rem);
 }
-
-@media (min-width: 48rem) {
-  .progress {
-    padding-inline: var(--space-8);
-  }
-}
-
 .progressHead {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
 }
-
-.progressTitle {
-  margin: 0;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-extrabold);
+.progressTitle,
+.progressText {
+  font-size: var(--font-size-sm);
+}
+.percent {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+  color: var(--color-primary-strong);
+}
+.progressText {
+  color: var(--color-text-secondary);
+}
+.hero[data-tone='soft'] {
+  background: var(--color-primary-soft);
   color: var(--color-text-primary);
 }
-
-.percent {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-black);
-  line-height: 1;
-  color: var(--color-success-strong);
+.hero[data-tone='soft'] .fact {
+  background: var(--color-surface);
+  color: var(--color-primary-strong);
 }
-
-.progressText {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+@media (max-width: 40rem) {
+  .hero {
+    padding: var(--space-4);
+  }
+  .progress {
+    flex-basis: 100%;
+  }
 }

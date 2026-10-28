@@ -22,7 +22,7 @@ import styles from './AssessmentCategoryPicker.module.css';
 const CARD_TONES: readonly ActivityCategory[] = ['reading', 'math', 'memory', 'writing', 'logic'];
 const CARD_ICONS: readonly LucideIcon[] = [Puzzle, Shapes, Star, Sparkles];
 
-/** Key of a pending start: a category id, or `PLAY_ALL`. */
+/** Key of the single start action. */
 export const PLAY_ALL = 'all';
 
 export interface CategoryCardModel {
@@ -39,7 +39,7 @@ export interface AssessmentCategoryPickerProps {
   onRetry: () => void;
   /** `start` failure (e.g. the server has no assessment for this child). */
   startError: AppError | null;
-  /** The card (category id) or `PLAY_ALL` whose start is in flight. */
+  /** `PLAY_ALL` while the start request is in flight. */
   pendingKey: string | null;
   /** Shown after a category was finished. */
   notice: string | null;
@@ -50,37 +50,31 @@ export interface AssessmentCategoryPickerProps {
 
 interface CardState {
   status: string | null;
-  action: string;
   isDone: boolean;
-  isDisabled: boolean;
 }
 
 function cardState(progress: CategoryProgress | null): CardState {
-  if (progress === null) return { status: null, action: 'العب', isDone: false, isDisabled: false };
+  if (progress === null) return { status: null, isDone: false };
   const { total, done } = progress;
   if (total === 0) {
-    return { status: 'لا توجد أسئلة حالياً', action: 'العب', isDone: false, isDisabled: true };
+    return { status: 'لا توجد أسئلة حالياً', isDone: false };
   }
-  if (done >= total) return { status: 'مكتمل', action: 'تم', isDone: true, isDisabled: true };
+  if (done >= total) return { status: 'مكتمل', isDone: true };
   if (done > 0) {
     return {
       status: `أُنجز ${done.toString()} من ${total.toString()}`,
-      action: 'أكمل',
       isDone: false,
-      isDisabled: false,
     };
   }
   return {
     status: `عدد الأسئلة: ${total.toString()}`,
-    action: 'العب',
     isDone: false,
-    isDisabled: false,
   };
 }
 
 /**
  * Initial-assessment start screen (client revision 2026-10, Replit "مرحباً يا …" picker): the
- * assessment's real categories as large cards, each playable on its own, plus "play all".
+ * assessment's real categories as large cards, informational only; the orange button starts every category.
  */
 export function AssessmentCategoryPicker({
   childName,
@@ -125,16 +119,9 @@ export function AssessmentCategoryPicker({
             const describedBy = `cat-${category.id}-desc`;
             return (
               <li key={category.id}>
-                <button
-                  type="button"
+                <div
                   className={cx(styles.card, state.isDone && styles.cardDone)}
-                  aria-label={`${state.action} «${category.name}»`}
                   aria-describedby={describedBy}
-                  aria-busy={pendingKey === category.id}
-                  disabled={state.isDisabled || pendingKey !== null}
-                  onClick={() => {
-                    onSelect({ kind: 'category', category });
-                  }}
                 >
                   <span
                     className={cx(styles.icon, getCategoryGradientClass(tone))}
@@ -157,10 +144,7 @@ export function AssessmentCategoryPicker({
                       </span>
                     ) : null}
                   </span>
-                  <span className={styles.play} aria-hidden="true">
-                    {pendingKey === category.id ? 'جارٍ البدء…' : state.action}
-                  </span>
-                </button>
+                </div>
               </li>
             );
           })}
@@ -191,10 +175,10 @@ export function AssessmentCategoryPicker({
         </span>
         <h2 className={styles.greetingTitle}>{`مرحباً يا ${childName}!`}</h2>
         <p id="assessment-pick-title" className={styles.pickTitle}>
-          اختر لعبة أو تصنيفاً:
+          تصنيفات التقييم المبدئي
         </p>
         <p className={styles.greetingText}>
-          العب كل تصنيف وحده، أو العبها كلها دفعة واحدة. لا يوجد وقت محدد، خذ وقتك.
+          اضغط على الزر البرتقالي لبدء التقييم بكل التصنيفات. لا يوجد وقت محدد، خذ وقتك.
         </p>
       </div>
       {notice ? <Alert tone="success">{notice}</Alert> : null}

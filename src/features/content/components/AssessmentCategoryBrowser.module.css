@@ -1,0 +1,110 @@
+.browser {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  background: var(--color-surface);
+}
+.toolbar,
+.controls,
+.heading,
+.counts {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.toolbar {
+  justify-content: space-between;
+  margin-block-end: var(--space-4);
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.category {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.category[data-selected='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+.heading {
+  padding: var(--space-4);
+}
+.icon {
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  background: var(--color-violet-soft);
+  color: var(--color-violet-strong);
+}
+.identity {
+  flex: 1;
+  min-inline-size: 0;
+}
+.identity h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-md);
+}
+.muted {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+.groups {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+  border-block-start: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.group,
+.activity {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+.group summary,
+.activity summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  min-block-size: var(--tap-target-min);
+  font-weight: var(--font-weight-bold);
+}
+.group summary::after,
+.activity summary::after {
+  content: '⌄';
+  margin-inline-start: auto;
+}
+.group summary svg {
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
+  color: var(--color-primary-strong);
+}
+.activity {
+  margin-block-start: var(--space-3);
+}
+.questions {
+  display: grid;
+  gap: var(--space-2);
+  padding-inline-start: var(--space-6);
+  font-size: var(--font-size-sm);
+}
+.membership {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+.membership svg {
+  inline-size: var(--space-4);
+  block-size: var(--space-4);
+}

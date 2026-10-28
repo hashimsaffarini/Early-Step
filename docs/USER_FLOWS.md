@@ -1,3 +1,9 @@
+> **Update 2026-10-28:** part 4 supersedes the older category picker and child dashboards below.
+> Assessment starts all categories from one orange button; Specialist child files have assessment /
+> plan tabs and an inline report editor; Teacher gets an activity table and notes/answer panels.
+> Game content can be authored from editable level drafts and previewed before assignment.
+> See `CLIENT_REVISIONS_PART4.md` for current behavior and external limits.
+
 # User Flows
 
 > **Update 2026-10-14 (live-verified):** login and reload go through `GET Auth/me`; the initial

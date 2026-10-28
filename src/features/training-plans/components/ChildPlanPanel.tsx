@@ -8,6 +8,7 @@ import { PlanSection } from './PlanSection';
 
 export interface ChildPlanPanelProps {
   childId: string;
+  onSelectResult?: ((activity: PlanActivity) => void) | undefined;
   /** Parent / Teacher: link to play an activity that is not completed yet. */
   playTo?: ((activity: PlanActivity) => string) | undefined;
   /** False on the child dashboards (the summary is shown there as stat cards). */
@@ -23,6 +24,7 @@ export interface ChildPlanPanelProps {
 export function ChildPlanPanel({
   childId,
   playTo,
+  onSelectResult,
   showSummary = true,
   showAnswers = false,
 }: ChildPlanPanelProps) {
@@ -46,6 +48,7 @@ export function ChildPlanPanel({
       activities={plan.data}
       emptyText="يُضيف الأخصائي الأنشطة إلى الخطة بعد مراجعة التقييم المبدئي."
       playTo={playTo}
+      onSelectResult={onSelectResult}
       showSummary={showSummary}
       resultChildId={showAnswers ? childId : undefined}
     />

@@ -35,7 +35,7 @@
 
 @media (min-width: 80rem) {
   .columns {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -45,4 +45,37 @@
   flex-direction: column;
   gap: var(--space-6);
   min-inline-size: 0;
+}
+.main[hidden] {
+  display: none;
+}
+.fileTabs > [role='tablist'] {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-radius: var(--radius-card);
+  background: var(--color-surface-muted);
+}
+.fileTabs [role='tab'] {
+  justify-content: center;
+  border-radius: var(--radius-card);
+  border: 1px solid transparent;
+  font-size: var(--font-size-md);
+}
+.fileTabs [role='tab'][aria-selected='true'] {
+  background: var(--color-surface);
+  color: var(--color-primary-strong);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-xs);
+}
+.teacherSummary {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+@media (min-width: 80rem) {
+  .teacherSummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
 }

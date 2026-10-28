@@ -1,10 +1,13 @@
-import { ArrowRight, UserX } from 'lucide-react';
+import { useState } from 'react';
+import { Select, FormField } from '@/components/ui/Field';
+import { ArrowRight, Eye, UserX } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
 import {
   AssessmentPlanGate,
   AssessmentStatusCard,
   ChildHero,
+  DashboardPanel,
   childHeroProgress,
   PlanStatGrid,
 } from '@/components/shared/ChildDashboard';
@@ -14,7 +17,7 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { childFacts } from '@/features/children';
 import { TeacherNotesSection } from '@/features/feedback';
-import { ChildPlanPanel } from '@/features/training-plans';
+import { ChildPlanPanel, PlanActivityResultDetails } from '@/features/training-plans';
 import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
 import { useChildPlanActivities, useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
@@ -23,15 +26,12 @@ import { summarizePlan } from '@/services/api/planSummary';
 import styles from './ChildDashboardPage.module.css';
 
 /**
- * The teacher's view of one assigned child (client revisions 2026-10, like the specialist's but
- * read-only): header with the child's facts (`GET Teacher/children`) and plan progress, the plan's
- * stat cards, the «التقييم الأولي» card (its details page shows categories, question types and the
- * child's answers when the server allows the teacher to read them), the activities with their
- * saved results and the child's answers where allowed («ابدأ» to play in class), and the teacher's
- * notes for the specialist (add / edit / delete). No plan management and no reports.
+ * Part 4 teacher child file: progress and real figures, filterable activity history, teacher notes
+ * and saved-answer review when the backend permits it. The teacher cannot edit the plan or reports.
  */
 export function TeacherChildPage() {
   const { childId = '' } = useParams();
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const { paths } = useRoleArea();
   const children = useChildrenForRole('Teacher');
   const child = children.data?.find((item) => item.id === childId);
@@ -39,6 +39,11 @@ export function TeacherChildPage() {
   const assessment = useAssessmentStatus(child ? child.id : undefined);
   const isPlanOpen = assessment.state === 'complete' || assessment.state === 'unavailable';
   const summary = plan.data && isPlanOpen ? summarizePlan(plan.data) : null;
+
+  const completedActivities = (plan.data ?? []).filter((activity) => activity.isCompleted);
+  const selectedActivity =
+    completedActivities.find((activity) => activity.id === selectedActivityId) ??
+    completedActivities[0];
 
   let body;
   if (children.isPending) {
@@ -71,27 +76,73 @@ export function TeacherChildPage() {
   } else {
     body = (
       <>
-        <ChildHero
-          name={child.fullName}
-          eyebrow="الخطة التدريبية وملاحظات المعلم"
-          facts={childFacts(child, { withParent: true })}
-          progress={childHeroProgress(summary)}
-        />
-        {summary && summary.total > 0 ? <PlanStatGrid summary={summary} /> : null}
+        <div className={styles.teacherSummary}>
+          <ChildHero
+            tone="soft"
+            name={child.fullName}
+            eyebrow="الخطة التدريبية وملاحظات المعلم"
+            facts={childFacts(child, { withParent: true })}
+            progress={childHeroProgress(summary)}
+          />
+          {summary && summary.total > 0 ? (
+            <PlanStatGrid
+              summary={summary}
+              compact
+              assessmentScore={
+                assessment.state === 'complete' ? assessment.result.overallScore : undefined
+              }
+            />
+          ) : null}
+        </div>
         <AssessmentStatusCard status={assessment} to={paths.childAssessment(child.id)} />
-        <div className={styles.columns}>
+        <div className={styles.main}>
           <div className={styles.main}>
             <AssessmentPlanGate status={assessment}>
               <ChildPlanPanel
                 childId={child.id}
                 showSummary={false}
+                onSelectResult={(activity) => {
+                  setSelectedActivityId(activity.id);
+                }}
                 showAnswers
                 playTo={(activity) => paths.planActivityPlay(child.id, activity.activityId)}
               />
             </AssessmentPlanGate>
           </div>
-          <div className={styles.aside}>
+          <div className={styles.columns}>
             <TeacherNotesSection childId={child.id} />
+            <DashboardPanel id="teacher-child-answers" title="إجابات الطفل" icon={Eye}>
+              {selectedActivity ? (
+                <>
+                  <FormField label="النشاط المكتمل">
+                    {(field) => (
+                      <Select
+                        {...field}
+                        value={selectedActivity.id}
+                        onChange={(event) => {
+                          setSelectedActivityId(event.target.value);
+                        }}
+                      >
+                        {completedActivities.map((activity) => (
+                          <option value={activity.id} key={activity.id}>
+                            {activity.title}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </FormField>
+                  <PlanActivityResultDetails
+                    key={selectedActivity.id}
+                    childId={child.id}
+                    planActivityId={selectedActivity.id}
+                    title={selectedActivity.title}
+                    initiallyOpen
+                  />
+                </>
+              ) : (
+                <p>تظهر إجابات الطفل هنا بعد إكمال أحد الأنشطة.</p>
+              )}
+            </DashboardPanel>
           </div>
         </div>
       </>

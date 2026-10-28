@@ -1,3 +1,4 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import { useState } from 'react';
 
 import { CHOICE_TYPE_LABELS, toChoiceQuestionType } from '@/components/players';
@@ -5,6 +6,7 @@ import { AnswerOptionList } from '@/components/shared/AnswerOptionList';
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { ServerImage } from '@/components/shared/ServerImage';
 import { Badge } from '@/components/ui/Badge';
+import { HTTP_STATUS } from '@/services/http/httpStatus';
 import { Spinner } from '@/components/ui/Feedback';
 
 import { usePlanActivityResult } from '../api/trainingPlansQueries';
@@ -15,6 +17,7 @@ export interface PlanActivityResultDetailsProps {
   childId: string;
   planActivityId: string;
   title: string;
+  initiallyOpen?: boolean;
 }
 
 /**
@@ -26,20 +29,29 @@ export function PlanActivityResultDetails({
   childId,
   planActivityId,
   title,
+  initiallyOpen = false,
 }: PlanActivityResultDetailsProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initiallyOpen);
   const query = usePlanActivityResult(childId, planActivityId, isOpen);
 
   return (
     <details
       className={styles.result}
+      open={isOpen}
       onToggle={(event) => {
-        if (event.currentTarget.open) setIsOpen(true);
+        setIsOpen(event.currentTarget.open);
       }}
     >
       <summary>عرض إجابات الطفل</summary>
       {query.isPending && isOpen ? <Spinner label="جارٍ تحميل النتيجة…" /> : null}
-      <ApiErrorAlert error={query.error} onRetry={() => void query.refetch()} />
+      {query.error?.status === HTTP_STATUS.FORBIDDEN ? (
+        <p className={styles.meta}>
+          تفاصيل الإجابات متاحة للأخصائي المتابع للطفل. يمكنك متابعة حالة الأنشطة وإرسال ملاحظاتك
+          له.
+        </p>
+      ) : (
+        <ApiErrorAlert error={query.error} onRetry={() => void query.refetch()} />
+      )}
       {query.data?.questions.length === 0 ? (
         <p className={styles.meta}>لم يُرسل الخادم تفاصيل الأسئلة لهذا النشاط.</p>
       ) : null}
@@ -57,8 +69,13 @@ export function PlanActivityResultDetails({
                     </Badge>
                   )}
                 </div>
-                {question.imageUrl ? (
-                  <ServerImage path={question.imageUrl} alt="" className={styles.resultImage} />
+                {question.imageUrl || question.id ? (
+                  <ServerImage
+                    path={question.imageUrl}
+                    mediaKey={mediaKeys.question(question.id)}
+                    alt=""
+                    className={styles.resultImage}
+                  />
                 ) : null}
                 {type ? <p className={styles.meta}>{CHOICE_TYPE_LABELS[type]}</p> : null}
                 <AnswerOptionList

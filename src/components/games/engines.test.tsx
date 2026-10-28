@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { toChoiceAnswer } from '@/components/players';
 
+import { SpotIt } from './spot-it/SpotIt';
 import { FocusChallenge } from './focus-challenge/FocusChallenge';
 import { LetterHunt } from './letter-hunt/LetterHunt';
 import { MemorySequence } from './memory-sequence/MemorySequence';
@@ -172,5 +173,30 @@ describe('mobile-safe markup', () => {
     expect(css).toContain('overflow-wrap: anywhere');
     expect(css).toContain('prefers-reduced-motion');
     expect(css).not.toMatch(/(margin|padding|border)-(left|right)|\b(left|right):/);
+  });
+});
+
+describe('SpotIt visual search', () => {
+  it('keeps repeated pictures as distinct backend options and sends their actual ids', async () => {
+    const payload = play(SpotIt, {
+      id: 'search',
+      text: 'ابحث عن القطط',
+      imageUrl: null,
+      type: 'MultiSelect',
+      options: [opt('cat-a', '🐱'), opt('dog', '🐶'), opt('cat-b', '🐱')],
+    });
+    const cats = screen.getAllByRole('button', { name: '🐱' });
+    const first = cats[0];
+    const second = cats[1];
+    if (!first || !second) throw new Error('target tiles missing');
+    await userEvent.click(first);
+    await userEvent.click(second);
+    expect(payload.current).toEqual({
+      questionId: 'search',
+      selectedOptionIds: ['cat-a', 'cat-b'],
+    });
+    expect(screen.queryByText(/صحيحة|خاطئة/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'مسح الاختيار' }));
+    expect(payload.current).toBeNull();
   });
 });

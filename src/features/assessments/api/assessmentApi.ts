@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  correctedQuestionText,
+  recalledQuestionContent,
+  rememberQuestionContent,
+} from '@/services/api/questionContentCache';
 
 import { toChoiceQuestionType, type ChoiceAnswer } from '@/components/players';
 import { AppError } from '@/services/http/apiError';
@@ -50,19 +55,31 @@ function mapQuestion(
   dto: z.infer<typeof questionSchema>,
   section: { id: string | null; title: string | null },
 ): AssessmentQuestion {
-  return {
+  const type = toChoiceQuestionType(dto.type);
+  const cached = recalledQuestionContent(dto.id);
+  const supplied = (dto.options ?? []).map((option) => ({
+    id: option.id,
+    text: option.optionText ?? '',
+    imageUrl: option.optionImageUrl ?? null,
+  }));
+  const recovered =
+    supplied.length === 0 &&
+    cached?.type === type &&
+    cached.text === correctedQuestionText(dto.questionText ?? '')
+      ? cached.options
+      : [];
+  const question: AssessmentQuestion = {
     id: dto.id,
-    text: dto.questionText ?? '',
+    text: correctedQuestionText(dto.questionText ?? ''),
     imageUrl: dto.questionImageUrl ?? null,
-    type: toChoiceQuestionType(dto.type),
-    options: (dto.options ?? []).map((option) => ({
-      id: option.id,
-      text: option.optionText ?? '',
-      imageUrl: option.optionImageUrl ?? null,
-    })),
+    type,
+    options: supplied.length > 0 ? supplied : recovered,
+    ...(recovered.length > 0 ? { isLocalContent: true } : {}),
     sectionTitle: section.title,
     categoryId: section.id,
   };
+  if (supplied.length > 0) rememberQuestionContent(question);
+  return question;
 }
 
 const UNEXPECTED_START = 'تعذّر بدء التقييم: استجابة غير متوقعة من الخادم.';

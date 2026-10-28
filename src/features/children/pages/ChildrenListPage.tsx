@@ -1,4 +1,6 @@
 import { Plus, SearchX, ServerOff, Users } from 'lucide-react';
+import childrenIllustration from '@/assets/images/children-banner.svg';
+import { PageBanner } from '@/components/shared/PageBanner';
 import { useState } from 'react';
 import { Link } from 'react-router';
 
@@ -142,9 +144,15 @@ export function ChildrenListPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader
+      <PageBanner
         title={copy.title}
         subtitle={copy.subtitle}
+        aside={<img src={childrenIllustration} alt="" className={styles.bannerArt} />}
+      />
+      <PageHeader
+        headingLevel={2}
+        title="ملفات الأطفال"
+        subtitle="تابع بيانات الأطفال وتقدّمهم في رحلة التعلّم."
         actions={canAddChild && children.length > 0 ? addButton : undefined}
       />
       {lastAddedName ? <Alert tone="success">{COPY.added(lastAddedName)}</Alert> : null}

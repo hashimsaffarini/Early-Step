@@ -1,3 +1,4 @@
+import type { ActivityType } from '@/services/api/activityType';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Save, Trash2 } from 'lucide-react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
@@ -15,7 +16,7 @@ import { QUESTION_TYPE_LABELS, QUESTION_TYPES } from '../types';
 import styles from './content.module.css';
 import { ImageField } from './ImageField';
 
-const MAX_OPTIONS = 8;
+const MAX_OPTIONS = 24;
 
 const EMPTY_OPTION: QuestionFormValues['options'][number] = {
   text: '',
@@ -32,14 +33,23 @@ const TYPE_HINTS = {
 
 export interface QuestionFormDialogProps {
   activityId: string;
+  activityType?: ActivityType | undefined;
   onClose: () => void;
+  initialValues?: QuestionFormValues | undefined;
+  isGameLevel?: boolean;
 }
 
 /**
  * Add a question with its options (multipart `Options[i].*`). The answer fields shown depend on
  * the type: IsCorrect (single/multi), CorrectOrder (sequence).
  */
-export function QuestionFormDialog({ activityId, onClose }: QuestionFormDialogProps) {
+export function QuestionFormDialog({
+  activityId,
+  activityType,
+  onClose,
+  initialValues,
+  isGameLevel = false,
+}: QuestionFormDialogProps) {
   const createMutation = useCreateQuestion();
   const {
     register,
@@ -50,7 +60,7 @@ export function QuestionFormDialog({ activityId, onClose }: QuestionFormDialogPr
     formState: { errors },
   } = useForm<QuestionFormValues>({
     resolver: zodResolver(questionSchema),
-    defaultValues: {
+    defaultValues: initialValues ?? {
       text: '',
       image: null,
       type: 'SingleChoice',
@@ -64,6 +74,7 @@ export function QuestionFormDialog({ activityId, onClose }: QuestionFormDialogPr
     createMutation.mutate(
       {
         activityId,
+        activityType,
         input: {
           text: values.text,
           image: values.image,
@@ -89,7 +100,12 @@ export function QuestionFormDialog({ activityId, onClose }: QuestionFormDialogPr
   const optionsError = errors.options?.root?.message ?? errors.options?.message;
 
   return (
-    <Modal isOpen onClose={onClose} size="lg" title="إضافة سؤال">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="lg"
+      title={isGameLevel ? 'إضافة مستوى للعبة' : 'إضافة سؤال'}
+    >
       <form className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
         <ApiErrorAlert error={createMutation.error} />
         <FormField label="نص السؤال" error={errors.text?.message} isRequired>

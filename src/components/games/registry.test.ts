@@ -8,12 +8,13 @@ import {
 } from './registry';
 
 describe('game registry', () => {
-  it('has the four templates with their slugs, Arabic names and question types', () => {
+  it('has all templates with their slugs, Arabic names and question types', () => {
     expect(GAME_TEMPLATE_LIST.map((template) => [template.slug, template.name])).toEqual([
       ['letter-hunt', 'صيد الحروف'],
       ['number-match', 'طابق الرقم'],
       ['memory-sequence', 'تحدي الذاكرة'],
       ['focus-challenge', 'تحدي التركيز'],
+      ['spot-it', 'ابحث وجِد!'],
     ]);
     expect(GAME_TEMPLATES['letter-hunt'].questionTypes).toEqual(['SingleChoice']);
     expect(GAME_TEMPLATES['number-match'].questionTypes).toEqual(['SingleChoice']);

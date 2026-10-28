@@ -19,6 +19,7 @@ export interface AssessmentQuestion {
   /** Unknown types are kept as null and treated as not answerable. */
   type: AssessmentQuestionType | null;
   options: readonly AssessmentOption[];
+  isLocalContent?: boolean;
   /** Category/section title when the response provides one. */
   sectionTitle: string | null;
   /** Id of the category the question was sent under (live: `categories[].id`). */

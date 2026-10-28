@@ -1,3 +1,4 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import type { ReactNode, Ref } from 'react';
 
 import { CHOICE_HINTS, QuestionProgress } from '@/components/players';
@@ -48,12 +49,17 @@ export function GameStage({
           <p className={styles.stagePurpose}>{template.purpose}</p>
         </div>
       </header>
-      <QuestionProgress current={index + 1} total={total} />
+      <QuestionProgress current={index + 1} total={total} noun="المستوى" />
       <div className={styles.prompt}>
         <h2 ref={promptRef} tabIndex={-1} className={styles.promptText}>
-          {question.text || 'اختر الإجابة'}
+          {question.text || 'مهمة جديدة'}
         </h2>
-        <ServerImage path={question.imageUrl} alt="" className={styles.promptImage} />
+        <ServerImage
+          path={question.imageUrl}
+          mediaKey={mediaKeys.question(question.id)}
+          alt=""
+          className={styles.promptImage}
+        />
         <p className={styles.instruction}>{instruction}</p>
       </div>
       {children}

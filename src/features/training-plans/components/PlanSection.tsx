@@ -2,7 +2,7 @@ import { BookOpen } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { EmptyState } from '@/components/shared/EmptyState';
-import { PlanActivityList } from '@/components/shared/PlanActivityList';
+import { PlanActivityTable } from '@/components/shared/PlanActivityList';
 import { PlanSummary } from '@/components/shared/PlanSummary';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Card } from '@/components/ui/Card';
@@ -13,6 +13,7 @@ import styles from './plans.module.css';
 
 export interface PlanSectionProps {
   activities: readonly PlanActivity[];
+  onSelectResult?: ((activity: PlanActivity) => void) | undefined;
   action?: ReactNode;
   emptyText: string;
   onRemove?: ((activity: PlanActivity) => void) | undefined;
@@ -33,6 +34,7 @@ export function PlanSection({
   progress,
   resultChildId,
   playTo,
+  onSelectResult,
   showSummary = true,
 }: PlanSectionProps) {
   return (
@@ -56,10 +58,11 @@ export function PlanSection({
       ) : (
         <>
           {showSummary ? <PlanSummary activities={activities} serverProgress={progress} /> : null}
-          <PlanActivityList
+          <PlanActivityTable
             activities={activities}
             onRemove={onRemove}
             playTo={playTo}
+            onSelectResult={onSelectResult}
             renderDetails={
               resultChildId
                 ? (activity) => (

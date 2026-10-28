@@ -54,7 +54,7 @@ describe('TeacherChildPage — plan-focused view (client revision 2026-10)', () 
     // The summary is not repeated inside the plan section.
     expect(screen.queryByRole('region', { name: 'ملخص الأنشطة' })).not.toBeInTheDocument();
     // 3. Activities: status as icon + text, play links for the open ones.
-    const activities = screen.getByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    const activities = screen.getByRole('table', { name: 'أنشطة الخطة التدريبية' });
     expect(within(activities).getByText('مكتمل')).toBeInTheDocument();
     expect(within(activities).getByText('لم يكتمل بعد')).toBeInTheDocument();
     expect(within(activities).getAllByRole('link', { name: /^ابدأ: / })).toHaveLength(1);
@@ -76,7 +76,7 @@ describe('TeacherChildPage — plan-focused view (client revision 2026-10)', () 
       '/teacher/children/c0000000-0000-4000-8000-000000000001/assessment',
     );
     // Completed activities can open the child's answers (shown only if the server allows it).
-    const activities = await screen.findByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    const activities = await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
     expect(within(activities).getByText('عرض إجابات الطفل')).toBeInTheDocument();
     // Specialist-only actions are absent.
     expect(screen.queryByRole('button', { name: 'إضافة نشاط' })).not.toBeInTheDocument();

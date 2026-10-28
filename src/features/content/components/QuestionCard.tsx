@@ -1,3 +1,4 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import { Check, CheckCheck, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -137,6 +138,7 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
 
       <ServerImage
         path={question.imageUrl}
+        mediaKey={mediaKeys.question(question.id)}
         alt={`صورة السؤال ${number}`}
         className={styles.questionImage}
         fallback={question.imageUrl ? <p className={styles.muted}>{IMAGE_NOT_SERVED}</p> : null}
@@ -155,6 +157,7 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
                 <span className={styles.optionMain}>
                   <ServerImage
                     path={option.imageUrl}
+                    mediaKey={mediaKeys.option(option.id)}
                     alt={label}
                     className={styles.optionImage}
                     fallback={

@@ -1,0 +1,32 @@
+.subtitle {
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+.table {
+  border-collapse: collapse;
+  inline-size: 100%;
+  font-size: var(--font-size-sm);
+  text-align: start;
+}
+.table th,
+.table td {
+  padding: var(--space-3);
+  text-align: start;
+  border-block-end: 1px solid var(--color-border);
+}
+.table thead {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.table caption {
+  padding: var(--space-3);
+  text-align: start;
+  font-weight: var(--font-weight-bold);
+}

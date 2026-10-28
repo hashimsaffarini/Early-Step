@@ -1,8 +1,9 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import { ArrowLeft, CircleCheck, FileQuestion, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
-import { resolveGameTemplate, type GameQuestion } from '@/components/games';
+import { GAME_TEMPLATES, resolveGameTemplate, type GameQuestion } from '@/components/games';
 import {
   AnswerTile,
   CHOICE_HINTS,
@@ -137,7 +138,12 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
         <h2 className={styles.question} ref={questionRef} tabIndex={-1}>
           {question.text}
         </h2>
-        <ServerImage path={question.imageUrl} alt="" className={styles.questionImage} />
+        <ServerImage
+          path={question.imageUrl}
+          mediaKey={mediaKeys.question(question.id)}
+          alt=""
+          className={styles.questionImage}
+        />
         <p className={styles.hint}>{CHOICE_HINTS[type]}</p>
       </Card>
       <ul className={styles.answers} aria-label="الإجابات">
@@ -152,6 +158,7 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
               <AnswerTile
                 label={option.text}
                 imagePath={option.imageUrl}
+                imageKey={mediaKeys.option(option.id)}
                 badge={badge}
                 state={tileState(selection, option.id)}
                 onClick={() => {
@@ -196,8 +203,8 @@ function toGameQuestions(questions: readonly PlanQuestion[]): GameQuestion[] {
 /**
  * A child's training-plan activity, played from the server's questions; the result is saved.
  * Routing (client revision 2026-10): a game whose `slug` names a known template opens that game
- * engine (`components/games`); tests, games without a slug and unknown slugs use the generic
- * player below — old activities keep working.
+ * engine (`components/games`); games without usable template metadata use visual search /
+ * ordering, while tests retain the generic player.
  */
 export function PlanActivityPlayerPage() {
   const { childId = '', activityId = '' } = useParams();
@@ -287,7 +294,9 @@ export function PlanActivityPlayerPage() {
     );
   }
   const template =
-    query.data.activity.type === 'game' ? resolveGameTemplate(query.data.activity.slug) : null;
+    query.data.activity.type === 'game'
+      ? (resolveGameTemplate(query.data.activity.slug) ?? GAME_TEMPLATES['spot-it'])
+      : null;
   if (template) {
     return (
       <PlayerShell {...shell} emoji="🎮" width="wide">

@@ -195,6 +195,7 @@ export function ActivityFormDialog({
               value={field.value}
               onChange={field.onChange}
               existingPath={activity?.iconUrl}
+              mediaKey={`activity:${type}:${activity?.id ?? ''}`}
               error={fieldState.error?.message}
             />
           )}

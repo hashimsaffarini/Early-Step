@@ -245,46 +245,37 @@ describe('AssessmentPage (initial assessment)', () => {
     LONG_FLOW,
   );
 
-  it(
-    'lets the child skip a question without options and shows the server refusal to complete',
-    async () => {
-      server.use(
-        http.post(apiUrl('initial-assessment/:childId/start'), () =>
-          HttpResponse.json({
-            assessmentId: 'as-1',
-            categories: [
-              {
-                name: 'القراءة',
-                questions: [
-                  { id: 'q1', questionText: 'سؤال بلا خيارات', type: 'SingleChoice', options: [] },
-                ],
-              },
-            ],
-          }),
-        ),
-        http.post(apiUrl('initial-assessment/:id/complete'), () =>
-          HttpResponse.json(
-            { message: 'لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة.' },
-            { status: 400 },
-          ),
-        ),
-      );
-      renderAssessment();
-
-      await start();
-
-      expect(await screen.findByText(/لم يُرسل الخادم خيارات له/)).toBeInTheDocument();
-      await userEvent.click(screen.getByRole('button', { name: 'تخطّي السؤال' }));
-
-      expect(
-        await screen.findByText('لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة.'),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: 'إعادة محاولة إنهاء التقييم' }),
-      ).toBeInTheDocument();
-    },
-    LONG_FLOW,
-  );
+  it('blocks an incomplete assessment before sending any answers or attempting completion', async () => {
+    let writes = 0;
+    server.use(
+      http.post(apiUrl('initial-assessment/:childId/start'), () =>
+        HttpResponse.json({
+          assessmentId: 'as-1',
+          categories: [
+            {
+              name: 'القراءة',
+              questions: [
+                { id: 'q1', questionText: 'سؤال بلا خيارات', type: 'SingleChoice', options: [] },
+              ],
+            },
+          ],
+        }),
+      ),
+      http.post(apiUrl('initial-assessment/:id/answer'), () => {
+        writes += 1;
+        return HttpResponse.json({});
+      }),
+      http.post(apiUrl('initial-assessment/:id/complete'), () => {
+        writes += 1;
+        return HttpResponse.json({});
+      }),
+    );
+    renderAssessment();
+    await start();
+    expect(await screen.findByText('التقييم يحتاج إلى استكمال محتواه')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'تخطّي السؤال' })).not.toBeInTheDocument();
+    expect(writes).toBe(0);
+  });
 
   it('never reads the saved result as the parent (staff-only, product decision)', async () => {
     let resultCalls = 0;
@@ -324,7 +315,7 @@ describe('AssessmentPage (initial assessment)', () => {
     );
   });
   describe('category picker (client revision 2026-10)', () => {
-    const cardList = () => screen.findByRole('list', { name: 'اختر لعبة أو تصنيفاً:' });
+    const cardList = () => screen.findByRole('list', { name: 'تصنيفات التقييم المبدئي' });
 
     it('renders one large card per category the API returns — nothing hardcoded', async () => {
       let startCalls = 0;
@@ -346,104 +337,44 @@ describe('AssessmentPage (initial assessment)', () => {
       renderAssessment();
 
       expect(await screen.findByRole('heading', { name: 'مرحباً يا يوسف!' })).toBeInTheDocument();
-      const cards = within(await cardList()).getAllByRole('button');
-      expect(cards.map((card) => card.getAttribute('aria-label'))).toEqual([
-        'العب «تصنيف أول من الخادم»',
-        'العب «تصنيف ثانٍ من الخادم»',
-        'العب «تصنيف ثالث»',
-      ]);
-      expect(cards[0]).toHaveAccessibleDescription('وصف من الخادم');
+      const list = await cardList();
+      expect(within(list).queryByRole('button')).not.toBeInTheDocument();
+      expect(
+        within(list)
+          .getAllByRole('listitem')
+          .map((item) => item.textContent),
+      ).toEqual(['تصنيف أول من الخادموصف من الخادم', 'تصنيف ثانٍ من الخادم', 'تصنيف ثالث']);
       // No mock or Replit category names leak in, and nothing is started before a tap.
       expect(screen.queryByText(/الحروف والقراءة|الأرقام والحساب|الذاكرة/)).not.toBeInTheDocument();
       expect(startCalls).toBe(0);
     });
 
     it(
-      'plays one category only, then the rest, and completes once every category is done',
-      async () => {
-        const answers: { questionId: string }[] = [];
-        let completeCalls = 0;
-        server.events.on('request:start', ({ request }) => {
-          if (request.url.endsWith('/complete')) completeCalls += 1;
-        });
-        server.use(
-          http.post(apiUrl('initial-assessment/:id/answer'), async ({ request }) => {
-            const body = (await request.json()) as { questionId: string };
-            answers.push(body);
-            return HttpResponse.json({ questionId: body.questionId, isCorrect: true });
-          }),
-        );
-        renderAssessment();
-
-        await userEvent.click(
-          within(await cardList()).getByRole('button', { name: 'العب «الأرقام والحساب»' }),
-        );
-        expect(await screen.findByRole('heading', { name: 'الأرقام والحساب' })).toBeInTheDocument();
-        expect(screen.getByText('السؤال 1 من 3')).toBeInTheDocument();
-        await answerMath();
-        expect(screen.getByRole('button', { name: 'إنهاء التصنيف' })).toBeEnabled();
-        await next();
-
-        // Back on the picker: math is done, reading is still open, nothing completed yet.
-        expect(await screen.findByText(/أحسنت! أنهيت «الأرقام والحساب»/)).toBeInTheDocument();
-        const list = await cardList();
-        expect(within(list).getByRole('button', { name: 'تم «الأرقام والحساب»' })).toBeDisabled();
-        expect(within(list).getByText('مكتمل')).toBeInTheDocument();
-        expect(answers.map((answer) => answer.questionId)).toEqual([
-          'q-math-1',
-          'q-math-2',
-          'q-math-3',
-        ]);
-        expect(completeCalls).toBe(0);
-
-        await userEvent.click(within(list).getByRole('button', { name: 'العب «الحروف والقراءة»' }));
-        await tap('بطة');
-        await next();
-        await tap('ق');
-        await userEvent.click(screen.getByRole('button', { name: 'إنهاء التقييم' }));
-
-        expect(
-          await screen.findByRole('heading', { name: 'تم إرسال التقييم' }),
-        ).toBeInTheDocument();
-        expect(screen.getByText(/تم إرسال 5 أسئلة/)).toBeInTheDocument();
-        expect(completeCalls).toBe(1);
-        server.events.removeAllListeners();
-      },
-      LONG_FLOW,
-    );
-
-    it(
-      'keeps progress when the child goes back mid-category; play-all plays only what is left',
+      'starts every category through the single orange button and resumes only unanswered questions',
       async () => {
         const answered: string[] = [];
         server.use(
           http.post(apiUrl('initial-assessment/:id/answer'), async ({ request }) => {
             const body = (await request.json()) as { questionId: string };
             answered.push(body.questionId);
-            return HttpResponse.json({ questionId: body.questionId, isCorrect: true });
+            return HttpResponse.json({ message: 'تم الحفظ' });
           }),
         );
         renderAssessment();
-
-        await userEvent.click(
-          within(await cardList()).getByRole('button', { name: 'العب «الحروف والقراءة»' }),
-        );
+        expect(within(await cardList()).queryByRole('button')).not.toBeInTheDocument();
+        await start();
         await tap('بطة');
         await next();
-        await userEvent.click(await screen.findByRole('button', { name: 'العودة إلى التصنيفات' }));
-
-        const list = await cardList();
-        expect(
-          within(list).getByRole('button', { name: 'أكمل «الحروف والقراءة»' }),
-        ).toHaveAccessibleDescription('أُنجز 1 من 2');
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'العودة إلى مقدمة التقييم' }),
+        );
+        expect(await cardList()).toBeInTheDocument();
         await start();
-
         expect(await screen.findByText('السؤال 1 من 4')).toBeInTheDocument();
         await tap('ق');
         await next();
         await answerMath();
         await next();
-
         expect(
           await screen.findByRole('heading', { name: 'تم إرسال التقييم' }),
         ).toBeInTheDocument();
@@ -486,32 +417,24 @@ describe('AssessmentPage (initial assessment)', () => {
       await userEvent.click(screen.getByRole('button', { name: 'إعادة المحاولة' }));
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'العب «تصنيف من الخادم»' })).toBeInTheDocument();
+        expect(screen.getByText('تصنيف من الخادم')).toBeInTheDocument();
       });
     });
 
-    it('says so when a picked category has no questions in the started assessment', async () => {
+    it('includes questions from every category even when another category is empty', async () => {
       server.use(
-        http.get(apiUrl('initial-assessment/categories'), () =>
-          HttpResponse.json({
-            categories: [
-              { id: 'k1', name: 'تصنيف فارغ', order: 1 },
-              { id: 'k2', name: 'تصنيف بأسئلة', order: 2 },
-            ],
-          }),
-        ),
         http.post(apiUrl('initial-assessment/:childId/start'), () =>
           HttpResponse.json({
             assessmentId: 'as-1',
             categories: [
-              { id: 'k1', name: 'تصنيف فارغ', questions: [] },
+              { id: 'empty', name: 'تصنيف فارغ', questions: [] },
               {
-                id: 'k2',
+                id: 'actual',
                 name: 'تصنيف بأسئلة',
                 questions: [
                   {
                     id: 'q1',
-                    questionText: 'سؤال',
+                    questionText: 'سؤال فعلي',
                     type: 'SingleChoice',
                     options: [{ id: 'o1', optionText: 'أ' }],
                   },
@@ -522,13 +445,9 @@ describe('AssessmentPage (initial assessment)', () => {
         ),
       );
       renderAssessment();
-
-      await userEvent.click(await screen.findByRole('button', { name: 'العب «تصنيف فارغ»' }));
-
-      expect(await screen.findByText('لا توجد أسئلة في هذا التصنيف حالياً')).toBeInTheDocument();
-      await userEvent.click(screen.getByRole('button', { name: 'العودة إلى التصنيفات' }));
-      expect(await screen.findByRole('button', { name: 'العب «تصنيف فارغ»' })).toBeDisabled();
-      expect(screen.getByRole('button', { name: 'العب «تصنيف بأسئلة»' })).toBeEnabled();
+      await start();
+      expect(await screen.findByText('سؤال فعلي')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^أ$/ })).toBeEnabled();
     });
   });
 });

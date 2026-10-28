@@ -237,10 +237,69 @@ describe('ActivityDetailPage — game template (client revision 2026-10)', () =>
     );
   });
 
-  it('explains that a game without a template uses the generic player', async () => {
+  it('explains the visual default for a game without a template', async () => {
     server.use(gameDetail('memory-game'));
     renderContent(ADMIN_PATHS.activityDetail('game', 'g-1'));
 
-    expect(await screen.findByText(/لا يوجد «نوع لعبة» لهذا النشاط/)).toBeInTheDocument();
+    expect(await screen.findByText(/لا يوجد قالب محدد لهذا النشاط/)).toBeInTheDocument();
+  });
+  it('opens an editable level draft without writing until the Admin saves it', async () => {
+    let saved: FormData | null = null;
+    server.use(
+      gameDetail('spot-it'),
+      http.post(apiUrl('Admin/activities/:id/questions'), async ({ request }) => {
+        saved = await request.formData();
+        return HttpResponse.json({});
+      }),
+    );
+    renderContent(ADMIN_PATHS.activityDetail('game', 'g-1'));
+    await userEvent.click(await screen.findByRole('button', { name: 'إضافة مستوى جاهز' }));
+    const dialog = screen.getByRole('dialog', { name: 'إضافة مستوى للعبة' });
+    expect(saved).toBeNull();
+    expect(within(dialog).getByLabelText(/نص السؤال/)).toHaveValue(
+      'ابحث عن كل القطط 🐱 في اللوحة.',
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ السؤال' }));
+    await waitFor(() => {
+      expect(saved).not.toBeNull();
+    });
+    expect((saved as FormData | null)?.get('Type')).toBe('MultiSelect');
+    expect((saved as FormData | null)?.get('Options[11].OptionText')).toBe('🐶');
+    expect((saved as FormData | null)?.get('Options[4].IsCorrect')).toBe('true');
+  });
+
+  it('previews saved game options without submitting results or creating content', async () => {
+    let writes = 0;
+    server.use(
+      http.get(apiUrl('Admin/activities/:type/:id'), () =>
+        HttpResponse.json({
+          id: 'g-1',
+          title: 'ابحث وجِد',
+          slug: 'spot-it',
+          type: 'game',
+          questions: [
+            {
+              id: 'q-search',
+              questionText: 'ابحث عن القطة',
+              type: 'MultiSelect',
+              options: [
+                { id: 'cat', optionText: '🐱', isCorrect: true },
+                { id: 'dog', optionText: '🐶', isCorrect: false },
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+    server.events.on('request:start', ({ request }) => {
+      if (request.method !== 'GET') writes += 1;
+    });
+    renderContent(ADMIN_PATHS.activityDetail('game', 'g-1'));
+    await userEvent.click(await screen.findByRole('button', { name: 'معاينة اللعبة' }));
+    const dialog = screen.getByRole('dialog', { name: 'معاينة اللعبة' });
+    await userEvent.click(within(dialog).getByRole('button', { name: '🐱' }));
+    expect(within(dialog).getByRole('status')).toHaveTextContent('اخترت 1 من 2');
+    expect(writes).toBe(0);
+    server.events.removeAllListeners();
   });
 });

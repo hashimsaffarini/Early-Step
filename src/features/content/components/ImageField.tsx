@@ -1,6 +1,7 @@
 import { ImageIcon, ImagePlus, X } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
+import { useLocalMedia } from '@/hooks/useLocalMedia';
 import { IMAGE_NOT_SERVED } from '@/components/shared/ServerImage';
 import { resolveMediaUrl } from '@/services/api/mediaUrl';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +12,7 @@ import styles from './content.module.css';
 
 export interface ImageFieldProps {
   label: string;
+  mediaKey?: string | undefined;
   value: File | null;
   onChange: (file: File | null) => void;
   /** Current server image (edit forms), shown until a new file is picked. */
@@ -34,7 +36,15 @@ function PreviewPlaceholder({ text }: { text: string }) {
  * neutral placeholder), a choose / replace button over the native file input (still focusable and
  * labelled), the chosen file's name and a remove action. The preview URL is revoked on change.
  */
-export function ImageField({ label, value, onChange, existingPath, error, hint }: ImageFieldProps) {
+export function ImageField({
+  label,
+  value,
+  onChange,
+  existingPath,
+  error,
+  hint,
+  mediaKey,
+}: ImageFieldProps) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const previewUrl = useMemo(() => (value ? URL.createObjectURL(value) : null), [value]);
@@ -49,7 +59,8 @@ export function ImageField({ label, value, onChange, existingPath, error, hint }
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const statusId = `${id}-status`;
-  const currentSrc = resolveMediaUrl(existingPath);
+  const localSrc = useLocalMedia(mediaKey, existingPath);
+  const currentSrc = localSrc ?? resolveMediaUrl(existingPath);
   const hasCurrent = currentSrc !== null;
   // The server keeps the path even when it does not serve the file: say so instead of a broken icon.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -74,7 +85,9 @@ export function ImageField({ label, value, onChange, existingPath, error, hint }
         }}
       />
     );
-    status = 'الصورة الحالية — اختر صورة أخرى لاستبدالها.';
+    status = localSrc
+      ? 'نسخة محلية محفوظة على هذا المتصفح — اختر صورة أخرى لاستبدالها.'
+      : 'الصورة الحالية — اختر صورة أخرى لاستبدالها.';
   } else {
     preview = <PreviewPlaceholder text="لا توجد صورة" />;
     status = 'لا توجد صورة بعد.';
@@ -125,6 +138,10 @@ export function ImageField({ label, value, onChange, existingPath, error, hint }
           </p>
         </div>
       </div>
+      <p className={styles.muted}>
+        تظهر الصورة محلياً على هذا المتصفح، وتبقى بعد إعادة التحميل إذا كان التخزين المحلي متاحاً.
+        لا تنتقل تلقائياً إلى أجهزة أخرى.
+      </p>
       {hint ? (
         <p id={hintId} className={styles.muted}>
           {hint}

@@ -307,8 +307,7 @@ describe('Plan game player — dedicated engines (client revision 2026-10)', () 
   it.each([
     ['an unknown slug', { slug: 'memory-game' }],
     ['no slug (live today)', { slug: null }],
-    ['a test activity', { type: 'اختبارات' }],
-  ])('falls back to the generic player for %s', async (_label, overrides) => {
+  ])('uses the visual search board for %s', async (_label, overrides) => {
     serveGame(overrides);
     renderPlayer();
 
@@ -316,7 +315,15 @@ describe('Plan game player — dedicated engines (client revision 2026-10)', () 
       await screen.findByRole('heading', { name: 'ما الحرف الأول في كلمة «أسد»؟' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'صيد الحروف' })).not.toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'لوحة البحث' })).toBeInTheDocument();
+  });
+
+  it('keeps tests in the generic question player', async () => {
+    serveGame({ type: 'اختبارات' });
+    renderPlayer();
+    await screen.findByRole('heading', { name: 'ما الحرف الأول في كلمة «أسد»؟' });
     expect(screen.getByText('اختر إجابة واحدة.')).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'لوحة البحث' })).not.toBeInTheDocument();
   });
 
   it('plays the mock game rows end to end through the real submit flow', async () => {

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MIN_CHILD_AGE, MAX_CHILD_AGE } from '@/constants/children';
 
 import type { AreaRole } from '@/constants/routes';
 import { httpClient } from '@/services/http/httpClient';
@@ -44,7 +45,14 @@ export function mapChildSummary(dto: z.infer<typeof childListItemSchema>): Child
   return {
     id: dto.id,
     fullName: dto.fullName ?? '',
-    age: dto.age ?? null,
+    age:
+      dto.age !== null &&
+      dto.age !== undefined &&
+      Number.isInteger(dto.age) &&
+      dto.age >= MIN_CHILD_AGE &&
+      dto.age <= MAX_CHILD_AGE
+        ? dto.age
+        : null,
     gender: normalizeGender(dto.gender),
     parentName: dto.parentName ?? null,
     specialistName: dto.specialistName ?? null,

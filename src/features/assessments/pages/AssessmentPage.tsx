@@ -16,14 +16,14 @@ import { useAssessmentCategories } from '../api/assessmentQueries';
 import { AssessmentCategoryPicker, PLAY_ALL } from '../components/AssessmentCategoryPicker';
 import { AssessmentQuestionRunner, type RunProgress } from '../components/AssessmentQuestionRunner';
 import { AssessmentResults } from '../components/AssessmentResults';
-import { categoryProgress, questionsInScope, type AssessmentScope } from '../state/assessmentRun';
+import { isAnswerable, categoryProgress } from '../state/assessmentRun';
 
 const TITLE = 'التقييم الأولي';
 const EMOJI = '🎯';
 
 /**
  * Initial assessment (Replit `/assessment/:id`) — full-screen, light child style.
- * Parent only: pick a category (or play all) → start → answer each question → complete (Swagger
+ * Parent only: start all categories → answer each question → complete (Swagger
  * `initial-assessment/*`). The flow ends with the submission; the saved result is for staff
  * (product decision 2026-10-14).
  */
@@ -53,29 +53,18 @@ export function AssessmentPage() {
   return <ParentAssessment childId={childId} />;
 }
 
-const scopeKey = (scope: AssessmentScope) => (scope.kind === 'all' ? PLAY_ALL : scope.category.id);
-
 const addAll = (set: ReadonlySet<string>, ids: readonly string[]) => new Set([...set, ...ids]);
 
-/**
- * Client revision 2026-10: the assessment's real categories (`GET initial-assessment/categories`)
- * are shown first. The first pick starts ONE server assessment (`start`, whose response groups the
- * questions by category); each pick then plays only the still-open questions of that category, or
- * of every category ("العب الكل دفعة واحدة"). Answers are final on the server, so finished
- * questions are never replayed. Once every question was played, the assessment is completed.
- */
+/** One assessment over all categories. Returning to the intro preserves answers in this visit. */
 function ParentAssessment({ childId }: { childId: string }) {
   const { paths } = useRoleArea();
   const children = useChildrenForRole('Parent');
   const categories = useAssessmentCategories();
   const start = useStartAssessment();
   const complete = useCompleteAssessment();
-  const [scope, setScope] = useState<AssessmentScope | null>(null);
-  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
   const [run, setRun] = useState(0);
-  const [processed, setProcessed] = useState<ReadonlySet<string>>(new Set());
   const [answered, setAnswered] = useState<ReadonlySet<string>>(new Set());
-  const [notice, setNotice] = useState<string | null>(null);
   const [isFinished, setIsFinished] = useState(false);
 
   const profilePath = paths.childProfile(childId);
@@ -127,42 +116,23 @@ function ParentAssessment({ childId }: { childId: string }) {
     </Link>
   );
 
-  const play = (next: AssessmentScope) => {
-    setNotice(null);
+  const play = () => {
     setRun((count) => count + 1);
-    setScope(next);
+    setIsRunning(true);
   };
 
-  const select = (next: AssessmentScope) => {
-    if (assessment) {
-      play(next);
-      return;
-    }
-    setPendingKey(scopeKey(next));
-    start.mutate(childId, {
-      onSuccess: () => {
-        play(next);
-      },
-      onSettled: () => {
-        setPendingKey(null);
-      },
-    });
+  const select = () => {
+    if (assessment) play();
+    else start.mutate(childId, { onSuccess: play });
   };
 
-  /** Back to the picker, or — once every question was played — completes the assessment. */
-  const endRun = (progress: RunProgress, isRunComplete: boolean) => {
-    const nextProcessed = addAll(processed, progress.processed);
-    setProcessed(nextProcessed);
-    setAnswered(addAll(answered, progress.answered));
-    setScope(null);
-    if (!assessment) return;
-    if (allQuestions.every((question) => nextProcessed.has(question.id))) {
+  const endRun = (progress: RunProgress) => {
+    const nextAnswered = addAll(answered, progress.answered);
+    setAnswered(nextAnswered);
+    setIsRunning(false);
+    if (assessment && allQuestions.every((question) => nextAnswered.has(question.id))) {
       setIsFinished(true);
       complete.mutate(assessment.assessmentId);
-      return;
-    }
-    if (isRunComplete && scope?.kind === 'category') {
-      setNotice(`أحسنت! أنهيت «${scope.category.name}». اختر تصنيفاً آخر.`);
     }
   };
 
@@ -207,65 +177,50 @@ function ParentAssessment({ childId }: { childId: string }) {
         />
       );
     }
-    if (!assessment || scope === null) {
+    if (assessment && allQuestions.some((question) => !isAnswerable(question))) {
+      return (
+        <EmptyState
+          icon={<ClipboardX />}
+          title="التقييم يحتاج إلى استكمال محتواه"
+          description="يوجد سؤال بلا خيارات أو من نوع غير مدعوم. يُرجى التواصل مع إدارة المنصة لاستكماله قبل بدء الإجابة عن التقييم."
+          action={backToProfile}
+        />
+      );
+    }
+    if (!assessment || !isRunning) {
       return (
         <AssessmentCategoryPicker
           childName={child.fullName}
           cards={(categories.data ?? []).map((category) => ({
             category,
-            progress: assessment ? categoryProgress(allQuestions, category, processed) : null,
+            progress: assessment ? categoryProgress(allQuestions, category, answered) : null,
           }))}
           isLoading={categories.isPending}
           loadError={categories.error}
           onRetry={() => void categories.refetch()}
           startError={start.error}
-          pendingKey={pendingKey}
-          notice={notice}
+          pendingKey={start.isPending ? PLAY_ALL : null}
+          notice={null}
           exitAction={backToProfile}
           onSelect={select}
         />
       );
     }
-    const questions = questionsInScope(allQuestions, scope, processed);
-    if (questions.length === 0) {
-      return (
-        <EmptyState
-          icon={<ClipboardX />}
-          title="لا توجد أسئلة في هذا التصنيف حالياً"
-          description="لم يُرسل الخادم أسئلة لهذا التصنيف. اختر تصنيفاً آخر."
-          action={
-            <Button
-              onClick={() => {
-                setScope(null);
-              }}
-            >
-              العودة إلى التصنيفات
-            </Button>
-          }
-        />
-      );
-    }
-    const remainingAfter = allQuestions.filter(
-      (question) => !processed.has(question.id) && !questions.includes(question),
-    ).length;
+    const questions = allQuestions.filter((question) => !answered.has(question.id));
     return (
       <AssessmentQuestionRunner
         key={run}
         assessmentId={assessment.assessmentId}
         questions={questions}
-        finishLabel={remainingAfter === 0 ? 'إنهاء التقييم' : 'إنهاء التصنيف'}
-        onFinished={(progress) => {
-          endRun(progress, true);
-        }}
-        onExit={(progress) => {
-          endRun(progress, false);
-        }}
+        finishLabel="إنهاء التقييم"
+        onFinished={endRun}
+        onExit={endRun}
       />
     );
   };
 
   return (
-    <PlayerShell {...shell} title={title} width={scope ? 'player' : 'wide'}>
+    <PlayerShell {...shell} title={title} width={isRunning ? 'player' : 'wide'}>
       {renderBody()}
     </PlayerShell>
   );

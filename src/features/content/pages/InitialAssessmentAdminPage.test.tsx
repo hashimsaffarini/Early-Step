@@ -1,3 +1,4 @@
+import { clearAssessmentActions } from '../api/assessmentSelectionCache';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -7,6 +8,10 @@ import { mockAssessmentQuestionIds } from '@/mocks/fixtures/content';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
 import { renderContent } from '@/test/contentTestUtils';
+
+beforeEach(() => {
+  clearAssessmentActions();
+});
 
 const hierarchy = () => screen.findByRole('list', { name: 'تصنيفات التقييم المبدئي' });
 
@@ -118,7 +123,24 @@ describe('InitialAssessmentAdminPage (category → questions, client revision 20
       }),
     );
 
-    expect(await screen.findByText('أُضيف إلى التقييم في هذه الجلسة.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('آخر إجراء محفوظ على هذا المتصفح: إضافة إلى التقييم.'),
+    ).toBeInTheDocument();
     expect(mockAssessmentQuestionIds.has('q0000000-0000-4000-8000-000000000001')).toBe(true);
+  });
+  it('includes an activity question group and restores its acknowledged local selection after remount', async () => {
+    const first = renderContent(ADMIN_PATHS.initialAssessment);
+    const group = await screen.findByRole('checkbox', { name: 'تضمين جميع أسئلة اختبار الحروف' });
+    expect(group).toBePartiallyChecked();
+    await userEvent.click(group);
+    await waitFor(() => {
+      expect(group).toBeChecked();
+    });
+    expect(mockAssessmentQuestionIds.size).toBeGreaterThanOrEqual(2);
+    first.unmount();
+    renderContent(ADMIN_PATHS.initialAssessment);
+    expect(
+      await screen.findByRole('checkbox', { name: 'تضمين جميع أسئلة اختبار الحروف' }),
+    ).toBeChecked();
   });
 });

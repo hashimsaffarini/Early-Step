@@ -1,3 +1,4 @@
+import { mediaKeys } from '@/services/media/localMedia';
 import { Check } from 'lucide-react';
 
 import { ServerImage } from '@/components/shared/ServerImage';
@@ -60,7 +61,12 @@ export function GameOptionCard({
           <Check />
         </span>
       ) : null}
-      <ServerImage path={option.imageUrl} alt="" className={styles.optionImage} />
+      <ServerImage
+        path={option.imageUrl}
+        mediaKey={mediaKeys.option(option.id)}
+        alt=""
+        className={styles.optionImage}
+      />
       {option.text.trim() ? (
         <span className={styles.optionText} aria-hidden="true">
           <bdi>{option.text}</bdi>
