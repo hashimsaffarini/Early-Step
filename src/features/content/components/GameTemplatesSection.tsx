@@ -1,45 +1,42 @@
 import { Plus, Shapes } from 'lucide-react';
 
-import { GAME_TEMPLATE_LIST, type GameSlug } from '@/components/games';
-import { CHOICE_TYPE_LABELS } from '@/components/players';
+import { REAL_GAME_LIST } from '@/components/games';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Button } from '@/components/ui/Button';
 
 import styles from './content.module.css';
 
 /**
- * «قوالب الألعاب» (client revision 2026-10): the four game templates with an explicit «إنشاء لعبة»
- * per template. Nothing is created automatically: the button opens the normal form with the
- * template chosen; the Admin enters the content and saves it to the backend.
+ * «قوالب الألعاب» (client revision 2026-11): the five real games, each with an explicit «إنشاء
+ * لعبة». Nothing is created automatically: the button opens the normal form with the game chosen;
+ * the Admin saves it to the backend and assigns it from the plan as before. Older templates stay
+ * playable for existing activities but are no longer offered for new ones.
  */
-export function GameTemplatesSection({ onCreate }: { onCreate: (template: GameSlug) => void }) {
+export function GameTemplatesSection({ onCreate }: { onCreate: (template: string) => void }) {
   return (
     <section className={styles.page} aria-labelledby="game-templates">
       <SectionHeader id="game-templates" title="قوالب الألعاب" icon={Shapes} iconTone="violet" />
       <p className={styles.muted}>
-        اختر قالباً لإنشاء لعبة حقيقية، ثم أضف أسئلتها من صفحة اللعبة. يرى الطفل الأسئلة بواجهة
-        القالب.
+        اختر لعبة لإنشائها. كل لعبة جاهزة بمحتوى ومستويات سهل / متوسط / صعب، ولا تحتاج إلى أسئلة.
       </p>
       <ul className={styles.templateGrid} aria-label="قوالب الألعاب">
-        {GAME_TEMPLATE_LIST.map((template) => (
-          <li key={template.slug} className={styles.templateCard}>
+        {REAL_GAME_LIST.map((game) => (
+          <li key={game.slug} className={styles.templateCard}>
             <span className={styles.templateIcon} aria-hidden="true">
-              <template.icon />
+              <game.icon />
             </span>
             <div className={styles.rowMain}>
-              <h2 className={styles.rowTitle}>{template.name}</h2>
-              <p className={styles.muted}>{template.purpose}</p>
-              <p className={styles.muted}>
-                {`الأسئلة: ${template.questionTypes.map((type) => CHOICE_TYPE_LABELS[type]).join('، ')}`}
-              </p>
+              <h2 className={styles.rowTitle}>{game.name}</h2>
+              <p className={styles.muted}>{game.tagline}</p>
+              <p className={styles.typeSkill}>{`المهارة: ${game.skill}`}</p>
             </div>
             <Button
               variant="soft"
               size="sm"
               iconStart={<Plus aria-hidden="true" />}
-              aria-label={`إنشاء لعبة من قالب ${template.name}`}
+              aria-label={`إنشاء لعبة من قالب ${game.name}`}
               onClick={() => {
-                onCreate(template.slug);
+                onCreate(game.slug);
               }}
             >
               إنشاء لعبة

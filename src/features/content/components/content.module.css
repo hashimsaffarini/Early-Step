@@ -781,3 +781,147 @@
   block-size: 1.25rem;
   color: var(--color-text-secondary);
 }
+
+/* «نوع اللعبة» visual cards (client revision 2026-11). */
+.typePicker {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.typeLegend {
+  margin-block-end: var(--space-2);
+  font-weight: var(--font-weight-bold);
+}
+
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: var(--space-3);
+}
+
+.typeCard {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-block-size: var(--tap-target-min);
+  padding: var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.typeCard:has(.typeRadio:focus-visible) {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.typeCardSelected {
+  border-color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
+}
+
+.typeRadio {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.typeText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.typeSkill {
+  margin: 0;
+  color: var(--color-primary-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.typeChosen {
+  flex-shrink: 0;
+  color: var(--color-primary-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Initial assessment admin (client revision 2026-11): overview counts and collapsible categories. */
+.overviewCounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overviewCount {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+}
+
+.overviewValue {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+}
+
+.collapseButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--tap-target-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.collapseButton:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.chevron,
+.chevronOpen {
+  flex-shrink: 0;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  transition: transform var(--duration-base) var(--ease-standard);
+}
+
+.chevron {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron,
+  .chevronOpen {
+    transition: none;
+  }
+}
+
+.countChips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/Button';
 import { FormField, Select } from '@/components/ui/Field';
 import { ConfirmDialog } from '@/components/ui/Modal';
 import { ADMIN_PATHS } from '@/constants/routes';
-import type { GameSlug } from '@/components/games';
 import { normalizeActivityType, type ActivityType } from '@/services/api/activityType';
 
 import { useActivities, useCategories, useDeleteActivity } from '../api/contentQueries';
@@ -30,7 +29,7 @@ import {
 const TYPES: readonly ActivityType[] = ['test', 'game'];
 
 type Editing =
-  | { mode: 'create'; template?: GameSlug | undefined }
+  | { mode: 'create'; template?: string | undefined }
   | { mode: 'edit'; activity: ActivitySummary }
   | null;
 

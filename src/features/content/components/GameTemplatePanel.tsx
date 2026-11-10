@@ -1,6 +1,6 @@
 import { CircleAlert, CircleCheck, Gamepad2 } from 'lucide-react';
 
-import { resolveGameTemplate } from '@/components/games';
+import { resolveGameTemplate, resolveRealGame } from '@/components/games';
 import { CHOICE_TYPE_LABELS } from '@/components/players';
 import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Feedback';
@@ -19,6 +19,24 @@ export interface GameTemplatePanelProps {
  * rewritten: a question of another type still works in the game with the engine made for its type.
  */
 export function GameTemplatePanel({ slug, questions }: GameTemplatePanelProps) {
+  const realGame = resolveRealGame(slug);
+  if (realGame) {
+    return (
+      <Card as="section" className={styles.templatePanel} aria-label="نوع اللعبة">
+        <span className={styles.templateIcon} aria-hidden="true">
+          <realGame.icon />
+        </span>
+        <div className={styles.rowMain}>
+          <p className={styles.rowTitle}>{`نوع اللعبة: ${realGame.name}`}</p>
+          <p className={styles.muted}>{`${realGame.tagline} — المهارة: ${realGame.skill}.`}</p>
+          <p className={styles.muted}>
+            <CircleCheck aria-hidden="true" size={14} /> لعبة جاهزة بمحتوى ومستويات سهل / متوسط /
+            صعب من التطبيق، ولا تحتاج إلى أسئلة. يُحدَّد المستوى المبدئي حسب عمر الطفل.
+          </p>
+        </div>
+      </Card>
+    );
+  }
   const template = resolveGameTemplate(slug);
   if (!template) {
     return (

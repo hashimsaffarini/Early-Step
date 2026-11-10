@@ -1,5 +1,5 @@
 import { rememberAssessmentActions } from './assessmentSelectionCache';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { ActivityType } from '@/services/api/activityType';
 import { queryKeys } from '@/services/api/queryKeys';
@@ -51,6 +51,27 @@ export function useCategoryQuestions(categoryId: string) {
   return useQuery({
     queryKey: queryKeys.content.categoryQuestions(categoryId),
     queryFn: () => fetchCategoryQuestions(categoryId),
+  });
+}
+
+/**
+ * Activity / question totals over the assessment's categories (same queries as
+ * `useCategoryQuestions`, so the per-category lists share the cache). `null` while any is loading.
+ */
+export function useAssessmentTotals(categoryIds: readonly string[]) {
+  return useQueries({
+    queries: categoryIds.map((categoryId) => ({
+      queryKey: queryKeys.content.categoryQuestions(categoryId),
+      queryFn: () => fetchCategoryQuestions(categoryId),
+    })),
+    combine: (results) => {
+      if (results.some((result) => !result.data)) return null;
+      const groups = results.flatMap((result) => result.data ?? []);
+      return {
+        activities: groups.length,
+        questions: groups.reduce((sum, group) => sum + group.questions.length, 0),
+      };
+    },
   });
 }
 

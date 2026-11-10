@@ -1,5 +1,6 @@
 import { mediaKeys } from '@/services/media/localMedia';
 import {
+  ChevronDown,
   CircleMinus,
   CirclePlus,
   ClipboardCheck,
@@ -8,18 +9,22 @@ import {
   Gamepad2,
   ImageIcon,
   ListPlus,
+  Pencil,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { Link } from 'react-router';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { ServerImage } from '@/components/shared/ServerImage';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Button, getButtonClassName } from '@/components/ui/Button';
+import { ADMIN_PATHS } from '@/constants/routes';
 import { Alert } from '@/components/ui/Feedback';
 
 import {
   useAssessmentCategoryIds,
+  useAssessmentTotals,
   useCategories,
   useCategoryQuestions,
   useToggleAssessmentCategory,
@@ -86,6 +91,16 @@ function CategoryQuestions({
               {group.activity.title}
             </span>
             <span className={styles.muted}>{`(${group.questions.length.toString()} أسئلة)`}</span>
+            {group.activity.type ? (
+              <Link
+                to={ADMIN_PATHS.activityDetail(group.activity.type, group.activity.id)}
+                className={getButtonClassName({ variant: 'ghost', size: 'sm' })}
+                aria-label={`تعديل أسئلة «${group.activity.title}»`}
+              >
+                <Pencil aria-hidden="true" />
+                تعديل الأسئلة
+              </Link>
+            ) : null}
           </h4>
           <AssessmentMembershipCheckbox
             label={`تضمين جميع أسئلة ${group.activity.title}`}
@@ -184,6 +199,75 @@ function CategoryQuestions({
   );
 }
 
+/** One assessment category, collapsible, with its counts, edit and add links. */
+function CategoryBlock({
+  category,
+  index,
+  action,
+  ...questionProps
+}: { category: Category; index: number; action: ReactNode } & QuestionActionsProps) {
+  const [isOpen, setIsOpen] = useState(true);
+  const query = useCategoryQuestions(category.id);
+  const groups = query.data;
+  const panelId = `assessment-category-${category.id}`;
+  return (
+    <li className={styles.categoryBlock}>
+      <div className={styles.categoryHead}>
+        <span className={styles.categoryIndex} aria-hidden="true">
+          {(index + 1).toString()}
+        </span>
+        <h3 className={styles.categoryTitle}>
+          <button
+            type="button"
+            className={styles.collapseButton}
+            aria-expanded={isOpen}
+            aria-controls={panelId}
+            onClick={() => {
+              setIsOpen((value) => !value);
+            }}
+          >
+            <ChevronDown
+              aria-hidden="true"
+              className={isOpen ? styles.chevronOpen : styles.chevron}
+            />
+            <span className={styles.levelLabel}>التصنيف:</span> <span>{category.name}</span>
+          </button>
+        </h3>
+        {groups ? (
+          <span className={styles.countChips}>
+            <Badge tone="primary">{`الأنشطة: ${groups.length.toString()}`}</Badge>
+            <Badge tone="neutral">
+              {`الأسئلة: ${groups
+                .reduce((sum, group) => sum + group.questions.length, 0)
+                .toString()}`}
+            </Badge>
+          </span>
+        ) : null}
+        <Link
+          to={ADMIN_PATHS.categoryActivities(category.id)}
+          className={getButtonClassName({ variant: 'soft', size: 'sm' })}
+          aria-label={`إضافة نشاط إلى تصنيف ${category.name}`}
+        >
+          <CirclePlus aria-hidden="true" />
+          إضافة نشاط
+        </Link>
+        <Link
+          to={ADMIN_PATHS.categoryActivities(category.id)}
+          className={getButtonClassName({ variant: 'ghost', size: 'sm' })}
+          aria-label={`تعديل تصنيف ${category.name}`}
+        >
+          <Pencil aria-hidden="true" />
+          تعديل
+        </Link>
+        {action}
+      </div>
+      <div id={panelId} hidden={!isOpen}>
+        <CategoryQuestions category={category} {...questionProps} />
+      </div>
+    </li>
+  );
+}
+
 /**
  * Initial-assessment composition (client revision 2026-10), shown as a hierarchy:
  * التقييم المبدئي → its categories → the questions that belong to each category.
@@ -203,6 +287,7 @@ export function InitialAssessmentAdminPage() {
   const memberSet = new Set(memberIds.data ?? []);
   const categories = categoriesQuery.data ?? [];
   const inAssessment = categories.filter((category) => memberSet.has(category.id));
+  const totals = useAssessmentTotals(inAssessment.map((category) => category.id));
   const isLoading = categoriesQuery.isPending || memberIds.isPending;
   const loadError = categoriesQuery.error ?? memberIds.error;
   const retry = () => {
@@ -260,10 +345,23 @@ export function InitialAssessmentAdminPage() {
             <p className={styles.rootTitle}>التقييم الأولي</p>
             <p className={styles.muted}>التصنيف ← النشاط (اختبار أو لعبة) ← الأسئلة التابعة له.</p>
           </div>
-          {!isLoading && !loadError ? (
-            <Badge tone="primary">{`التصنيفات: ${inAssessment.length.toString()}`}</Badge>
-          ) : null}
         </div>
+        {!isLoading && !loadError ? (
+          <ul className={styles.overviewCounts} aria-label="ملخص التقييم المبدئي">
+            <li className={styles.overviewCount}>
+              <span className={styles.overviewValue}>{inAssessment.length.toString()}</span>
+              التصنيفات
+            </li>
+            <li className={styles.overviewCount}>
+              <span className={styles.overviewValue}>{totals?.activities.toString() ?? '…'}</span>
+              الأنشطة والاختبارات
+            </li>
+            <li className={styles.overviewCount}>
+              <span className={styles.overviewValue}>{totals?.questions.toString() ?? '…'}</span>
+              أسئلة هذه التصنيفات
+            </li>
+          </ul>
+        ) : null}
         <QueryStatus
           isLoading={isLoading}
           error={loadError}
@@ -281,25 +379,16 @@ export function InitialAssessmentAdminPage() {
             </Alert>
             <ol className={styles.tree} aria-label="تصنيفات التقييم المبدئي">
               {inAssessment.map((category, index) => (
-                <li key={category.id} className={styles.categoryBlock}>
-                  <div className={styles.categoryHead}>
-                    <span className={styles.categoryIndex} aria-hidden="true">
-                      {(index + 1).toString()}
-                    </span>
-                    <h3 className={styles.categoryTitle}>
-                      <span className={styles.levelLabel}>التصنيف:</span>{' '}
-                      <span>{category.name}</span>
-                    </h3>
-                    {categoryButton(category)}
-                  </div>
-                  <CategoryQuestions
-                    category={category}
-                    actions={questionActions}
-                    onToggle={runQuestion}
-                    onToggleGroup={runQuestions}
-                    pending={toggleQuestion.isPending}
-                  />
-                </li>
+                <CategoryBlock
+                  key={category.id}
+                  category={category}
+                  index={index}
+                  action={categoryButton(category)}
+                  actions={questionActions}
+                  onToggle={runQuestion}
+                  onToggleGroup={runQuestions}
+                  pending={toggleQuestion.isPending}
+                />
               ))}
             </ol>
           </>
