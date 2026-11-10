@@ -1,0 +1,132 @@
+.game {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.status {
+  margin: 0;
+  min-block-size: 1.5em;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0 auto;
+  padding: 0;
+  inline-size: min(100%, 40rem);
+  list-style: none;
+}
+
+.grid[data-count='8'],
+.grid[data-count='12'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (min-width: 40rem) {
+  .grid[data-count='8'],
+  .grid[data-count='12'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.card {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 3 / 4;
+  min-block-size: 6rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: transparent;
+  cursor: pointer;
+  perspective: 40rem;
+}
+
+.card:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+.card:disabled {
+  cursor: default;
+}
+
+.inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform var(--duration-base) ease;
+}
+
+.faceUp .inner {
+  transform: rotateY(180deg);
+}
+
+.back,
+.front {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-xl);
+  backface-visibility: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.back {
+  background: var(--gradient-brand);
+  color: var(--color-text-on-dark);
+  font-size: var(--font-size-3xl);
+}
+
+.front {
+  border: 3px solid var(--color-primary-soft);
+  background: var(--color-surface);
+  transform: rotateY(180deg);
+}
+
+.matched .front {
+  border-color: var(--color-success-strong);
+  background: var(--color-success-soft);
+}
+
+.emoji {
+  font-size: var(--font-size-4xl);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.caption {
+  max-inline-size: 100%;
+  padding-inline: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.check {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-start: var(--space-2);
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  color: var(--color-success-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inner {
+    transition: none;
+  }
+}
