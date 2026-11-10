@@ -136,12 +136,50 @@ describe('ChildProfilePage — parent dashboard (client revision 2026-10)', () =
     await heading('يوسف');
 
     const plan = screen.getByRole('region', { name: 'الخطة التدريبية' });
-    expect(await within(plan).findByText('لعبة الذاكرة')).toBeInTheDocument();
-    expect(within(plan).getByText('لعبة')).toBeInTheDocument();
-    expect(within(plan).getByRole('link', { name: 'ابدأ: لعبة الذاكرة' })).toHaveAttribute(
+    // Client revision 2026-11: games appear as a picture library, apart from the tests.
+    const library = await within(plan).findByRole('list', { name: 'مكتبة الألعاب' });
+    expect(within(library).getByRole('heading', { name: 'لعبة الذاكرة' })).toBeInTheDocument();
+    expect(within(library).getByRole('link', { name: 'ابدأ اللعب: لعبة الذاكرة' })).toHaveAttribute(
       'href',
       getAreaPaths('Parent').planActivityPlay(YOUSEF, 'g-real'),
     );
+  });
+
+  it('keeps completed games replayable and completed tests reopenable', async () => {
+    server.use(
+      http.get(apiUrl('TrainingPlan/children/:childId/activities'), ({ request }) => {
+        const type = new URL(request.url).searchParams.get('type');
+        const row = (id: string, title: string, wire: string) => ({
+          planActivityId: `pa-${id}`,
+          activityId: id,
+          title,
+          iconUrl: null,
+          type: wire,
+          isCompleted: true,
+          score: 80,
+        });
+        return HttpResponse.json(
+          type === 'game'
+            ? [{ ...row('g-done', 'قطار الترتيب', 'ألعاب'), slug: 'sequence-train' }]
+            : [row('t-done', 'اختبار الحروف', 'اختبارات')],
+        );
+      }),
+    );
+    renderProfile('Parent', YOUSEF);
+    await heading('يوسف');
+
+    const library = await screen.findByRole('list', { name: 'مكتبة الألعاب' });
+    expect(within(library).getByText('مكتملة')).toBeInTheDocument();
+    // A known slug adds the game's skill.
+    expect(within(library).getByText('التسلسل والترتيب')).toBeInTheDocument();
+    expect(
+      within(library).getByRole('link', { name: 'العب مرة أخرى: قطار الترتيب' }),
+    ).toBeInTheDocument();
+    const tests = screen.getByRole('list', { name: 'أنشطة الخطة التدريبية' });
+    expect(within(tests).getByText('مكتمل')).toBeInTheDocument();
+    expect(
+      within(tests).getByRole('link', { name: 'إعادة المحاولة: اختبار الحروف' }),
+    ).toBeInTheDocument();
   });
 
   it('offers the parent to start the assessment (the result is staff-only: 403 for the parent)', async () => {

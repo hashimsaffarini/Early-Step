@@ -9,6 +9,7 @@ import type { PlanActivity } from '@/services/api/childPlan';
 import { cx } from '@/utils/classNames';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
+import { availabilityHint, playLabel, statusLabel } from './activityWording';
 import styles from './PlanActivityList.module.css';
 
 const TYPE_LABEL = { test: 'اختبار', game: 'لعبة' } as const;
@@ -23,7 +24,10 @@ export interface PlanActivityListProps {
   onRemove?: ((activity: PlanActivity) => void) | undefined;
   /** Extra content under a completed activity (the specialist's answer details). */
   renderDetails?: ((activity: PlanActivity) => ReactNode) | undefined;
-  /** Parent / Teacher: link to play an activity that is not completed yet. */
+  /**
+   * Parent only: link to play an activity. Completed activities stay openable (games replay,
+   * tests reopen as practice — client revision 2026-11); the Teacher gets no play link.
+   */
   playTo?: ((activity: PlanActivity) => string) | undefined;
 }
 
@@ -85,17 +89,14 @@ export function PlanActivityList({
                 {activity.type ? (
                   <span className={styles.typeChip}>{TYPE_LABEL[activity.type]}</span>
                 ) : null}
-                {activity.isCompleted ? (
-                  <span className={cx(styles.status, styles.statusDone)}>
+                <span className={cx(styles.status, activity.isCompleted && styles.statusDone)}>
+                  {activity.isCompleted ? (
                     <CircleCheck aria-hidden="true" />
-                    مكتمل
-                  </span>
-                ) : (
-                  <span className={styles.status}>
+                  ) : (
                     <Clock aria-hidden="true" />
-                    لم يكتمل بعد
-                  </span>
-                )}
+                  )}
+                  {statusLabel(activity)}
+                </span>
               </div>
               {activity.description ? (
                 <p className={styles.description}>{activity.description}</p>
@@ -111,15 +112,21 @@ export function PlanActivityList({
                 </ul>
               ) : null}
               {dates ? <p className={styles.meta}>{dates}</p> : null}
+              {!playTo && availabilityHint(activity) ? (
+                <p className={styles.meta}>{availabilityHint(activity)}</p>
+              ) : null}
             </div>
             <div className={styles.actions}>
-              {playTo && !activity.isCompleted ? (
+              {playTo ? (
                 <Link
                   to={playTo(activity)}
-                  className={getButtonClassName({ size: 'sm' })}
-                  aria-label={`ابدأ: ${title}`}
+                  className={getButtonClassName({
+                    size: 'sm',
+                    variant: activity.isCompleted ? 'outline' : 'primary',
+                  })}
+                  aria-label={`${playLabel(activity)}: ${title}`}
                 >
-                  ابدأ
+                  {playLabel(activity)}
                   <ChevronLeft aria-hidden="true" />
                 </Link>
               ) : null}

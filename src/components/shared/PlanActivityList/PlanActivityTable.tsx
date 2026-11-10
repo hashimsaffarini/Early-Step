@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
 import type { PlanActivityListProps } from './PlanActivityList';
+import { availabilityHint, playLabel, statusLabel } from './activityWording';
 import styles from './PlanActivityTable.module.css';
 
 type Filter = 'all' | 'test' | 'game' | 'completed';
@@ -91,8 +92,11 @@ export function PlanActivityTable({
                       ) : (
                         <Clock aria-hidden="true" />
                       )}
-                      {activity.isCompleted ? 'مكتمل' : 'لم يكتمل بعد'}
+                      {statusLabel(activity)}
                     </Badge>
+                    {!playTo && availabilityHint(activity) ? (
+                      <span className={styles.meta}>{availabilityHint(activity)}</span>
+                    ) : null}
                   </td>
                   <td>
                     <bdi>{activity.score === null ? '—' : `${activity.score.toString()}%`}</bdi>
@@ -105,13 +109,13 @@ export function PlanActivityTable({
                   <td>{activity.completedAt ? formatDisplayDate(activity.completedAt) : '—'}</td>
                   <td>
                     <div className={styles.actions}>
-                      {playTo && !activity.isCompleted ? (
+                      {playTo ? (
                         <Link
                           to={playTo(activity)}
                           className={getButtonClassName({ size: 'sm' })}
-                          aria-label={`ابدأ: ${activity.title}`}
+                          aria-label={`${playLabel(activity)}: ${activity.title}`}
                         >
-                          متابعة
+                          {playLabel(activity)}
                         </Link>
                       ) : null}
                       {onRemove && !activity.isCompleted ? (
@@ -136,7 +140,7 @@ export function PlanActivityTable({
                             onSelectResult(activity);
                           }}
                         >
-                          عرض إجابات الطفل
+                          عرض النتيجة
                         </Button>
                       ) : null}
                       {activity.isCompleted && renderDetails && !onSelectResult ? (

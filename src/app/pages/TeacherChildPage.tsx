@@ -5,11 +5,10 @@ import { Link, useParams } from 'react-router';
 
 import {
   AssessmentPlanGate,
-  AssessmentStatusCard,
   ChildHero,
   DashboardPanel,
   childHeroProgress,
-  PlanStatGrid,
+  PlanProgressCard,
 } from '@/components/shared/ChildDashboard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -26,8 +25,11 @@ import { summarizePlan } from '@/services/api/planSummary';
 import styles from './ChildDashboardPage.module.css';
 
 /**
- * Part 4 teacher child file: progress and real figures, filterable activity history, teacher notes
- * and saved-answer review when the backend permits it. The teacher cannot edit the plan or reports.
+ * Teacher child file (client revision 2026-11): plan progress (ring, %, figures), the filterable
+ * activity history with read-only «عرض النتيجة», teacher notes and the child's answers as separate
+ * question cards. The Teacher does not play the child's activities and has no initial-assessment
+ * card or page; the plan still opens only after the assessment (server status). The teacher
+ * cannot edit the plan or reports.
  */
 export function TeacherChildPage() {
   const { childId = '' } = useParams();
@@ -84,17 +86,8 @@ export function TeacherChildPage() {
             facts={childFacts(child, { withParent: true })}
             progress={childHeroProgress(summary)}
           />
-          {summary && summary.total > 0 ? (
-            <PlanStatGrid
-              summary={summary}
-              compact
-              assessmentScore={
-                assessment.state === 'complete' ? assessment.result.overallScore : undefined
-              }
-            />
-          ) : null}
+          {summary && summary.total > 0 ? <PlanProgressCard summary={summary} /> : null}
         </div>
-        <AssessmentStatusCard status={assessment} to={paths.childAssessment(child.id)} />
         <div className={styles.main}>
           <div className={styles.main}>
             <AssessmentPlanGate status={assessment}>
@@ -105,13 +98,16 @@ export function TeacherChildPage() {
                   setSelectedActivityId(activity.id);
                 }}
                 showAnswers
-                playTo={(activity) => paths.planActivityPlay(child.id, activity.activityId)}
               />
             </AssessmentPlanGate>
           </div>
           <div className={styles.columns}>
             <TeacherNotesSection childId={child.id} />
-            <DashboardPanel id="teacher-child-answers" title="إجابات الطفل" icon={Eye}>
+            <DashboardPanel
+              id="teacher-child-answers"
+              title="نتيجة النشاط وإجابات الطفل"
+              icon={Eye}
+            >
               {selectedActivity ? (
                 <>
                   <FormField label="النشاط المكتمل">

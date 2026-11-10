@@ -24,3 +24,22 @@
   inline-size: 1rem;
   block-size: 1rem;
 }
+
+/* Parent plan: games library, then tests (client revision 2026-11). */
+.planGroups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.planGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.planGroupTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-extrabold);
+}

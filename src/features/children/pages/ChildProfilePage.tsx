@@ -12,7 +12,7 @@ import {
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
-import { PlanActivityList } from '@/components/shared/PlanActivityList';
+import { PlanActivityList, PlanGameLibrary } from '@/components/shared/PlanActivityList';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
@@ -56,11 +56,30 @@ function ParentChildDashboard({ child }: { child: ChildSummary }) {
       </p>
     );
   } else {
+    const playTo = (activity: { activityId: string }) =>
+      paths.planActivityPlay(child.id, activity.activityId);
+    const games = plan.data.filter((activity) => activity.type === 'game');
+    const others = plan.data.filter((activity) => activity.type !== 'game');
+    // Client revision 2026-11: games as a picture library, tests as a list — they look different.
     planBody = (
-      <PlanActivityList
-        activities={plan.data}
-        playTo={(activity) => paths.planActivityPlay(child.id, activity.activityId)}
-      />
+      <div className={pageStyles.planGroups}>
+        {games.length > 0 ? (
+          <section aria-labelledby="child-plan-games" className={pageStyles.planGroup}>
+            <h3 id="child-plan-games" className={pageStyles.planGroupTitle}>
+              الألعاب
+            </h3>
+            <PlanGameLibrary games={games} playTo={playTo} />
+          </section>
+        ) : null}
+        {others.length > 0 ? (
+          <section aria-labelledby="child-plan-tests" className={pageStyles.planGroup}>
+            <h3 id="child-plan-tests" className={pageStyles.planGroupTitle}>
+              الاختبارات
+            </h3>
+            <PlanActivityList activities={others} playTo={playTo} />
+          </section>
+        ) : null}
+      </div>
     );
   }
 

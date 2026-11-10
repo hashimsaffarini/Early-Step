@@ -35,36 +35,74 @@ function optionsAfter(container: HTMLElement, label: string): string[] {
     .map((item) => item.textContent);
 }
 
-describe('Specialist child file — part 4', () => {
-  const openPlan = async () =>
-    userEvent.click(await screen.findByRole('tab', { name: 'الخطة التدريبية' }));
+describe('Specialist child file — client revision 2026-11', () => {
+  const openTab = async (name: string) => userEvent.click(await screen.findByRole('tab', { name }));
+  const openPlan = () => openTab('الخطة التدريبية');
+  const openReports = () => openTab('التقارير');
 
-  it('opens the initial assessment tab with real category scores and editable report', async () => {
+  it('shows five sections, each with its title above the content', async () => {
     renderPage();
     await heading('يوسف');
-    expect(screen.getByRole('tab', { name: 'التقييم المبدئي' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    const names = screen.getAllByRole('tab').map((tab) => tab.textContent);
+    expect(names).toEqual([
+      'نظرة عامة',
+      'التقييم المبدئي',
+      'الخطة التدريبية',
+      'ملاحظات المعلم',
+      'التقارير',
+    ]);
+    expect(screen.getByRole('tab', { name: 'نظرة عامة' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { level: 2, name: 'نظرة عامة' })).toBeInTheDocument();
+    for (const name of ['التقييم المبدئي', 'الخطة التدريبية', 'ملاحظات المعلم', 'التقارير']) {
+      await openTab(name);
+      expect(screen.getAllByRole('heading', { level: 2, name })[0]).toBeVisible();
+    }
+  });
+
+  it('shows the redesigned plan progress with real figures on the overview', async () => {
+    renderPage();
+    await heading('يوسف');
+    const ring = await screen.findByRole('progressbar', { name: 'تقدّم الخطة التدريبية' });
+    expect(ring).toHaveAttribute('aria-valuenow', '50');
+    expect(screen.getByText('1 من 2 نشاطاً مكتمل')).toBeInTheDocument();
+    const stats = screen.getByRole('list', { name: 'ملخص الخطة التدريبية' });
+    expect(statValue(stats, 'المكتملة')).toBe('1');
+    expect(statValue(stats, 'المتبقية')).toBe('1');
+    expect(statValue(stats, 'متوسط النتيجة')).toBe('75%');
+  });
+
+  it('shows the initial assessment as completed and view-only, with real category scores', async () => {
+    renderPage();
+    await heading('يوسف');
+    await openTab('التقييم المبدئي');
     const table = await screen.findByRole('table', { name: 'النتيجة العامة: 50%' });
     expect(within(table).getByText('الحروف والقراءة')).toBeInTheDocument();
-    expect(screen.queryByRole('list', { name: 'ملخص الخطة التدريبية' })).not.toBeInTheDocument();
+    expect(screen.getAllByText('تم إكمال التقييم')[0]).toBeVisible();
+    expect(screen.queryByRole('link', { name: /ابدأ التقييم/ })).not.toBeInTheDocument();
+  });
+
+  it('keeps the editable report in the reports section', async () => {
+    renderPage();
+    await heading('يوسف');
+    await openReports();
     expect(await screen.findByLabelText(/عنوان التقرير/)).toHaveValue('تقرير متابعة');
     expect(screen.getByRole('button', { name: 'حفظ التقرير' })).toBeDisabled();
   });
 
-  it('keeps teacher assignment, results and plan actions in the training-plan tab', async () => {
+  it('keeps teacher assignment, results and plan actions in the training-plan section', async () => {
     renderPage();
     await heading('يوسف');
     await openPlan();
     const table = await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
     expect(within(table).getByText('عرض إجابات الطفل')).toBeInTheDocument();
+    // Availability wording: a completed test can be reopened by the child (practice only).
+    expect(within(table).getByText('مكتمل')).toBeInTheDocument();
+    expect(
+      within(table).getByText('يمكن للطفل إعادة فتحه للتدريب دون تغيير النتيجة'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'إضافة نشاط' })).toBeInTheDocument();
     expect(screen.getByText('المعلم المسؤول: أ. سارة خالد')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^ابدأ:/ })).not.toBeInTheDocument();
-    const stats = screen.getByRole('list', { name: 'ملخص الخطة التدريبية' });
-    expect(statValue(stats, 'إجمالي الأنشطة')).toBe('2');
-    expect(statValue(stats, 'متوسط النتيجة')).toBe('75%');
+    expect(screen.queryByRole('link', { name: /^ابدأ/ })).not.toBeInTheDocument();
   });
 
   it('gates the training plan until assessment completion', async () => {
@@ -75,9 +113,10 @@ describe('Specialist child file — part 4', () => {
     expect(screen.queryByRole('button', { name: 'إضافة نشاط' })).not.toBeInTheDocument();
   });
 
-  it('opens the full assessment details from the initial tab', async () => {
+  it('opens the full assessment details from the initial assessment section', async () => {
     const { router } = renderPage();
     await heading('يوسف');
+    await openTab('التقييم المبدئي');
     await userEvent.click(await screen.findByRole('link', { name: 'عرض التقييم كاملاً' }));
     expect(
       await screen.findByRole('heading', { level: 1, name: 'التقييم الأولي' }),
@@ -85,7 +124,7 @@ describe('Specialist child file — part 4', () => {
     expect(router.state.location.pathname).toBe(paths.childAssessment(YOUSEF));
   });
 
-  it('shows the teacher feedback read-only inside the plan tab', async () => {
+  it('shows the teacher feedback read-only in the teacher notes section', async () => {
     server.use(
       http.get(apiUrl('Teacher/children/:childId/feedbacks'), () =>
         HttpResponse.json([{ id: 'n-1', content: 'يتحسّن في الحروف', createdAt: '2026-10-02' }]),
@@ -93,7 +132,7 @@ describe('Specialist child file — part 4', () => {
     );
     renderPage();
     await heading('يوسف');
-    await openPlan();
+    await openTab('ملاحظات المعلم');
     const notes = screen.getByRole('region', { name: 'ملاحظات المعلم' });
     expect(await within(notes).findByText('يتحسّن في الحروف')).toBeInTheDocument();
     expect(within(notes).queryByRole('button')).not.toBeInTheDocument();
@@ -109,6 +148,7 @@ describe('Specialist child file — part 4', () => {
     );
     renderPage();
     await heading('يوسف');
+    await openReports();
     const title = await screen.findByLabelText(/عنوان التقرير/);
     await userEvent.clear(title);
     await userEvent.type(title, 'تقرير محدث');
@@ -128,6 +168,7 @@ describe('Specialist child file — part 4', () => {
     );
     renderPage(SALMA);
     await heading('سلمى');
+    await openReports();
     await userEvent.type(await screen.findByLabelText(/عنوان التقرير/), 'تقرير جديد');
     await userEvent.type(screen.getByLabelText(/جوانب تحتاج إلى دعم/), 'تمييز الحروف');
     await userEvent.type(screen.getByLabelText(/التوصيات/), 'قراءة قصة يومياً');
@@ -149,6 +190,7 @@ describe('Specialist child file — part 4', () => {
     );
     renderPage();
     await heading('يوسف');
+    await openReports();
     const title = await screen.findByLabelText(/عنوان التقرير/);
     await userEvent.clear(title);
     await userEvent.type(title, 'مسودة التقرير');
@@ -157,14 +199,15 @@ describe('Specialist child file — part 4', () => {
     expect(title).toHaveValue('مسودة التقرير');
   });
 
-  it('preserves an unsaved report when moving between the two tabs', async () => {
+  it('preserves an unsaved report when moving between sections', async () => {
     renderPage();
     await heading('يوسف');
+    await openReports();
     const title = await screen.findByLabelText(/عنوان التقرير/);
     await userEvent.clear(title);
     await userEvent.type(title, 'مسودة لم تحفظ');
     await openPlan();
-    await userEvent.click(screen.getByRole('tab', { name: 'التقييم المبدئي' }));
+    await openReports();
     expect(screen.getByLabelText(/عنوان التقرير/)).toHaveValue('مسودة لم تحفظ');
   });
 
