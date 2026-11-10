@@ -88,6 +88,8 @@ export function AssessmentCategoryPicker({
   exitAction,
   onSelect,
 }: AssessmentCategoryPickerProps) {
+  // Client revision 2026-11: «ابدأ التقييم» (was «العب الكل دفعة واحدة»); a resumed run continues.
+  const hasProgress = cards.some((card) => (card.progress?.done ?? 0) > 0);
   let body: ReactNode;
   if (isLoading) {
     body = <LoadingState label="جارٍ تحميل التصنيفات…" />;
@@ -161,7 +163,7 @@ export function AssessmentCategoryPicker({
             onSelect({ kind: 'all' });
           }}
         >
-          العب الكل دفعة واحدة
+          {hasProgress ? 'متابعة التقييم' : 'ابدأ التقييم'}
         </Button>
       </>
     );

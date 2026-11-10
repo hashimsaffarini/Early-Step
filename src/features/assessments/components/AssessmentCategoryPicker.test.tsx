@@ -39,7 +39,7 @@ describe('AssessmentCategoryPicker', () => {
     expect(within(list).queryByRole('button')).not.toBeInTheDocument();
     expect(within(list).getByText('تصنيف أ')).toBeInTheDocument();
     await userEvent.tab();
-    expect(screen.getByRole('button', { name: 'العب الكل دفعة واحدة' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'ابدأ التقييم' })).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     expect(props.onSelect).toHaveBeenCalledExactlyOnceWith({ kind: 'all' });
   });

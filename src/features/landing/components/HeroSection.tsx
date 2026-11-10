@@ -24,16 +24,12 @@ export function HeroSection({ nextSectionId }: HeroSectionProps) {
       <div className={styles.grid}>
         <div className={styles.text}>
           <h1 id="hero-title" className={styles.title}>
-            {hero.titleLine1}
-            <br />
-            {hero.titleLine2Start}{' '}
+            {hero.titleStart}{' '}
             <span className={styles.noWrap}>
-              {hero.titleConjunction}
               <span className={styles.highlight}>
                 <span className={styles.titleText}>{hero.titleHighlight}</span>
               </span>
-            </span>{' '}
-            {hero.titleLine2End}
+            </span>
           </h1>
           <p className={styles.description}>{hero.description}</p>
           <ul className={styles.features}>

@@ -8,11 +8,9 @@ import { Activity, Heart, Trophy, type LucideIcon } from 'lucide-react';
 export const LANDING_COPY = {
   nav: { login: 'تسجيل الدخول', start: 'ابدأ الآن' },
   hero: {
-    titleLine1: 'اكتشف إمكانات',
-    titleLine2Start: 'طفلك',
-    titleConjunction: 'و',
-    titleHighlight: 'طوّر قدراته',
-    titleLine2End: 'بسهولة',
+    // Client revision 2026-11: the headline is exactly «اكتشف قدرات طفلك».
+    titleStart: 'اكتشف',
+    titleHighlight: 'قدرات طفلك',
     description:
       'منصة تفاعلية ممتعة تساعد على اكتشاف صعوبات التعلم مبكراً من خلال ألعاب واختبارات، مع تقارير ومتابعة من الأخصائي للأهالي والمعلمين.',
     features: ['ألعاب واختبارات تفاعلية', 'تقييم مبدئي يراجعه أخصائي', 'توصيات ومتابعة مستمرة'],
