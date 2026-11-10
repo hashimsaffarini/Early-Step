@@ -1,9 +1,18 @@
 import { mediaKeys } from '@/services/media/localMedia';
-import { ArrowLeft, CircleCheck, FileQuestion, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Eye, FileQuestion, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
-import { GAME_TEMPLATES, resolveGameTemplate, type GameQuestion } from '@/components/games';
+import {
+  DEFAULT_REAL_GAME,
+  difficultyForAge,
+  GAME_TEMPLATES,
+  REAL_GAMES,
+  RealGameSession,
+  resolveGameTemplate,
+  resolveRealGame,
+  type GameQuestion,
+} from '@/components/games';
 import {
   AnswerTile,
   CHOICE_HINTS,
@@ -20,6 +29,7 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { ServerImage } from '@/components/shared/ServerImage';
 import type { AppError } from '@/services/http/apiError';
@@ -48,6 +58,11 @@ function isRetryable(error: AppError): boolean {
   return error.status === undefined || error.status >= HTTP_STATUS.INTERNAL_SERVER_ERROR;
 }
 
+function lastLabel(isLast: boolean, isPractice: boolean): string {
+  if (!isLast) return 'التالي';
+  return isPractice ? 'إنهاء المحاولة' : 'إنهاء النشاط وحفظ النتيجة';
+}
+
 function tileState(selection: readonly string[], optionId: string): AnswerTileState {
   return selection.includes(optionId) ? 'selected' : 'idle';
 }
@@ -56,6 +71,13 @@ interface RunProps {
   childId: string;
   detail: PlanActivityDetail;
   exitTo: string;
+  /**
+   * Reopened after a saved result (client revision 2026-11: training-plan activities stay
+   * openable). The server keeps one result per activity (a second submit → 409), so a practice
+   * run is never submitted and the saved result stays untouched.
+   */
+  isPractice?: boolean;
+  onRestart?: () => void;
 }
 
 /**
@@ -64,7 +86,8 @@ interface RunProps {
  * and the parent cannot read the result (403), so the child gets no right/wrong feedback; the
  * specialist sees the score and per-question result.
  */
-function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
+function PlanActivityRun({ childId, detail, exitTo, isPractice = false, onRestart }: RunProps) {
+  const restartLabel = 'إعادة المحاولة';
   const { questions } = detail;
   const submit = useSubmitPlanActivity(childId, detail.activity.id);
   const [index, setIndex] = useState(0);
@@ -80,6 +103,25 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
   const question = questions[index];
 
   if (isFinished || !question) {
+    if (isPractice) {
+      return (
+        <ResultPanel
+          category="neutral"
+          title="أحسنت! انتهت المحاولة 👏"
+          scoreText="هذه محاولة للتدريب: تبقى النتيجة المحفوظة سابقاً كما هي."
+          actions={
+            <>
+              <Button size="lg" iconStart={<RotateCcw aria-hidden="true" />} onClick={onRestart}>
+                {restartLabel}
+              </Button>
+              <Link to={exitTo} className={getButtonClassName({ variant: 'outline', size: 'lg' })}>
+                العودة إلى ملف الطفل
+              </Link>
+            </>
+          }
+        />
+      );
+    }
     if (submit.isSuccess) {
       return (
         <ResultPanel
@@ -125,7 +167,7 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
     setSelection([]);
     if (isLast) {
       setIsFinished(true);
-      submit.mutate(nextAnswers);
+      if (!isPractice) submit.mutate(nextAnswers);
       return;
     }
     setIndex((value) => value + 1);
@@ -187,7 +229,7 @@ function PlanActivityRun({ childId, detail, exitTo }: RunProps) {
         iconEnd={<ArrowLeft aria-hidden="true" />}
         onClick={next}
       >
-        {isLast ? 'إنهاء النشاط وحفظ النتيجة' : 'التالي'}
+        {lastLabel(isLast, isPractice)}
       </Button>
     </>
   );
@@ -202,17 +244,27 @@ function toGameQuestions(questions: readonly PlanQuestion[]): GameQuestion[] {
 
 /**
  * A child's training-plan activity, played from the server's questions; the result is saved.
- * Routing (client revision 2026-10): a game whose `slug` names a known template opens that game
- * engine (`components/games`); games without usable template metadata use visual search /
- * ordering, while tests retain the generic player.
+ * Routing (client revisions 2026-10 / 2026-11):
+ * - a game whose `slug` names one of the five real games opens that game (`components/games/real`),
+ *   as does a game with no usable slug and no questions; real games are always replayable and are
+ *   never submitted (no backend contract stores their result — BACKEND_REQUESTS);
+ * - other games open their legacy template engine (unknown slug with questions → visual search);
+ * - tests use the generic player;
+ * - an activity that already has a saved result reopens as a practice run that is not submitted
+ *   (one result per activity on the server; a second submit → 409);
+ * - the Teacher reviews results on the child page and does not play the child's activities.
  */
 export function PlanActivityPlayerPage() {
   const { childId = '', activityId = '' } = useParams();
-  const { paths } = useRoleArea();
-  const query = usePlanActivityDetail(childId, activityId);
+  const { role, paths } = useRoleArea();
+  const isTeacher = role === 'Teacher';
+  const query = usePlanActivityDetail(isTeacher ? '' : childId, activityId);
+  const children = useChildrenForRole(role);
+  const childAge = children.data?.find((item) => item.id === childId)?.age ?? null;
   // "Already done" is decided on the first load: after this session's submission the refetched
   // activity is completed, but the run (and its result screen) stays on screen.
   const [completedOnLoad, setCompletedOnLoad] = useState<boolean | null>(null);
+  const [practiceRun, setPracticeRun] = useState(0);
   if (query.data && completedOnLoad === null) {
     setCompletedOnLoad(query.data.activity.isCompleted);
   }
@@ -226,7 +278,22 @@ export function PlanActivityPlayerPage() {
       العودة إلى ملف الطفل
     </Link>
   );
+  const restartPractice = () => {
+    setPracticeRun((value) => value + 1);
+  };
 
+  if (isTeacher) {
+    return (
+      <PlayerShell {...shell}>
+        <EmptyState
+          icon={<Eye />}
+          title="عرض النتيجة من ملف الطفل"
+          description="يلعب الطفل أنشطته من حساب وليّ الأمر. يمكنك مراجعة النتيجة وإجابات الطفل من ملف الطفل."
+          action={backLink}
+        />
+      </PlayerShell>
+    );
+  }
   if (query.isPending) {
     return (
       <PlayerShell {...shell}>
@@ -256,20 +323,27 @@ export function PlanActivityPlayerPage() {
       </PlayerShell>
     );
   }
-  if (completedOnLoad ?? query.data.activity.isCompleted) {
-    // One attempt per activity: the server rejects a second submission.
-    return (
-      <PlayerShell {...shell}>
-        <EmptyState
-          icon={<CircleCheck />}
-          title="أُنجز هذا النشاط"
-          description="حُفظت نتيجة هذا النشاط من قبل، ولا يمكن إرساله مرة أخرى."
-          action={backLink}
-        />
-      </PlayerShell>
-    );
+  const { activity, questions } = query.data;
+  if (activity.type === 'game') {
+    const realGame =
+      resolveRealGame(activity.slug) ??
+      (resolveGameTemplate(activity.slug) === null && questions.length === 0
+        ? REAL_GAMES[DEFAULT_REAL_GAME]
+        : null);
+    if (realGame) {
+      return (
+        <PlayerShell {...shell} emoji={realGame.emoji} width="wide">
+          <RealGameSession
+            game={realGame}
+            initialDifficulty={difficultyForAge(childAge)}
+            exitTo={exitTo}
+            exitLabel="العودة إلى ملف الطفل"
+          />
+        </PlayerShell>
+      );
+    }
   }
-  if (!query.data.questions.every(isPlayable)) {
+  if (!questions.every(isPlayable)) {
     return (
       <PlayerShell {...shell}>
         <EmptyState
@@ -281,7 +355,7 @@ export function PlanActivityPlayerPage() {
       </PlayerShell>
     );
   }
-  if (query.data.questions.length === 0) {
+  if (questions.length === 0) {
     return (
       <PlayerShell {...shell}>
         <EmptyState
@@ -293,27 +367,45 @@ export function PlanActivityPlayerPage() {
       </PlayerShell>
     );
   }
+  const isPractice = completedOnLoad ?? activity.isCompleted;
+  const practiceNotice = isPractice ? (
+    <p className={styles.practiceNotice} role="note">
+      حُفظت نتيجة هذا النشاط من قبل. هذه محاولة للتدريب ولن تُرسل مرة أخرى.
+    </p>
+  ) : null;
   const template =
-    query.data.activity.type === 'game'
-      ? (resolveGameTemplate(query.data.activity.slug) ?? GAME_TEMPLATES['spot-it'])
+    activity.type === 'game'
+      ? (resolveGameTemplate(activity.slug) ?? GAME_TEMPLATES['spot-it'])
       : null;
   if (template) {
     return (
       <PlayerShell {...shell} emoji="🎮" width="wide">
+        {practiceNotice}
         <PlanGameRun
+          key={practiceRun}
           childId={childId}
-          activity={query.data.activity}
-          savedActivity={query.data.activity}
+          activity={activity}
+          savedActivity={activity}
           template={template}
-          questions={toGameQuestions(query.data.questions)}
+          questions={toGameQuestions(questions)}
           exitTo={exitTo}
+          isPractice={isPractice}
+          onRestart={restartPractice}
         />
       </PlayerShell>
     );
   }
   return (
     <PlayerShell {...shell}>
-      <PlanActivityRun childId={childId} detail={query.data} exitTo={exitTo} />
+      {practiceNotice}
+      <PlanActivityRun
+        key={practiceRun}
+        childId={childId}
+        detail={query.data}
+        exitTo={exitTo}
+        isPractice={isPractice}
+        onRestart={restartPractice}
+      />
     </PlayerShell>
   );
 }
