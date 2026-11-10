@@ -280,3 +280,17 @@ No new value is static, placeholder or invented; a value the server does not sen
 The Teacher area (dashboard, children, profile, plan, feedback, chat) is wired to the real
 endpoints but cannot be verified live: accounts created with `POST SuperAdmin/users` still answer
 `Auth/login` with an empty 500 (re-tested 2026-10-15). No mock data is used to fill it.
+
+## 17. NOVEMBER CLIENT REVISION BATCH (2026-11-10) — data sources
+
+- Real-game content (`components/games/real/content`) is product content shipped with the app,
+  like the UI copy; it is not user data and never presented as a child's saved result.
+- Real-game end screens show only the current session's figures; nothing is persisted or sent
+  (no endpoint, backend #11). No stars, coins or invented scores.
+- Practice runs of completed activities never call `submit`; the saved server result stays the
+  only result shown in plans and dashboards.
+- `PlanProgressCard` figures come from `summarizePlan` over the real plan rows; absent figures are
+  hidden, never shown as 0. Admin overview counts come from `initial-assessment/categories` and the
+  existing per-category question reads.
+- Mock mode adds five real-game rows for the demo child (`fixtures/planActivities.ts`); mock mode
+  remains unreachable in production builds (§1).

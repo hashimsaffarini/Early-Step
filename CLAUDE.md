@@ -30,7 +30,14 @@ Status per feature: `docs/BACKEND_INTEGRATION_STATUS.md`. Development mock mode
 (`VITE_USE_MOCKS=true`, dev only) lets you review the integrated UI without accounts.
 Next steps: `docs/IMPLEMENTATION_PLAN.md`.
 
-## Latest client revision 2026-10-28
+## Latest client revision 2026-11-10
+
+November batch (ADR-030, `docs/GAME_ENGINE.md` §9): five real games in `components/games/real`
+(content-driven, never submitted — no backend contract); completed plan activities reopen as
+practice runs that never resubmit; the Teacher has no play links and no initial assessment;
+Specialist child file has five titled sections; Admin creates games only from the five real games.
+
+## Client revision 2026-10-28
 
 Part 4 behavior is recorded in `docs/CLIENT_REVISIONS_PART4.md` and ADR-027. Initial assessment
 starts all categories from one orange button. Specialist child files use assessment/plan tabs and
