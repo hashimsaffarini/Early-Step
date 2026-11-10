@@ -1,0 +1,119 @@
+.game {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.prompt {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-black);
+  text-align: center;
+}
+
+.status {
+  margin: 0;
+  min-block-size: 1.5em;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+/* The sky: lanes side by side, balloons float gently up and down inside their lane. */
+.field {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--lanes), minmax(0, 1fr));
+  block-size: clamp(18rem, 55vh, 26rem);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, var(--color-primary-soft), var(--color-surface));
+  list-style: none;
+}
+
+.lane {
+  position: relative;
+}
+
+.balloon {
+  position: absolute;
+  inset-block-start: 55%;
+  inset-inline: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  inline-size: clamp(3.5rem, 18vw, 5rem);
+  margin-inline: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  animation: float var(--float) ease-in-out var(--phase) infinite;
+}
+
+.balloon:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+  border-radius: var(--radius-pill);
+}
+
+.face {
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 50% 50% 45% 45%;
+  background: var(--color-surface);
+  border: 3px solid var(--color-accent);
+  box-shadow: var(--shadow-card);
+  font-size: clamp(var(--font-size-xl), 6vw, var(--font-size-3xl));
+}
+
+.string {
+  inline-size: 2px;
+  block-size: 1.5rem;
+  background: var(--color-border-strong);
+}
+
+.wiggle {
+  animation:
+    float var(--float) ease-in-out var(--phase) infinite,
+    wiggle 0.4s ease;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-9rem);
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+
+  33% {
+    rotate: -8deg;
+  }
+
+  66% {
+    rotate: 8deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .balloon,
+  .wiggle {
+    inset-block-start: 30%;
+    animation: none;
+  }
+}

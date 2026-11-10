@@ -1,0 +1,155 @@
+.game {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.stage {
+  margin: 0;
+  align-self: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-soft-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.prompt {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-black);
+  text-align: center;
+}
+
+.status {
+  margin: 0;
+  min-block-size: 1.5em;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+/* The train runs from the inline start (right in RTL): engine first, then wagons 1, 2, 3… */
+.train {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border-block-end: 4px solid var(--color-border-strong);
+  list-style: none;
+}
+
+.engine {
+  font-size: clamp(var(--font-size-3xl), 10vw, var(--font-size-5xl));
+  line-height: 1;
+}
+
+.wagon {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  inline-size: clamp(4rem, 17vw, 5.5rem);
+  block-size: clamp(4.5rem, 18vw, 6rem);
+  padding: var(--space-1);
+  border: 3px dashed var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  font: inherit;
+  cursor: default;
+}
+
+.full {
+  border-style: solid;
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  cursor: pointer;
+}
+
+.done {
+  border-color: var(--color-success-strong);
+  background: var(--color-success-soft);
+}
+
+.wagon:focus-visible,
+.card:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+.wagonNumber {
+  align-self: flex-start;
+  min-inline-size: 1.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-strong);
+  color: var(--color-text-on-dark);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-black);
+}
+
+.cargo {
+  font-size: clamp(var(--font-size-xl), 6vw, var(--font-size-3xl));
+  line-height: 1;
+}
+
+.wheels {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.5em;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  inline-size: clamp(5rem, 22vw, 7rem);
+  min-block-size: 6rem;
+  padding: var(--space-2);
+  border: 3px solid transparent;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  font: inherit;
+  cursor: pointer;
+}
+
+.loaded {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.cardEmoji {
+  font-size: var(--font-size-4xl);
+  line-height: 1.1;
+}
+
+.cardLabel {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}

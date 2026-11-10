@@ -1,17 +1,27 @@
-import { ArrowRight, UserX } from 'lucide-react';
+import {
+  ArrowRight,
+  ClipboardCheck,
+  FileText,
+  LayoutDashboard,
+  MessageSquareText,
+  Target,
+  UserX,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Tabs } from '@/components/ui/Tabs';
 import { Link, useParams } from 'react-router';
 
 import {
   AssessmentPlanGate,
+  AssessmentStatusCard,
   ChildHero,
   childHeroProgress,
-  PlanStatGrid,
+  PlanProgressCard,
 } from '@/components/shared/ChildDashboard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { SectionHeader } from '@/components/shared/SectionHeader';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { AssessmentOverview, childFacts, TeacherFeedbackPanel } from '@/features/children';
 import { ChildReportEditor } from '@/features/reports';
@@ -23,14 +33,25 @@ import { summarizePlan } from '@/services/api/planSummary';
 
 import styles from './ChildDashboardPage.module.css';
 
+type SpecialistTab = 'overview' | 'assessment' | 'plan' | 'notes' | 'reports';
+
+const TABS: readonly { value: SpecialistTab; label: string }[] = [
+  { value: 'overview', label: 'نظرة عامة' },
+  { value: 'assessment', label: 'التقييم المبدئي' },
+  { value: 'plan', label: 'الخطة التدريبية' },
+  { value: 'notes', label: 'ملاحظات المعلم' },
+  { value: 'reports', label: 'التقارير' },
+];
+
 /**
- * Part 4 specialist child file: initial-assessment / plan tabs, server category results and an
- * inline report editor. Plan editing and teacher feedback remain in the plan tab. Tab content
- * stays mounted so a report draft survives switching tabs. Child-data editing is Parent-only.
+ * Specialist child file (client revision 2026-11): five sections, each with a clear title above
+ * its content — overview (plan progress), initial assessment (view only once completed), training
+ * plan (editing), teacher notes (read-only) and reports. Section content stays mounted so a report
+ * draft survives switching sections. Child-data editing is Parent-only.
  */
 export function SpecialistChildPage() {
   const { childId = '' } = useParams();
-  const [tab, setTab] = useState<'assessment' | 'plan'>('assessment');
+  const [tab, setTab] = useState<SpecialistTab>('overview');
   const { paths } = useRoleArea();
   const children = useChildrenForRole('Specialist');
   const child = children.data?.find((item) => item.id === childId);
@@ -84,26 +105,51 @@ export function SpecialistChildPage() {
         <Tabs
           className={styles.fileTabs}
           label="ملف الطفل"
-          items={[
-            { value: 'assessment', label: 'التقييم المبدئي' },
-            { value: 'plan', label: 'الخطة التدريبية' },
-          ]}
+          items={TABS}
           value={tab}
           onChange={setTab}
         >
+          <div className={styles.main} hidden={tab !== 'overview'}>
+            <SectionHeader id="sp-overview" title="نظرة عامة" icon={LayoutDashboard} />
+            {summary && summary.total > 0 ? (
+              <PlanProgressCard
+                summary={summary}
+                assessmentScore={
+                  assessment.state === 'complete' ? assessment.result.overallScore : undefined
+                }
+              />
+            ) : (
+              <p className={styles.muted}>
+                تظهر نسبة إنجاز الخطة التدريبية هنا بعد إضافة أنشطة إلى الخطة.
+              </p>
+            )}
+            <AssessmentStatusCard status={assessment} to={paths.childAssessment(child.id)} />
+          </div>
           <div className={styles.main} hidden={tab !== 'assessment'}>
+            <SectionHeader id="sp-assessment" title="التقييم المبدئي" icon={ClipboardCheck} />
             <AssessmentOverview status={assessment} detailsTo={paths.childAssessment(child.id)} />
-            <ChildReportEditor childId={child.id} />
           </div>
           <div className={styles.main} hidden={tab !== 'plan'}>
-            {summary && summary.total > 0 ? <PlanStatGrid summary={summary} compact /> : null}
+            <SectionHeader id="sp-plan" title="الخطة التدريبية" icon={Target} iconTone="accent" />
             <AssessmentPlanGate status={assessment}>
               <SpecialistPlanEditor
                 child={{ id: child.id, name: child.fullName, teacherName: child.teacherName }}
                 showSummary={false}
               />
             </AssessmentPlanGate>
+          </div>
+          <div className={styles.main} hidden={tab !== 'notes'}>
+            <SectionHeader
+              id="sp-notes"
+              title="ملاحظات المعلم"
+              icon={MessageSquareText}
+              iconTone="success"
+            />
             <TeacherFeedbackPanel childId={child.id} />
+          </div>
+          <div className={styles.main} hidden={tab !== 'reports'}>
+            <SectionHeader id="sp-reports" title="التقارير" icon={FileText} iconTone="violet" />
+            <ChildReportEditor childId={child.id} />
           </div>
         </Tabs>
       </>

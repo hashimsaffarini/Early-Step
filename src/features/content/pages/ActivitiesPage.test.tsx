@@ -193,54 +193,58 @@ describe('ActivitiesPage', () => {
       renderContent(`${ADMIN_PATHS.activities}?type=game`);
 
       const templates = await screen.findByRole('list', { name: 'قوالب الألعاب' });
-      expect(within(templates).getAllByRole('listitem')).toHaveLength(5);
+      // Client revision 2026-11: only the five real games are offered for new games.
+      expect(
+        within(templates)
+          .getAllByRole('heading', { level: 2 })
+          .map((item) => item.textContent),
+      ).toEqual(['لعبة الذاكرة', 'رتّب وطابق', 'اصطد الهدف', 'قطار الترتيب', 'متاهة التعلم']);
+      expect(within(templates).queryByText('صيد الحروف')).not.toBeInTheDocument();
       await userEvent.click(
-        within(templates).getByRole('button', { name: 'إنشاء لعبة من قالب صيد الحروف' }),
+        within(templates).getByRole('button', { name: 'إنشاء لعبة من قالب لعبة الذاكرة' }),
       );
 
       const dialog = screen.getByRole('dialog', { name: 'إضافة لعبة' });
-      expect(within(dialog).getByLabelText('نوع اللعبة')).toHaveValue('letter-hunt');
-      expect(
-        within(dialog).getByText(/أنواع الأسئلة المناسبة: اختيار إجابة واحدة/),
-      ).toBeInTheDocument();
-      expect(within(dialog).getByLabelText(/المعرّف المختصر/)).toHaveValue('letter-hunt');
-      await userEvent.type(within(dialog).getByLabelText(/عنوان النشاط/), 'صيد حروف الحيوانات');
+      const types = within(dialog).getByRole('group', { name: 'نوع اللعبة' });
+      expect(within(types).getAllByRole('radio')).toHaveLength(5);
+      expect(within(types).getByRole('radio', { name: /^لعبة الذاكرة/ })).toBeChecked();
+      expect(within(dialog).getByText(/ولا تحتاج إلى أسئلة/)).toBeInTheDocument();
+      expect(within(dialog).getByLabelText(/المعرّف المختصر/)).toHaveValue('memory-pairs');
+      await userEvent.type(within(dialog).getByLabelText(/عنوان النشاط/), 'ذاكرة الحيوانات');
       await userEvent.selectOptions(within(dialog).getByLabelText(/^التصنيف/), 'الحروف والقراءة');
       await userEvent.click(within(dialog).getByRole('button', { name: 'حفظ' }));
 
       await waitFor(() => {
-        expect(received?.get('Slug')).toBe('letter-hunt');
+        expect(received?.get('Slug')).toBe('memory-pairs');
       });
-      expect(received?.get('Title')).toBe('صيد حروف الحيوانات');
+      expect(received?.get('Title')).toBe('ذاكرة الحيوانات');
     });
 
-    it('keeps a suffix when switching template and shows each template’s question types', async () => {
+    it('keeps a suffix when switching between the visual game cards', async () => {
       renderContent(`${ADMIN_PATHS.activities}?type=game`);
       await screen.findByRole('list', { name: 'قوالب الألعاب' });
       await userEvent.click(
         screen.getAllByRole('button', { name: 'إضافة لعبة' })[0] ?? document.body,
       );
       const dialog = screen.getByRole('dialog', { name: 'إضافة لعبة' });
-      const template = within(dialog).getByLabelText('نوع اللعبة');
-      expect(template).toHaveValue('');
+      const types = within(dialog).getByRole('group', { name: 'نوع اللعبة' });
+      expect(within(types).queryByRole('radio', { checked: true })).not.toBeInTheDocument();
 
-      await userEvent.selectOptions(template, 'memory-sequence');
-      expect(within(dialog).getByText(/أنواع الأسئلة المناسبة: ترتيب/)).toBeInTheDocument();
+      await userEvent.click(within(types).getByRole('radio', { name: /^قطار الترتيب/ }));
       const slug = within(dialog).getByLabelText(/المعرّف المختصر/);
+      expect(slug).toHaveValue('sequence-train');
       await userEvent.clear(slug);
-      await userEvent.type(slug, 'memory-sequence-2');
-      await userEvent.selectOptions(template, 'focus-challenge');
+      await userEvent.type(slug, 'sequence-train-2');
+      await userEvent.click(within(types).getByRole('radio', { name: /^متاهة التعلم/ }));
 
-      expect(slug).toHaveValue('focus-challenge-2');
-      expect(
-        within(dialog).getByText(/أنواع الأسئلة المناسبة: اختيار عدة إجابات/),
-      ).toBeInTheDocument();
+      expect(slug).toHaveValue('learning-maze-2');
+      expect(within(types).getByText('✓ مختار')).toBeInTheDocument();
     });
 
-    it('rejects a slug that does not belong to the chosen template', async () => {
+    it('rejects a slug that does not belong to the chosen game', async () => {
       renderContent(`${ADMIN_PATHS.activities}?type=game`);
       await screen.findByRole('list', { name: 'قوالب الألعاب' });
-      await userEvent.click(screen.getByRole('button', { name: 'إنشاء لعبة من قالب طابق الرقم' }));
+      await userEvent.click(screen.getByRole('button', { name: 'إنشاء لعبة من قالب اصطد الهدف' }));
       const dialog = screen.getByRole('dialog', { name: 'إضافة لعبة' });
       await userEvent.type(within(dialog).getByLabelText(/عنوان النشاط/), 'لعبة');
       await userEvent.selectOptions(within(dialog).getByLabelText(/^التصنيف/), 'الأرقام والحساب');
@@ -251,7 +255,7 @@ describe('ActivitiesPage', () => {
 
       expect(
         await within(dialog).findByText(
-          'يجب أن يبدأ المعرّف بـ number-match ليفتح الطفل لعبة «طابق الرقم».',
+          'يجب أن يبدأ المعرّف بـ target-catch ليفتح الطفل لعبة «اصطد الهدف».',
         ),
       ).toBeInTheDocument();
     });

@@ -35,7 +35,8 @@ export function AssessmentOverview({
       }
     >
       <p className={styles.subtitle}>
-        نتيجة التقييم المبدئي حسب التصنيفات، وإجابات الطفل المحفوظة.
+        <Badge tone="success">تم إكمال التقييم</Badge> يُجرى التقييم المبدئي مرة واحدة؛ يمكن عرض
+        النتيجة حسب التصنيفات وإجابات الطفل المحفوظة.
       </p>
       <div className={styles.scroll} role="region" aria-label="نتائج التقييم المبدئي" tabIndex={0}>
         <table className={styles.table}>

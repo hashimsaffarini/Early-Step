@@ -34,7 +34,7 @@ async function addNote(text: string) {
   await userEvent.click(screen.getByRole('button', { name: 'حفظ الملاحظة' }));
 }
 
-describe('TeacherChildPage — plan-focused view (client revision 2026-10)', () => {
+describe('TeacherChildPage — plan-focused view (client revisions 2026-10 / 2026-11)', () => {
   it('shows the child, the plan progress, stat cards, the activities and the notes — no tabs', async () => {
     renderNotes();
 
@@ -48,16 +48,23 @@ describe('TeacherChildPage — plan-focused view (client revision 2026-10)', () 
     expect(
       await screen.findByRole('progressbar', { name: 'نسبة إنجاز الخطة التدريبية' }),
     ).toHaveAttribute('aria-valuetext', '1 من 2 أنشطة منجزة');
+    // Redesigned progress (2026-11): ring with the %, «X من Y نشاطاً مكتمل» and figure chips.
+    expect(screen.getByRole('progressbar', { name: 'تقدّم الخطة التدريبية' })).toHaveAttribute(
+      'aria-valuenow',
+      '50',
+    );
+    expect(screen.getByText('1 من 2 نشاطاً مكتمل')).toBeInTheDocument();
     const stats = screen.getByRole('list', { name: 'ملخص الخطة التدريبية' });
-    expect(within(stats).getByText('إجمالي الأنشطة').nextElementSibling).toHaveTextContent('2');
     expect(within(stats).getByText('المكتملة').nextElementSibling).toHaveTextContent('1');
+    expect(within(stats).getByText('المتبقية').nextElementSibling).toHaveTextContent('1');
     // The summary is not repeated inside the plan section.
     expect(screen.queryByRole('region', { name: 'ملخص الأنشطة' })).not.toBeInTheDocument();
-    // 3. Activities: status as icon + text, play links for the open ones.
+    // 3. Activities: status as icon + text; the teacher reviews results and never plays them.
     const activities = screen.getByRole('table', { name: 'أنشطة الخطة التدريبية' });
     expect(within(activities).getByText('مكتمل')).toBeInTheDocument();
     expect(within(activities).getByText('لم يكتمل بعد')).toBeInTheDocument();
-    expect(within(activities).getAllByRole('link', { name: /^ابدأ: / })).toHaveLength(1);
+    expect(within(activities).queryAllByRole('link')).toHaveLength(0);
+    expect(within(activities).getByRole('button', { name: 'عرض النتيجة' })).toBeInTheDocument();
     // 4. Notes live in the plan view.
     expect(screen.getByRole('region', { name: 'ملاحظات المعلم' })).toBeInTheDocument();
     // No overview / initial-assessment / reports for the teacher.
@@ -70,14 +77,11 @@ describe('TeacherChildPage — plan-focused view (client revision 2026-10)', () 
     renderNotes();
     expect(await screen.findByRole('heading', { level: 1, name: 'يوسف' })).toBeInTheDocument();
 
-    // The initial-assessment card (its page shows the details the server lets the teacher read).
-    expect(await screen.findByRole('link', { name: /^التقييم الأولي:/ })).toHaveAttribute(
-      'href',
-      '/teacher/children/c0000000-0000-4000-8000-000000000001/assessment',
-    );
-    // Completed activities can open the child's answers (shown only if the server allows it).
+    // Completed activities open their result read-only (answers only if the server allows it).
     const activities = await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
-    expect(within(activities).getByText('عرض إجابات الطفل')).toBeInTheDocument();
+    expect(within(activities).getByText('عرض النتيجة')).toBeInTheDocument();
+    // No initial-assessment card for the teacher (client revision 2026-11).
+    expect(screen.queryByRole('link', { name: /^التقييم الأولي/ })).not.toBeInTheDocument();
     // Specialist-only actions are absent.
     expect(screen.queryByRole('button', { name: 'إضافة نشاط' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^إزالة/ })).not.toBeInTheDocument();
@@ -85,7 +89,7 @@ describe('TeacherChildPage — plan-focused view (client revision 2026-10)', () 
     expect(screen.queryByText(/تقرير/)).not.toBeInTheDocument();
   });
 
-  it('shows the assessment result to the teacher when the server allows it', async () => {
+  it('shows no initial assessment to the teacher, even when the server allows reading it', async () => {
     server.use(
       http.get(apiUrl('initial-assessment/:childId/result'), () =>
         HttpResponse.json({
@@ -97,8 +101,52 @@ describe('TeacherChildPage — plan-focused view (client revision 2026-10)', () 
     );
     renderNotes();
 
-    const card = await screen.findByRole('link', { name: /التقييم الأولي: مكتمل/ });
-    expect(card).toHaveTextContent('النتيجة العامة: 60%');
+    await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
+    expect(screen.queryByText(/التقييم الأولي|التقييم المبدئي/)).not.toBeInTheDocument();
+    expect(screen.queryByText('النتيجة العامة: 60%')).not.toBeInTheDocument();
+  });
+
+  it("shows the child's answers as separate question cards with a ✓ / ✕ verdict in text", async () => {
+    server.use(
+      http.get(apiUrl('TrainingPlan/children/:childId/activities/:planActivityId/result'), () =>
+        HttpResponse.json({
+          trainingPlanActivityId: 'p0000000-0000-4000-8000-000000000001',
+          activityId: 'a0000000-0000-4000-8000-000000000001',
+          title: 'اختبار الحروف',
+          isCompleted: true,
+          score: 50,
+          questions: [
+            {
+              questionId: 'q-1',
+              questionText: 'ما هذا الحرف؟',
+              type: 'SingleChoice',
+              selectedOptions: [{ id: 'o-1', optionText: 'ب', optionImageUrl: null }],
+              isCorrect: true,
+            },
+            {
+              questionId: 'q-2',
+              questionText: 'اختر الحرف الأول',
+              type: 'SingleChoice',
+              selectedOptions: [{ id: 'o-2', optionText: 'ت', optionImageUrl: null }],
+              isCorrect: false,
+            },
+          ],
+        }),
+      ),
+    );
+    renderNotes();
+
+    const answers = await screen.findByRole('list', { name: 'إجابات «اختبار الحروف»' });
+    const cards = within(answers).getAllByRole('article');
+    expect(cards).toHaveLength(2);
+    const [first, second] = cards as [HTMLElement, HTMLElement];
+    expect(within(first).getByRole('heading', { name: 'السؤال 1' })).toBeInTheDocument();
+    expect(within(first).getByText('إجابة صحيحة')).toBeInTheDocument();
+    expect(within(first).getByText('اختيار إجابة واحدة')).toBeInTheDocument();
+    expect(within(first).getByText('الإجابة الصحيحة:')).toBeInTheDocument();
+    expect(within(second).getByRole('heading', { name: 'السؤال 2' })).toBeInTheDocument();
+    expect(within(second).getByText('إجابة غير صحيحة')).toBeInTheDocument();
+    expect(within(second).getByText('لا يرسلها الخادم حالياً.')).toBeInTheDocument();
   });
 
   it("lists the child's earlier notes from GET Teacher/children/{childId}/feedbacks", async () => {

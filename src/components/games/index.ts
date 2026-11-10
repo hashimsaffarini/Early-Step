@@ -16,3 +16,18 @@ export {
   type GameSlug,
   type GameTemplate,
 } from './types';
+export {
+  DEFAULT_REAL_GAME,
+  difficultyForAge,
+  DIFFICULTIES,
+  DIFFICULTY_LABELS,
+  REAL_GAME_LIST,
+  REAL_GAME_SLUGS,
+  REAL_GAMES,
+  RealGameSession,
+  resolveRealGame,
+  type Difficulty,
+  type RealGameDefinition,
+  type RealGameSlug,
+  type SessionFigure,
+} from './real';

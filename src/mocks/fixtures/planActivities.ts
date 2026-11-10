@@ -84,6 +84,12 @@ const INITIAL: readonly MockPlanActivityRow[] = [
   gameRow(2, 'number-match', 'طابق الرقم', 'اختر الرقم المناسب.'),
   gameRow(3, 'memory-sequence', 'تحدي الذاكرة', 'رتّب البطاقات بالترتيب الصحيح.'),
   gameRow(4, 'focus-challenge', 'تحدي التركيز', 'اختر كل البطاقات المطلوبة.'),
+  // Client revision 2026-11: the five real games (no questions — content lives in the app).
+  gameRow(5, 'memory-pairs', 'لعبة الذاكرة', 'اقلب البطاقات واعثر على الأزواج.'),
+  gameRow(6, 'sort-and-match', 'رتّب وطابق', 'ضع كل صورة في مجموعتها.'),
+  gameRow(7, 'target-catch', 'اصطد الهدف', 'المس البالونات التي تحمل الهدف.'),
+  gameRow(8, 'sequence-train', 'قطار الترتيب', 'رتّب العربات بالترتيب الصحيح.'),
+  gameRow(9, 'learning-maze', 'متاهة التعلم', 'أوصل السلحفاة إلى الهدف الصحيح.'),
 ];
 
 export const mockPlanActivities: MockPlanActivityRow[] = [];

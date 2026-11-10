@@ -257,3 +257,36 @@ Parent dashboard, child page, assessment picker, a game; Specialist child page (
 and not completed), assessment page, report form, reports list; Teacher child page and assessment
 page; Admin categories, a category's activities, a parent's page, specialists. Add-child and
 employee-edit dialogs fit the mobile width.
+
+## NOVEMBER CLIENT REVISION BATCH (2026-11-10)
+
+Branch `feature/nov-client-revisions`. ADR-030; games in `docs/GAME_ENGINE.md` §9; backend
+requests #9–#13.
+
+| Request                                          | Status  | Implementation                                                                                                |
+| ------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------- |
+| Landing headline «اكتشف قدرات طفلك»              | DONE    | `landing/content.ts` + `HeroSection` (exact h1 text, tested)                                                  |
+| «العب الكل دفعة واحدة» → «ابدأ التقييم»          | DONE    | `AssessmentCategoryPicker`; «متابعة التقييم» when resuming                                                    |
+| Five real games (not quizzes)                    | DONE    | `components/games/real` — five engines, content, levels, age default                                          |
+| Start / end screens, no fake rewards             | DONE    | `RealGameSession`                                                                                             |
+| Backend still controls assignment                | DONE    | Routed by the server `slug`; no fake assignments or ids                                                       |
+| Real-game result stored                          | BLOCKED | No endpoint (backend #11); games are never submitted                                                          |
+| Old slugs backward compatible                    | DONE    | Legacy engines unchanged; legacy card kept when editing                                                       |
+| Admin creates only the five games (visual cards) | DONE    | `GameTemplatesSection`, `GameTypePicker`, `GameTemplatePanel`                                                 |
+| Games always replayable                          | DONE    | Real games: «العب مرة أخرى»; legacy completed games: practice run, no submit                                  |
+| Training-plan tests reopenable                   | DONE    | Practice run, no resubmission (no 409), saved result unchanged                                                |
+| Initial assessment one-time                      | DONE    | Server-enforced; staff see «تم إكمال التقييم» (view only); Parent status unreadable (backend #10)             |
+| Admin initial-assessment redesign                | DONE    | Overview counts, collapsible categories, edit / add links, per-category counts                                |
+| Teacher cannot play child games                  | DONE    | No play links; the player shows «عرض النتيجة من ملف الطفل»                                                    |
+| Teacher answers as question cards                | DONE    | `PlanActivityResultDetails` (number, type, child / correct answer, ✓ / ✕ text); answers need backend #13 live |
+| Teacher plan redesign                            | DONE    | `PlanProgressCard` + activity table (type, status, result, «عرض النتيجة»)                                     |
+| Teacher: no initial assessment                   | DONE    | Card removed, route removed for the Teacher                                                                   |
+| Specialist section titles                        | DONE    | Five titled sections: نظرة عامة / التقييم المبدئي / الخطة التدريبية / ملاحظات المعلم / التقارير               |
+| Specialist plan progress redesign                | DONE    | `PlanProgressCard`: ring, large %, «X من Y نشاطاً مكتمل», figure chips                                        |
+| Availability wording                             | DONE    | game «مكتملة», test «مكتمل» + hints; assessment «تم إكمال التقييم»                                            |
+| Parent game library                              | DONE    | `PlanGameLibrary` cards, «ابدأ اللعب» / «العب مرة أخرى»; tests stay a list                                    |
+| Accessibility                                    | DONE    | Large targets, tap alternative to drag, keyboard, reduced motion, text states                                 |
+| Regressions preserved                            | DONE    | Full suite green; gate, toasts, reports, Pages config unchanged                                               |
+
+Known limits: the plan list has no `slug` (#9), so live games cannot be told apart yet and the
+library shows the generic game picture; correct answers are absent from activity results (#12).

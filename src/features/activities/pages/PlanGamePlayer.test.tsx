@@ -258,13 +258,42 @@ describe('Plan game player — dedicated engines (client revision 2026-10)', () 
     expect(await screen.findByRole('button', { name: 'إعادة محاولة الحفظ' })).toBeInTheDocument();
   });
 
-  it('shows the completed state for an already submitted game (no second attempt)', async () => {
-    serveGame({ isCompleted: true });
-    renderPlayer();
+  it(
+    'replays an already submitted game without a second submission (no 409)',
+    async () => {
+      let calls = 0;
+      serveGame({ isCompleted: true });
+      server.use(
+        http.post(
+          apiUrl('TrainingPlan/children/:childId/activities/:planActivityId/submit'),
+          () => {
+            calls += 1;
+            return HttpResponse.json({ message: 'conflict' }, { status: 409 });
+          },
+        ),
+      );
+      renderPlayer();
 
-    expect(await screen.findByText('أُنجز هذا النشاط')).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'صيد الحروف' })).not.toBeInTheDocument();
-  });
+      expect(await screen.findByRole('region', { name: 'صيد الحروف' })).toBeInTheDocument();
+      expect(screen.getByText(/محاولة للتدريب ولن تُرسل/)).toBeInTheDocument();
+      await tap('أ');
+      await next();
+      await tap('ق');
+      await tap('ل');
+      await tap('م');
+      await next();
+      await tap('تفاحة');
+      await userEvent.click(screen.getByRole('button', { name: 'إنهاء اللعبة' }));
+
+      expect(await screen.findByText('أحسنت! انتهت المحاولة 👏')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'العب مرة أخرى' }));
+      expect(
+        await screen.findByRole('heading', { name: 'ما الحرف الأول في كلمة «أسد»؟' }),
+      ).toBeInTheDocument();
+      expect(calls).toBe(0);
+    },
+    LONG_FLOW,
+  );
 
   it('shows loading, then an error with retry', async () => {
     let calls = 0;
@@ -339,5 +368,69 @@ describe('Plan game player — dedicated engines (client revision 2026-10)', () 
     await waitFor(() => {
       expect(screen.queryByText('جارٍ حفظ النتيجة…')).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('Plan game player — the five real games (client revision 2026-11)', () => {
+  it.each([
+    ['memory-pairs', 'لعبة الذاكرة'],
+    ['sort-and-match', 'رتّب وطابق'],
+    ['target-catch-2', 'اصطد الهدف'],
+    ['sequence-train', 'قطار الترتيب'],
+    ['learning-maze', 'متاهة التعلم'],
+  ])('opens the real %s game (not a quiz) with the age-based difficulty', async (slug, name) => {
+    serveGame({ slug, questions: [] });
+    renderPlayer();
+
+    expect(await screen.findByRole('heading', { level: 2, name })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'ابدأ اللعب' })).toBeInTheDocument();
+    // Nour is 5 in the mock list → «متوسط».
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'متوسط' })).toHaveAttribute('aria-pressed', 'true');
+    });
+    expect(screen.queryByRole('button', { name: 'التالي' })).not.toBeInTheDocument();
+  });
+
+  it('opens a real game even when the server sends questions for its slug', async () => {
+    serveGame({ slug: 'memory-pairs' });
+    renderPlayer();
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'لعبة الذاكرة' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'صيد الحروف' })).not.toBeInTheDocument();
+  });
+
+  it('uses the default real game for a game with no slug and no questions', async () => {
+    serveGame({ slug: null, questions: [] });
+    renderPlayer();
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'لعبة الذاكرة' }),
+    ).toBeInTheDocument();
+  });
+
+  it('never submits a real game — completed or not, it stays replayable', async () => {
+    let calls = 0;
+    serveGame({ slug: 'target-catch', questions: [], isCompleted: true });
+    server.use(
+      http.post(apiUrl('TrainingPlan/children/:childId/activities/:planActivityId/submit'), () => {
+        calls += 1;
+        return HttpResponse.json({ message: 'conflict' }, { status: 409 });
+      }),
+    );
+    renderPlayer();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'سهل' }));
+    await userEvent.click(screen.getByRole('button', { name: 'ابدأ اللعب' }));
+    // The engine always keeps at least one target («قطة» on easy) in the air.
+    for (let caught = 0; caught < 3; caught += 1) {
+      const [target] = await screen.findAllByRole('button', { name: 'بالون: قطة' });
+      if (!target) throw new Error('no target balloon');
+      await userEvent.click(target);
+    }
+    expect(await screen.findByRole('heading', { name: 'أحسنت!' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'العب مرة أخرى' })).toBeInTheDocument();
+    expect(calls).toBe(0);
   });
 });

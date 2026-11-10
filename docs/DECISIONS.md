@@ -686,3 +686,28 @@ No synthetic option ids or fabricated child results are introduced. The reported
 Initial-assessment question controls support batch include/removal using existing endpoints. Only
 acknowledged changes are remembered locally. Mixed checkboxes denote unknown/partial states, and
 the UI labels this as local history rather than claiming a global backend membership read.
+
+## ADR-030 — Five real games, replay without resubmission, staff role changes
+
+**Date:** 2026-11-10 · **Status:** Accepted (November client revision batch)
+
+- **Real games.** `components/games/real` adds five interactive games (`memory-pairs`,
+  `sort-and-match`, `target-catch`, `sequence-train`, `learning-maze`) with product-owned content
+  and easy / medium / hard levels; the default level follows the child's age (≤ 4 easy, ≤ 7 medium,
+  else hard). They are not quizzes: no server questions, no answer or option ids.
+- **Assignment stays on the backend.** A game opens as a real game only when the server's activity
+  `slug` names it (exact or `slug-suffix`), or — as before for unknown games — when the activity has
+  no usable slug _and_ no questions (`memory-pairs` default). Unknown slugs with questions keep the
+  visual default (ADR-027); the four legacy slugs keep their engines.
+- **No fabricated results.** No endpoint stores a real-game session (Swagger 2026-11-10, 84
+  operations). The submit endpoint needs real question / option ids, so real games are never
+  submitted; the end screen shows only the session's own figures. Backend request #11.
+- **Replay.** Games are always replayable. A plan activity that already has a saved result reopens
+  as a practice run that is never submitted (one result per activity: a second submit → 409); the
+  saved result is untouched and the page says so. The initial assessment stays one-time: completion
+  is enforced by the server, and the Parent cannot read its status (403, backend #10), so the
+  Parent's flow is unchanged.
+- **Teacher.** No play links and no player access (the submit endpoint is Parent-only anyway); no
+  initial-assessment card or route. The plan gate still follows the server status.
+- **Admin.** New games are created only from the five real games (visual radio cards); an activity
+  saved with a legacy template keeps that card when edited.

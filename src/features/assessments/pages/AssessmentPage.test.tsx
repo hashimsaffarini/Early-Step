@@ -31,9 +31,9 @@ function renderAssessment(role: 'Parent' | 'Teacher' = 'Parent', childId = CHILD
   );
 }
 
-const PLAY_ALL = 'العب الكل دفعة واحدة';
+const PLAY_ALL = 'ابدأ التقييم';
 
-/** "العب الكل دفعة واحدة" — starts the server assessment with every category. */
+/** «ابدأ التقييم» — starts the server assessment with every category. */
 const start = async () => {
   await userEvent.click(await screen.findByRole('button', { name: PLAY_ALL }));
 };
@@ -369,7 +369,8 @@ describe('AssessmentPage (initial assessment)', () => {
           await screen.findByRole('button', { name: 'العودة إلى مقدمة التقييم' }),
         );
         expect(await cardList()).toBeInTheDocument();
-        await start();
+        // A resumed run continues the assessment (client revision 2026-11 wording).
+        await userEvent.click(await screen.findByRole('button', { name: 'متابعة التقييم' }));
         expect(await screen.findByText('السؤال 1 من 4')).toBeInTheDocument();
         await tap('ق');
         await next();

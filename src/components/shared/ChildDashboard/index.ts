@@ -4,3 +4,4 @@ export { ChildHero, type ChildHeroFact, type ChildHeroProgress } from './ChildHe
 export { DashboardPanel } from './DashboardPanel';
 export { PlanStatGrid } from './PlanStatGrid';
 export { childHeroProgress } from './progress';
+export { PlanProgressCard } from './PlanProgressCard';

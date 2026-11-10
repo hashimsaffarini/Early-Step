@@ -80,14 +80,41 @@ and is not part of this list.
 
 ## Small improvements (not merge blockers)
 
-| #   | Now                                                                                                                                                                           | Suggested                                                                                                                                             |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 5   | Deleting a child with saved results (`DELETE Parent/{id}`) or removing a played plan activity → **empty 500**                                                                 | 400 / 409 with a message (e.g. "لا يمكن حذف طفل لديه نتائج محفوظة") — the app already blocks these actions                                            |
-| 6   | `Admin/categoriesActivity` → `isInInitialAssessment` was false for categories in the assessment (2026-10-15); `Admin/categories` now follows add / remove (2026-10-16)        | Keep both lists consistent (the app reads membership from `initial-assessment/categories`)                                                            |
-| 7   | `specialist/children` → `progressPercentage` stays 0 while the plan's `progress` is 50 / 100 (the app does not display it)                                                    | Use the plan progress                                                                                                                                 |
-| 8   | `SuperAdmin/children` has no specialist / teacher fields                                                                                                                      | Optional: add `specialistName` (the panel then shows it)                                                                                              |
-| 10  | The Parent gets 403 on `GET initial-assessment/{childId}/result` and no Parent endpoint says whether the assessment is completed (re-checked 2026-10-24)                      | Let the Parent read the result, or add `hasCompletedInitialAssessment` to `Parent/{childId}` — the plan gate then applies to the Parent automatically |
-| 9   | The Training Plan activity responses (`TrainingPlan/children/{id}/activities[/{activityId}]`, `available-activities`) do not include the activity `slug` (saved by the Admin) | Return `slug` — the game engines then open automatically for games (`docs/GAME_ENGINE.md`)                                                            |
+| #   | Now                                                                                                                                                                                                                  | Suggested                                                                                                                                             |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5   | Deleting a child with saved results (`DELETE Parent/{id}`) or removing a played plan activity → **empty 500**                                                                                                        | 400 / 409 with a message (e.g. "لا يمكن حذف طفل لديه نتائج محفوظة") — the app already blocks these actions                                            |
+| 6   | `Admin/categoriesActivity` → `isInInitialAssessment` was false for categories in the assessment (2026-10-15); `Admin/categories` now follows add / remove (2026-10-16)                                               | Keep both lists consistent (the app reads membership from `initial-assessment/categories`)                                                            |
+| 7   | `specialist/children` → `progressPercentage` stays 0 while the plan's `progress` is 50 / 100 (the app does not display it)                                                                                           | Use the plan progress                                                                                                                                 |
+| 8   | `SuperAdmin/children` has no specialist / teacher fields                                                                                                                                                             | Optional: add `specialistName` (the panel then shows it)                                                                                              |
+| 10  | The Parent gets 403 on `GET initial-assessment/{childId}/result` and no Parent endpoint says whether the assessment is completed (re-checked 2026-10-24 and 2026-11-10)                                              | Let the Parent read the result, or add `hasCompletedInitialAssessment` to `Parent/{childId}` — the plan gate then applies to the Parent automatically |
+| 9   | (Re-checked 2026-11-10: still absent.) The Training Plan activity responses (`TrainingPlan/children/{id}/activities[/{activityId}]`, `available-activities`) do not include the activity `slug` (saved by the Admin) | Return `slug` — the game engines then open automatically for games (`docs/GAME_ENGINE.md`)                                                            |
+
+## November client revision batch (2026-11-10)
+
+### 11. No endpoint stores a real-game session
+
+- **Now:** the five real games (`docs/GAME_ENGINE.md` §9) run on app content, without server
+  questions. `POST TrainingPlan/children/{childId}/activities/{planActivityId}/submit` needs one
+  answer per server question with real option ids (empty answers → 400), so a real game cannot
+  be saved and its plan row stays «لم يكتمل بعد». The app never invents answers.
+- **Request:** e.g. `POST TrainingPlan/children/{childId}/activities/{planActivityId}/game-result`
+  with `{ difficulty, durationSeconds, correct, mistakes, completed: true }`, which marks the row
+  completed (repeatable, keeping the best or latest session) and returns it in the plan / result
+  responses.
+
+### 12. The activity result has no correct answers
+
+- **Now:** `GET …/activities/{planActivityId}/result` sends the child's options and `isCorrect`
+  per question, not the correct options. The Teacher / Specialist question cards show the correct
+  answer only when the child's answer is it; otherwise «لا يرسلها الخادم حالياً».
+- **Request:** add `correctOptions` per question (as `initial-assessment/{id}/result` already does).
+
+### 13. Teacher access to activity answers
+
+- **Now:** the result endpoint answers 403 to the Teacher, who sees an explanation instead of the
+  child's answers.
+- **Request:** allow the assigned Teacher to read it (read-only), if the product wants teachers to
+  review answers.
 
 ## Accounts / data
 

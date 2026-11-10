@@ -52,7 +52,8 @@
 .fileTabs > [role='tablist'] {
   align-self: stretch;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Five sections (client revision 2026-11): one row when there is room, wrapping on phones. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
   border-radius: var(--radius-card);
   background: var(--color-surface-muted);
 }
@@ -78,4 +79,9 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
   }
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-text-secondary);
 }

@@ -3,15 +3,7 @@ import { Save } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
-import {
-  buildGameSlug,
-  GAME_TEMPLATE_LIST,
-  GAME_TEMPLATES,
-  gameSlugSuffix,
-  resolveGameTemplate,
-  type GameSlug,
-} from '@/components/games';
-import { CHOICE_TYPE_LABELS } from '@/components/players';
+import { REAL_GAME_LIST, resolveGameTemplate, resolveRealGame } from '@/components/games';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
 import { Button } from '@/components/ui/Button';
@@ -24,6 +16,7 @@ import { activitySchema, type ActivityFormValues } from '../schemas/contentForms
 import { ACTIVITY_TYPE_LABELS, ADD_LABELS, type ActivitySummary, type Category } from '../types';
 
 import styles from './content.module.css';
+import { GameTypePicker, type GameTypeOption } from './GameTypePicker';
 import { ImageField } from './ImageField';
 
 export interface ActivityFormDialogProps {
@@ -31,24 +24,50 @@ export interface ActivityFormDialogProps {
   /** `null` = create. Mounted only while open. */
   activity: ActivitySummary | null;
   categories: readonly Category[];
-  /** Games: the template chosen from «قوالب الألعاب» before opening the form. */
-  initialTemplate?: GameSlug | undefined;
+  /** Games: the real game chosen from «قوالب الألعاب» before opening the form. */
+  initialTemplate?: string | undefined;
   onClose: () => void;
 }
 
-/** A game's template from its current slug (edit) or the one picked before opening (create). */
-function startingTemplate(
-  activity: ActivitySummary | null,
-  initialTemplate: GameSlug | undefined,
-): GameSlug | '' {
-  return resolveGameTemplate(activity?.slug)?.slug ?? initialTemplate ?? '';
+const REAL_GAME_OPTIONS: readonly GameTypeOption[] = REAL_GAME_LIST.map((game) => ({
+  slug: game.slug,
+  name: game.name,
+  description: game.tagline,
+  skill: game.skill,
+  icon: game.icon,
+}));
+
+/** The game type a saved slug names: one of the five real games, else a legacy template. */
+function savedGameType(slug: string | null | undefined): GameTypeOption | null {
+  const real = resolveRealGame(slug);
+  if (real) return REAL_GAME_OPTIONS.find((option) => option.slug === real.slug) ?? null;
+  const legacy = resolveGameTemplate(slug);
+  if (!legacy) return null;
+  return {
+    slug: legacy.slug,
+    name: legacy.name,
+    description: legacy.description,
+    skill: legacy.purpose,
+    icon: legacy.icon,
+    isLegacy: true,
+  };
+}
+
+function slugSuffix(slug: string, base: string): string {
+  return slug.startsWith(`${base}-`) ? slug.slice(base.length + 1) : '';
+}
+
+function withSuffix(base: string, suffix: string): string {
+  const clean = suffix.trim().toLowerCase();
+  return clean ? `${base}-${clean}` : base;
 }
 
 /**
  * Create/edit an activity (multipart: Title, Description, Slug, CategoryId, Icon). Games also get
- * «نوع اللعبة» (client revision 2026-10): the template is saved in the backend `Slug` — the template
- * slug itself (`letter-hunt`) or with a suffix (`letter-hunt-2`) when several games share it.
- * Existing questions are never changed; the detail page shows which ones fit the template.
+ * «نوع اللعبة» as visual cards (client revision 2026-11): new games use one of the five real
+ * games; an activity saved with an older template keeps it as an extra card (backward compatible).
+ * The type is saved in the backend `Slug` — the game slug itself (`memory-pairs`) or with a
+ * suffix (`memory-pairs-2`) when several activities share it. Questions are never changed.
  */
 export function ActivityFormDialog({
   type,
@@ -59,10 +78,13 @@ export function ActivityFormDialog({
 }: ActivityFormDialogProps) {
   const saveMutation = useSaveActivity();
   const isGame = type === 'game';
-  const [templateSlug, setTemplateSlug] = useState<GameSlug | ''>(() =>
-    isGame ? startingTemplate(activity, initialTemplate) : '',
-  );
-  const template = templateSlug ? GAME_TEMPLATES[templateSlug] : null;
+  const saved = isGame ? savedGameType(activity?.slug) : null;
+  const options = saved?.isLegacy ? [...REAL_GAME_OPTIONS, saved] : REAL_GAME_OPTIONS;
+  const [templateSlug, setTemplateSlug] = useState<string>(() => {
+    if (!isGame) return '';
+    return saved?.slug ?? savedGameType(initialTemplate)?.slug ?? '';
+  });
+  const template = options.find((option) => option.slug === templateSlug) ?? null;
   const {
     register,
     handleSubmit,
@@ -82,15 +104,15 @@ export function ActivityFormDialog({
     },
   });
 
-  const chooseTemplate = (next: GameSlug | '') => {
+  const chooseTemplate = (next: string) => {
     const current = getValues('slug');
-    const suffix = templateSlug ? gameSlugSuffix(current, templateSlug) : '';
+    const suffix = templateSlug ? slugSuffix(current, templateSlug) : '';
     setTemplateSlug(next);
-    if (next) setValue('slug', buildGameSlug(next, suffix), { shouldValidate: true });
+    if (next) setValue('slug', withSuffix(next, suffix), { shouldValidate: true });
   };
 
   const onSubmit = handleSubmit((values) => {
-    if (template && resolveGameTemplate(values.slug)?.slug !== template.slug) {
+    if (template && savedGameType(values.slug)?.slug !== template.slug) {
       setError('slug', {
         message: `يجب أن يبدأ المعرّف بـ ${template.slug} ليفتح الطفل لعبة «${template.name}».`,
       });
@@ -118,42 +140,11 @@ export function ActivityFormDialog({
         </FormField>
         {isGame ? (
           <div className={styles.templatePicker}>
-            <FormField
-              label="نوع اللعبة"
-              hint="يحدّد واجهة اللعب التي يراها الطفل. الأسئلة تبقى من محتوى هذا النشاط."
-            >
-              {(field) => (
-                <Select
-                  {...field}
-                  value={templateSlug}
-                  onChange={(event) => {
-                    chooseTemplate(resolveGameTemplate(event.target.value)?.slug ?? '');
-                  }}
-                >
-                  <option value="">بدون قالب (المشغّل العام)</option>
-                  {GAME_TEMPLATE_LIST.map((option) => (
-                    <option key={option.slug} value={option.slug}>
-                      {option.name}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </FormField>
-            {template ? (
-              <div className={styles.templateInfo} role="status">
-                <span className={styles.templateIcon} aria-hidden="true">
-                  <template.icon />
-                </span>
-                <div className={styles.rowMain}>
-                  <p className={styles.rowTitle}>{`${template.name} — ${template.purpose}`}</p>
-                  <p className={styles.muted}>{template.description}</p>
-                  <p className={styles.muted}>
-                    {`أنواع الأسئلة المناسبة: ${template.questionTypes
-                      .map((questionType) => CHOICE_TYPE_LABELS[questionType])
-                      .join('، ')}. الأسئلة من نوع آخر تُعرض بالواجهة المناسبة لنوعها.`}
-                  </p>
-                </div>
-              </div>
+            <GameTypePicker options={options} value={templateSlug} onChange={chooseTemplate} />
+            {template && !template.isLegacy ? (
+              <p className={styles.muted} role="status">
+                {`«${template.name}» لعبة جاهزة بمحتوى ومستويات (سهل / متوسط / صعب) من التطبيق، ولا تحتاج إلى أسئلة.`}
+              </p>
             ) : null}
           </div>
         ) : null}

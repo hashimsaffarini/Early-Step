@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
+import { RoleAreaContext } from '@/hooks/useRoleArea';
 import { apiUrl } from '@/mocks/http';
 import { server } from '@/mocks/server';
 import { renderWithRouter } from '@/test/renderWithRouter';
@@ -187,10 +188,60 @@ describe('PlanActivityPlayerPage', () => {
     expect(screen.queryByRole('button', { name: 'التالي' })).not.toBeInTheDocument();
   });
 
-  it('shows a completed activity instead of a second attempt (the server allows one)', async () => {
+  it('reopens a completed test as practice: it can be played again but is never re-submitted', async () => {
+    let calls = 0;
+    server.use(
+      http.get(apiUrl('TrainingPlan/children/:childId/activities/:activityId'), () =>
+        HttpResponse.json({ ...liveActivity(true), questions: [liveActivity().questions[0]] }),
+      ),
+      http.post(apiUrl('TrainingPlan/children/:childId/activities/:planActivityId/submit'), () => {
+        calls += 1;
+        return HttpResponse.json({ message: 'conflict' }, { status: 409 });
+      }),
+    );
+    renderPlayer('a-1');
+
+    expect(
+      await screen.findByText(
+        'حُفظت نتيجة هذا النشاط من قبل. هذه محاولة للتدريب ولن تُرسل مرة أخرى.',
+      ),
+    ).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: /^بطة/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'إنهاء المحاولة' }));
+    expect(await screen.findByText('أحسنت! انتهت المحاولة 👏')).toBeInTheDocument();
+    expect(
+      screen.getByText('هذه محاولة للتدريب: تبقى النتيجة المحفوظة سابقاً كما هي.'),
+    ).toBeInTheDocument();
+    // «إعادة المحاولة» starts a fresh run, still without submitting.
+    await userEvent.click(screen.getByRole('button', { name: 'إعادة المحاولة' }));
+    expect(await screen.findByRole('button', { name: /^بطة/ })).toBeInTheDocument();
+    expect(calls).toBe(0);
+  });
+
+  it('reopens the seeded completed activity instead of locking it', async () => {
     renderPlayer(COMPLETED_WITH_QUESTIONS);
 
-    expect(await screen.findByText('أُنجز هذا النشاط')).toBeInTheDocument();
+    expect(await screen.findByText(/محاولة للتدريب ولن تُرسل/)).toBeInTheDocument();
+    expect(screen.queryByText('أُنجز هذا النشاط')).not.toBeInTheDocument();
+  });
+
+  it('never lets the teacher play the child activity', async () => {
+    signInAs('Teacher');
+    renderWithRouter(
+      [
+        {
+          path: '/teacher/children/:childId/activities/:activityId/play',
+          element: (
+            <RoleAreaContext value="Teacher">
+              <PlanActivityPlayerPage />
+            </RoleAreaContext>
+          ),
+        },
+      ],
+      `/teacher/children/${CHILD_ID}/activities/a-1/play`,
+    );
+
+    expect(await screen.findByText('عرض النتيجة من ملف الطفل')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'التالي' })).not.toBeInTheDocument();
   });
 

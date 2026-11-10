@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { http, HttpResponse } from 'msw';
@@ -34,9 +34,12 @@ describe('LoginPage', () => {
 
     await submit();
 
-    expect(screen.getByLabelText('البريد الإلكتروني')).toHaveAccessibleDescription(
-      'البريد الإلكتروني مطلوب',
-    );
+    // Validation resolves asynchronously; under a loaded suite it can land after the click.
+    await waitFor(() => {
+      expect(screen.getByLabelText('البريد الإلكتروني')).toHaveAccessibleDescription(
+        'البريد الإلكتروني مطلوب',
+      );
+    });
     expect(screen.getByLabelText('كلمة المرور')).toHaveAccessibleDescription('كلمة المرور مطلوبة');
   });
 

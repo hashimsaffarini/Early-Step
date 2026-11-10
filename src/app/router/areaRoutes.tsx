@@ -140,8 +140,9 @@ function buildAreaRoute(role: AreaRole): RouteObject {
     },
     // One dashboard-style page per child and role (client revision 2026-10).
     { path: AREA_SEGMENTS.childProfile, lazy: () => loadChildPage(role) },
-    // Staff: the initial-assessment details have their own page (client revision 2026-10).
-    ...(role === 'Specialist' || role === 'Teacher'
+    // Specialist: the initial-assessment details have their own page (client revision 2026-10;
+    // the Teacher no longer sees the initial assessment — client revision 2026-11).
+    ...(role === 'Specialist'
       ? [
           {
             path: AREA_SEGMENTS.childAssessment,

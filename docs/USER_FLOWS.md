@@ -206,3 +206,16 @@ Conversation list → Search/open conversation → Messages → Send → Unread 
 - **Parent → dashboard:** each child card is the link to the profile (no «عرض الملف»); the plan
   page and profile show «ملخص الأنشطة» + «نسبة الإنجاز».
 - Details and live status: `CLIENT_REVISIONS_2026-10.md`.
+
+## NOVEMBER CLIENT REVISION BATCH (2026-11-10)
+
+- **Parent:** child page → «الألعاب» library (cards: picture, name, skill when the slug is
+  known, «ابدأ اللعب» / «العب مرة أخرى») and «الاختبارات» list («ابدأ» / «إعادة المحاولة»). A real
+  game: start screen → play → «أحسنت!» → replay or back. A completed test or legacy game: practice
+  run, nothing is sent. Initial assessment: «ابدأ التقييم» (resume: «متابعة التقييم»), one time.
+- **Teacher:** child page → plan progress card, activity table with «عرض النتيجة» (no play),
+  notes, the child's answers as question cards. No initial-assessment card or page.
+- **Specialist:** child page → five sections: overview (progress ring and assessment status),
+  initial assessment (view only once completed), training plan (editing), teacher notes, reports.
+- **Admin:** activities → «قوالب الألعاب» (five real games) → form with visual «نوع اللعبة» cards.
+  Initial assessment → overview counts, collapsible categories with edit / add links.

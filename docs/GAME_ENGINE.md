@@ -127,3 +127,38 @@ accepts the Parent only; a Teacher submission shows the server's error.
 Mock mode (development only) gives the child «نور» four original game rows whose
 child-facing detail includes the requested `slug`, so the engines can be reviewed end to end. This
 mock field is marked as a requested backend field; production never uses mock data.
+
+## 9. NOVEMBER CLIENT REVISION BATCH — the five real games (2026-11-10)
+
+| Slug             | Name         | Mechanic                                                                   | Skill                   | Levels (easy / medium / hard)                                |
+| ---------------- | ------------ | -------------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------------ |
+| `memory-pairs`   | لعبة الذاكرة | Flip two cards; matching pairs stay open, others flip back                 | الذاكرة والانتباه       | 2 identical pairs · 4 letter ↔ picture · 6 number ↔ quantity |
+| `sort-and-match` | رتّب وطابق   | Drag a picture to its group, or tap it then tap the group (no drag needed) | التصنيف والمطابقة       | 2 groups · 3 groups · 4 groups                               |
+| `target-catch`   | اصطد الهدف   | Balloons float; tap those that fit the goal; no timer                      | التركيز والتمييز البصري | cat ×3 · letter أ ×5 · even numbers ×7                       |
+| `sequence-train` | قطار الترتيب | Tap cards into wagons in order; tap a wagon to take back; undo / reset     | التسلسل والترتيب        | 1 · 2 · 3 stages                                             |
+| `learning-maze`  | متاهة التعلم | Move the turtle with arrow buttons or keyboard arrows to the right target  | التخطيط وحل المشكلات    | 5×5 · 7×7 · 9×9 (every target reachable, checked by BFS)     |
+
+- **Code:** `src/components/games/real/` — `types.ts`, `content/*` (product content, one file per
+  game), one folder per engine, `registry.ts` (`REAL_GAMES`, `resolveRealGame`,
+  `difficultyForAge`), `RealGameBoard` (slug → engine) and `RealGameSession` (start screen →
+  game → end screen).
+- **Start screen:** picture, name, one-line instruction, difficulty chips (default from the
+  child's age), «ابدأ اللعب». **End screen:** «أحسنت!», «أنهيت اللعبة بنجاح», the session's own
+  figures (e.g. targets caught, mistakes), «العب مرة أخرى», «العودة إلى ملف الطفل». No stars or
+  coins.
+- **Accessibility:** large touch targets (QA at 390 px: no game button under 40 px; the session
+  buttons and maze arrow pad use the 56 px child token; maze cells are not tap targets), `aria-pressed` / text states (never colour only), a
+  tap alternative to every drag, keyboard support (maze arrows, native buttons), no audio, gentle
+  messages for mistakes, `prefers-reduced-motion` stops floating / flipping animations.
+- **Routing:** `PlanActivityPlayerPage` opens a real game for a known real slug (also when the
+  server sends questions), or for a game with neither a usable slug nor questions. Legacy slugs
+  (`letter-hunt`, `number-match`, `memory-sequence`, `focus-challenge`, `spot-it`) keep their
+  engines; unknown slugs with questions keep the visual default.
+- **Persistence:** none — no backend contract (BACKEND_REQUESTS #11). Real games are never
+  submitted and are always replayable. Until the plan response includes `slug` (#9), the live
+  backend cannot route a game to a specific real game; slug-less, question-less games open
+  `memory-pairs`.
+- **Replay of question-based activities:** a completed test or legacy game reopens as practice:
+  played again, never submitted (no 409), the saved result unchanged.
+- **Admin:** «قوالب الألعاب» and «نوع اللعبة» offer only the five real games (visual cards);
+  editing an activity with a legacy slug keeps it as an extra «قالب سابق» card.

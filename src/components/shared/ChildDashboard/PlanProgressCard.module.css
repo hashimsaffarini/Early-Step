@@ -1,0 +1,122 @@
+.card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5) var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+/* Completion ring: a conic gradient filled to `--progress`, with a surface-coloured hole. */
+.ring {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 8.5rem;
+  block-size: 8.5rem;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--color-success-strong) var(--progress),
+    var(--color-surface-muted) 0
+  );
+}
+
+.ringValue {
+  display: grid;
+  place-items: center;
+  inline-size: 6.5rem;
+  block-size: 6.5rem;
+  border-radius: 50%;
+  background: var(--color-surface);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-black);
+  color: var(--color-text-primary);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: min(100%, 16rem);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.count {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.chip svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.chipValue {
+  font-weight: var(--font-weight-black);
+}
+
+.chip[data-tone='success'] {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+}
+
+.chip[data-tone='warning'] {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.chip[data-tone='danger'] {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+
+.chip[data-tone='primary'] {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
+.chip[data-tone='violet'] {
+  background: var(--color-violet-soft);
+  color: var(--color-violet-strong);
+}
+
+@media (max-width: 30rem) {
+  .card {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .chips {
+    justify-content: center;
+  }
+}

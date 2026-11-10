@@ -24,6 +24,9 @@ export interface PlanGameRunProps {
   template: GameTemplate;
   questions: readonly GameQuestion[];
   exitTo: string;
+  /** Reopened after a saved result: played again without submitting (see PlanActivityRun). */
+  isPractice?: boolean;
+  onRestart?: () => void;
 }
 
 /** 400 / 409 are final answers from the server (e.g. already submitted); retry only others. */
@@ -52,6 +55,11 @@ function savedResultText(activity: PlanActivity, answered: number, total: number
  * `POST TrainingPlan/children/{childId}/activities/{planActivityId}/submit`. Nothing is scored or
  * stored locally; leaving before the submission asks first.
  */
+function finishLabel(isLast: boolean, isPractice: boolean): string {
+  if (!isLast) return 'التالي';
+  return isPractice ? 'إنهاء اللعبة' : 'إنهاء اللعبة وحفظ النتيجة';
+}
+
 export function PlanGameRun({
   childId,
   activity,
@@ -59,7 +67,10 @@ export function PlanGameRun({
   template,
   questions,
   exitTo,
+  isPractice = false,
+  onRestart,
 }: PlanGameRunProps) {
+  const restartLabel = 'العب مرة أخرى';
   const submit = useSubmitPlanActivity(childId, activity.id);
   const [index, setIndex] = useState(0);
   const [selection, setSelection] = useState<string[]>([]);
@@ -67,7 +78,8 @@ export function PlanGameRun({
   const [isFinished, setIsFinished] = useState(false);
   const promptRef = useRef<HTMLHeadingElement>(null);
 
-  const hasUnsavedWork = !submit.isSuccess && (answers.length > 0 || selection.length > 0);
+  const hasUnsavedWork =
+    !isPractice && !submit.isSuccess && (answers.length > 0 || selection.length > 0);
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       hasUnsavedWork && currentLocation.pathname !== nextLocation.pathname,
@@ -106,6 +118,25 @@ export function PlanGameRun({
 
   const question = questions[index];
   if (isFinished || !question) {
+    if (isPractice) {
+      return (
+        <ResultPanel
+          category="neutral"
+          title="أحسنت! انتهت المحاولة 👏"
+          scoreText="هذه محاولة للتدريب: تبقى النتيجة المحفوظة سابقاً كما هي."
+          actions={
+            <>
+              <Button size="lg" iconStart={<RotateCcw aria-hidden="true" />} onClick={onRestart}>
+                {restartLabel}
+              </Button>
+              <Link to={exitTo} className={getButtonClassName({ variant: 'outline', size: 'lg' })}>
+                العودة إلى ملف الطفل
+              </Link>
+            </>
+          }
+        />
+      );
+    }
     if (submit.isSuccess) {
       return (
         <ResultPanel
@@ -155,7 +186,7 @@ export function PlanGameRun({
     setSelection([]);
     if (isLast) {
       setIsFinished(true);
-      submit.mutate(nextAnswers);
+      if (!isPractice) submit.mutate(nextAnswers);
       return;
     }
     setIndex((value) => value + 1);
@@ -177,7 +208,7 @@ export function PlanGameRun({
             iconEnd={isLast ? <Flag aria-hidden="true" /> : <ArrowLeft aria-hidden="true" />}
             onClick={next}
           >
-            {isLast ? 'إنهاء اللعبة وحفظ النتيجة' : 'التالي'}
+            {finishLabel(isLast, isPractice)}
           </Button>
         }
       >

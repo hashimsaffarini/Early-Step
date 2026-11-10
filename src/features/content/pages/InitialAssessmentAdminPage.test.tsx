@@ -1,6 +1,7 @@
 import { clearAssessmentActions } from '../api/assessmentSelectionCache';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MOCK_CATEGORY_IDS } from '@/mocks/fixtures/content';
 import { http, HttpResponse } from 'msw';
 
 import { ADMIN_PATHS } from '@/constants/routes';
@@ -35,7 +36,17 @@ describe('InitialAssessmentAdminPage (category → questions, client revision 20
 
     const list = await hierarchy();
     expect(screen.getByText('التقييم الأولي')).toBeInTheDocument();
-    expect(screen.getByText('التصنيفات: 1')).toBeInTheDocument();
+    // Overview counts (client revision 2026-11): categories, activities and questions.
+    const overview = screen.getByRole('list', { name: 'ملخص التقييم المبدئي' });
+    const count = (label: string) =>
+      within(overview)
+        .getAllByRole('listitem')
+        .find((item) => item.lastChild?.textContent?.trim() === label)?.firstElementChild
+        ?.textContent;
+    expect(count('التصنيفات')).toBe('1');
+    await waitFor(() => {
+      expect(count('الأنشطة والاختبارات')).not.toBe('…');
+    });
     const reading = within(list).getByRole('heading', { name: 'التصنيف: الحروف والقراءة' });
     const block = reading.closest('li');
     if (!block) throw new Error('category block not found');
@@ -47,6 +58,25 @@ describe('InitialAssessmentAdminPage (category → questions, client revision 20
     expect(
       within(group).getAllByText(/^(اختيار إجابة واحدة|اختيار عدة إجابات|ترتيب)$/).length,
     ).toBeGreaterThan(0);
+  });
+
+  it('collapses a category and offers edit and add actions', async () => {
+    renderContent(ADMIN_PATHS.initialAssessment);
+    const list = await hierarchy();
+    const toggle = within(list).getByRole('button', { name: 'التصنيف: الحروف والقراءة' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const block = toggle.closest('li');
+    if (!block) throw new Error('category block not found');
+    expect(
+      await within(block).findByRole('link', { name: 'تعديل أسئلة «اختبار الحروف»' }),
+    ).toBeInTheDocument();
+    expect(
+      within(block).getByRole('link', { name: 'إضافة نشاط إلى تصنيف الحروف والقراءة' }),
+    ).toHaveAttribute('href', ADMIN_PATHS.categoryActivities(MOCK_CATEGORY_IDS.reading));
+    expect(within(block).getByText(/^الأنشطة: \d+$/)).toBeInTheDocument();
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(within(block).queryByRole('region', { name: 'اختبار الحروف' })).not.toBeInTheDocument();
   });
 
   it('marks membership with an icon and text, not a colour dot', async () => {
