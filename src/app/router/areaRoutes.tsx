@@ -44,8 +44,8 @@ async function loadChildPage(role: AreaRole) {
   return { Component: (await loadChildren()).ChildProfilePage };
 }
 
-/** Admin: the report list and details stay reachable (not in the sidebar). */
-const adminReportPages: RouteObject[] = [
+/** Admin (not in the sidebar) and Parent (read-only, client revision 2026-11): list and details. */
+const readReportPages: RouteObject[] = [
   {
     path: AREA_SEGMENTS.reports,
     lazy: async () => ({ Component: (await loadReports()).ReportsListPage }),
@@ -58,7 +58,7 @@ const adminReportPages: RouteObject[] = [
 
 /** The Specialist: list, create, details and edit. */
 const specialistReportPages: RouteObject[] = [
-  ...adminReportPages,
+  ...readReportPages,
   {
     path: AREA_SEGMENTS.reportCreate,
     lazy: async () => ({ Component: (await loadReports()).CreateReportPage }),
@@ -71,7 +71,7 @@ const specialistReportPages: RouteObject[] = [
 
 function reportPagesFor(role: AreaRole): RouteObject[] {
   if (role === 'Specialist') return specialistReportPages;
-  if (role === 'Admin') return adminReportPages;
+  if (role === 'Admin' || role === 'Parent') return readReportPages;
   return [redirectReportsToDashboard(role)];
 }
 
@@ -140,9 +140,9 @@ function buildAreaRoute(role: AreaRole): RouteObject {
     },
     // One dashboard-style page per child and role (client revision 2026-10).
     { path: AREA_SEGMENTS.childProfile, lazy: () => loadChildPage(role) },
-    // Specialist: the initial-assessment details have their own page (client revision 2026-10;
-    // the Teacher no longer sees the initial assessment — client revision 2026-11).
-    ...(role === 'Specialist'
+    // Specialist and Admin: the initial-assessment details have their own page (client revisions
+    // 2026-10 / 2026-11; the Teacher no longer sees the initial assessment).
+    ...(role === 'Specialist' || role === 'Admin'
       ? [
           {
             path: AREA_SEGMENTS.childAssessment,
@@ -173,9 +173,8 @@ function buildAreaRoute(role: AreaRole): RouteObject {
           },
         ]
       : []),
-    // Reports (latest client request 2026-10 overrides the earlier removal): the Specialist
-    // writes, edits and reads reports; the Admin keeps the read-only pages; the Parent and the
-    // Teacher have no reports (old links lead back to the dashboard).
+    // Reports: the Specialist writes, edits and reads reports; the Admin and the Parent (client
+    // revision 2026-11) read them; the Teacher has no reports (old links lead to the dashboard).
     ...reportPagesFor(role),
     ...(role === 'Admin' ? adminOnlyPages : []),
     ...(role === 'Teacher'

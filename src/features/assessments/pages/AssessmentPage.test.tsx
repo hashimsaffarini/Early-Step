@@ -11,7 +11,9 @@ import { signInAs } from '@/test/session';
 
 import { AssessmentPage } from './AssessmentPage';
 
-const CHILD_ID = 'c0000000-0000-4000-8000-000000000001';
+/** نور has not completed the assessment yet (يوسف has — mock seed). */
+const CHILD_ID = 'c0000000-0000-4000-8000-000000000002';
+const COMPLETED_CHILD_ID = 'c0000000-0000-4000-8000-000000000001';
 const LONG_FLOW = 15_000;
 
 function renderAssessment(role: 'Parent' | 'Teacher' = 'Parent', childId = CHILD_ID) {
@@ -106,7 +108,7 @@ describe('AssessmentPage (initial assessment)', () => {
       );
       renderAssessment();
 
-      expect(await screen.findByRole('heading', { name: 'مرحباً يا يوسف!' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'مرحباً يا نور!' })).toBeInTheDocument();
       await start();
 
       expect(await screen.findByRole('heading', { name: 'الحروف والقراءة' })).toBeInTheDocument();
@@ -131,7 +133,7 @@ describe('AssessmentPage (initial assessment)', () => {
     'ends with a confirmation, not a score: the specialist reviews the result',
     async () => {
       renderAssessment();
-      expect(await screen.findByRole('heading', { name: 'مرحباً يا يوسف!' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'مرحباً يا نور!' })).toBeInTheDocument();
       await start();
       await answerAll();
 
@@ -141,6 +143,17 @@ describe('AssessmentPage (initial assessment)', () => {
     },
     LONG_FLOW,
   );
+
+  it('tells the parent the one-time assessment is already completed instead of an error', async () => {
+    renderAssessment('Parent', COMPLETED_CHILD_ID);
+
+    await start();
+
+    expect(await screen.findByText('أكمل يوسف التقييم المبدئي 🎉')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: PLAY_ALL })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'العودة إلى ملف الطفل' })).toBeInTheDocument();
+  });
 
   it('shows the backend message when no assessment is available', async () => {
     server.use(
@@ -336,7 +349,7 @@ describe('AssessmentPage (initial assessment)', () => {
       );
       renderAssessment();
 
-      expect(await screen.findByRole('heading', { name: 'مرحباً يا يوسف!' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'مرحباً يا نور!' })).toBeInTheDocument();
       const list = await cardList();
       expect(within(list).queryByRole('button')).not.toBeInTheDocument();
       expect(

@@ -163,18 +163,6 @@ export function AssessmentCategoryBrowser({
                 />
                 <Button
                   size="sm"
-                  variant={member ? 'outline' : 'soft'}
-                  disabled={pending}
-                  onClick={() => {
-                    onToggle(category.id, !member);
-                  }}
-                >
-                  {member
-                    ? `إزالة ${category.name} من التقييم`
-                    : `إضافة ${category.name} إلى التقييم`}
-                </Button>
-                <Button
-                  size="sm"
                   variant="ghost"
                   aria-expanded={open}
                   aria-label={`${open ? 'طي' : 'توسيع'} ${category.name}`}

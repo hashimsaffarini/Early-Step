@@ -30,12 +30,20 @@ Status per feature: `docs/BACKEND_INTEGRATION_STATUS.md`. Development mock mode
 (`VITE_USE_MOCKS=true`, dev only) lets you review the integrated UI without accounts.
 Next steps: `docs/IMPLEMENTATION_PLAN.md`.
 
-## Latest client revision 2026-11-10
+## Latest client revision 2026-11-14
+
+Screenshot batch (ADR-031): completed initial assessment shown as done (not an error); completed
+plan tests have no retry (games still replay); no level picker in games; Parent reports restored
+(read-only); Admin reads full assessment results; «تغيير كلمة المرور» for every role; staff names
+only from real sources (backend #15); Teacher note error is backend #14.
+
+## Client revision 2026-11-10
 
 November batch (ADR-030, `docs/GAME_ENGINE.md` §9): five real games in `components/games/real`
 (content-driven, never submitted — no backend contract); completed plan activities reopen as
 practice runs that never resubmit; the Teacher has no play links and no initial assessment;
-Specialist child file has five titled sections; Admin creates games only from the five real games.
+Specialist child file has five titled sections; Admin creates games only from the five real games
+(2026-11-14: completed tests no longer reopen).
 
 ## Client revision 2026-10-28
 

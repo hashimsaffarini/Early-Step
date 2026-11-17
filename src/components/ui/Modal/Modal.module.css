@@ -29,6 +29,10 @@
   --modal-width: 44rem;
 }
 
+.xl {
+  --modal-width: 60rem;
+}
+
 .header {
   display: flex;
   align-items: flex-start;

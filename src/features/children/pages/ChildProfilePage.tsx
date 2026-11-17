@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router';
 import {
   AssessmentPlanGate,
   ChildHero,
+  ChildReportSummary,
   childHeroProgress,
   DashboardPanel,
   PlanStatGrid,
@@ -16,7 +17,7 @@ import { PlanActivityList, PlanGameLibrary } from '@/components/shared/PlanActiv
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
-import { useChildPlanActivities } from '@/hooks/api/childResources';
+import { useChildPlanActivities, useChildReport } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import type { ChildSummary } from '@/services/api/childrenLists';
 import { summarizePlan } from '@/services/api/planSummary';
@@ -34,12 +35,15 @@ import pageStyles from './ChildProfilePage.module.css';
 /**
  * The parent's child page (client revision 2026-10, dashboard style): header with the child's
  * facts and plan progress, the plan's stat cards, then the initial assessment and the training-plan
- * activities. No reports and no delete action for the parent (client request).
+ * activities, then the specialist's report (read-only — client revision 2026-11 restores it). No
+ * delete action for the parent (client request).
  */
 function ParentChildDashboard({ child }: { child: ChildSummary }) {
   const { paths } = useRoleArea();
   const plan = useChildPlanActivities(child.id);
   const assessment = useAssessmentStatus(child.id);
+  // The report names its specialist: the only per-child staff name the Parent API sends.
+  const report = useChildReport(child.id);
   // Client revision 2026-10: the plan appears after the initial assessment is completed.
   const isPlanOpen = assessment.state === 'complete' || assessment.state === 'unavailable';
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -88,7 +92,7 @@ function ParentChildDashboard({ child }: { child: ChildSummary }) {
       <ChildHero
         name={child.fullName}
         eyebrow="ملف الطفل"
-        facts={childFacts(child)}
+        facts={childFacts(child, { specialistName: report.data?.authorName ?? null })}
         progress={childHeroProgress(summary)}
         actions={
           <Button
@@ -122,6 +126,7 @@ function ParentChildDashboard({ child }: { child: ChildSummary }) {
       <DashboardPanel id="child-plan-title" title="الخطة التدريبية" icon={Target} iconTone="accent">
         <AssessmentPlanGate status={assessment}>{planBody}</AssessmentPlanGate>
       </DashboardPanel>
+      <ChildReportSummary childId={child.id} />
       <ChildFormDialog
         isOpen={isEditOpen}
         child={child}

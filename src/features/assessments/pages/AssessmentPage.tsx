@@ -1,4 +1,4 @@
-import { ClipboardX, RotateCcw, UserX } from 'lucide-react';
+import { CircleCheck, ClipboardX, RotateCcw, UserX } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 
@@ -10,6 +10,8 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
+import type { AppError } from '@/services/http/apiError';
+import { HTTP_STATUS } from '@/services/http/httpStatus';
 
 import { useCompleteAssessment, useStartAssessment } from '../api/assessmentMutations';
 import { useAssessmentCategories } from '../api/assessmentQueries';
@@ -51,6 +53,21 @@ export function AssessmentPage() {
   }
 
   return <ParentAssessment childId={childId} />;
+}
+
+/**
+ * VERIFIED LIVE: once the child has completed the one-time assessment, `start` answers 404 with this
+ * text. The same text is sent when the assessment has no categories, so it only means "completed"
+ * while the categories read lists some (client revision 2026-11: not an error for the parent).
+ */
+const NO_ASSESSMENT_MESSAGE = 'لا يوجد تقييم أولي متاح حالياً.';
+
+function isAlreadyCompleted(error: AppError | null, categoryCount: number): boolean {
+  return (
+    error?.status === HTTP_STATUS.NOT_FOUND &&
+    error.message.trim() === NO_ASSESSMENT_MESSAGE &&
+    categoryCount > 0
+  );
 }
 
 const addAll = (set: ReadonlySet<string>, ids: readonly string[]) => new Set([...set, ...ids]);
@@ -167,6 +184,16 @@ function ParentAssessment({ childId }: { childId: string }) {
 
   const renderBody = () => {
     if (isFinished) return renderCompletion(assessment?.assessmentId);
+    if (isAlreadyCompleted(start.error, categories.data?.length ?? 0)) {
+      return (
+        <EmptyState
+          icon={<CircleCheck />}
+          title={`أكمل ${child.fullName} التقييم المبدئي 🎉`}
+          description="يُجرى التقييم المبدئي مرة واحدة فقط، وقد حُفظت إجاباته. يراجع الأخصائي النتيجة ويُعدّ الخطة التدريبية للطفل."
+          action={backToProfile}
+        />
+      );
+    }
     if (assessment && allQuestions.length === 0) {
       return (
         <EmptyState

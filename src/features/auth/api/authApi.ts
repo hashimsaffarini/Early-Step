@@ -71,3 +71,14 @@ export interface ResetPasswordInput {
 export async function resetPassword(input: ResetPasswordInput): Promise<void> {
   await httpClient.post(AUTH_PATHS.resetPassword, input);
 }
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+/** `POST Auth/change-password` (JSON, Swagger `ChangePasswordRequest`) — the signed-in user's own. */
+export async function changePassword(input: ChangePasswordInput): Promise<void> {
+  await httpClient.post(AUTH_PATHS.changePassword, input);
+}

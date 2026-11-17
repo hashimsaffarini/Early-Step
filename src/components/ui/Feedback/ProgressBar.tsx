@@ -16,6 +16,8 @@ export interface ProgressBarProps {
   tone?: 'primary' | 'success' | 'accent';
   /** Human-readable value (e.g. "3 من 8") shown instead of a percentage and announced as aria-valuetext. */
   valueText?: string;
+  /** `lg`: a larger, clearer label row and a thicker bar (e.g. result titles). */
+  size?: 'md' | 'lg';
 }
 
 const TONE_CLASS = {
@@ -31,13 +33,14 @@ export function ProgressBar({
   showLabel = false,
   tone = 'primary',
   valueText,
+  size = 'md',
 }: ProgressBarProps) {
   const clamped = Math.min(Math.max(value, 0), max);
   const percent = max > 0 ? Math.round((clamped / max) * MAX_PERCENT) : 0;
   const fillStyle = { '--progress-value': `${percent}%` } as CSSProperties;
 
   return (
-    <div className={styles.progress}>
+    <div className={cx(styles.progress, size === 'lg' && styles.progressLg)}>
       {showLabel ? (
         <div className={styles.progressLabelRow} aria-hidden="true">
           <span>{label}</span>

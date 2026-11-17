@@ -7,7 +7,6 @@ import {
   AssessmentPlanGate,
   ChildHero,
   DashboardPanel,
-  childHeroProgress,
   PlanProgressCard,
 } from '@/components/shared/ChildDashboard';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -21,11 +20,13 @@ import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
 import { useChildPlanActivities, useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { summarizePlan } from '@/services/api/planSummary';
+import { useSession } from '@/services/session';
 
 import styles from './ChildDashboardPage.module.css';
 
 /**
- * Teacher child file (client revision 2026-11): plan progress (ring, %, figures), the filterable
+ * Teacher child file (client revision 2026-11): full-width header with the child's facts (parent,
+ * specialist when sent, teacher), plan progress across the page (ring, %, figures), the filterable
  * activity history with read-only «عرض النتيجة», teacher notes and the child's answers as separate
  * question cards. The Teacher does not play the child's activities and has no initial-assessment
  * card or page; the plan still opens only after the assessment (server status). The teacher
@@ -36,6 +37,8 @@ export function TeacherChildPage() {
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const { paths } = useRoleArea();
   const children = useChildrenForRole('Teacher');
+  // Teacher/children lists the signed-in teacher's own children: they are this child's teacher.
+  const session = useSession();
   const child = children.data?.find((item) => item.id === childId);
   const plan = useChildPlanActivities(child?.id);
   const assessment = useAssessmentStatus(child ? child.id : undefined);
@@ -78,16 +81,16 @@ export function TeacherChildPage() {
   } else {
     body = (
       <>
-        <div className={styles.teacherSummary}>
-          <ChildHero
-            tone="soft"
-            name={child.fullName}
-            eyebrow="الخطة التدريبية وملاحظات المعلم"
-            facts={childFacts(child, { withParent: true })}
-            progress={childHeroProgress(summary)}
-          />
-          {summary && summary.total > 0 ? <PlanProgressCard summary={summary} /> : null}
-        </div>
+        {/* Client revision 2026-11: full-width header, then the plan progress across the page. */}
+        <ChildHero
+          name={child.fullName}
+          eyebrow="الخطة التدريبية وملاحظات المعلم"
+          facts={childFacts(child, {
+            withParent: true,
+            teacherName: session?.user.name ?? null,
+          })}
+        />
+        {summary && summary.total > 0 ? <PlanProgressCard summary={summary} /> : null}
         <div className={styles.main}>
           <div className={styles.main}>
             <AssessmentPlanGate status={assessment}>

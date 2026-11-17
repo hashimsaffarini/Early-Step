@@ -13,12 +13,6 @@ export type RealGameSlug = (typeof REAL_GAME_SLUGS)[number];
 export const DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
 
-export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
-  easy: 'سهل',
-  medium: 'متوسط',
-  hard: 'صعب',
-};
-
 /** A picture with its Arabic name (the name is also what screen readers announce). */
 export interface Visual {
   emoji: string;

@@ -21,7 +21,7 @@ describe('LandingPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'اكتشف قدرات طفلك' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /أمّ تبتسم/ })).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { level: 2, name: 'جاهز لاكتشاف موهبة طفلك؟' }),
+      screen.getByRole('heading', { level: 2, name: 'جاهز لاكتشاف صعوبات التعلم لدى طفلك؟' }),
     ).toBeInTheDocument();
   });
 

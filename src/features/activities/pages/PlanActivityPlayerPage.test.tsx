@@ -188,7 +188,7 @@ describe('PlanActivityPlayerPage', () => {
     expect(screen.queryByRole('button', { name: 'التالي' })).not.toBeInTheDocument();
   });
 
-  it('reopens a completed test as practice: it can be played again but is never re-submitted', async () => {
+  it('closes a completed test: no retry, nothing is submitted (client revision 2026-11)', async () => {
     let calls = 0;
     server.use(
       http.get(apiUrl('TrainingPlan/children/:childId/activities/:activityId'), () =>
@@ -201,28 +201,18 @@ describe('PlanActivityPlayerPage', () => {
     );
     renderPlayer('a-1');
 
-    expect(
-      await screen.findByText(
-        'حُفظت نتيجة هذا النشاط من قبل. هذه محاولة للتدريب ولن تُرسل مرة أخرى.',
-      ),
-    ).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('button', { name: /^بطة/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'إنهاء المحاولة' }));
-    expect(await screen.findByText('أحسنت! انتهت المحاولة 👏')).toBeInTheDocument();
-    expect(
-      screen.getByText('هذه محاولة للتدريب: تبقى النتيجة المحفوظة سابقاً كما هي.'),
-    ).toBeInTheDocument();
-    // «إعادة المحاولة» starts a fresh run, still without submitting.
-    await userEvent.click(screen.getByRole('button', { name: 'إعادة المحاولة' }));
-    expect(await screen.findByRole('button', { name: /^بطة/ })).toBeInTheDocument();
+    expect(await screen.findByText('أنهى الطفل هذا الاختبار 👏')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^بطة/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'إعادة المحاولة' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'العودة إلى ملف الطفل' })).toBeInTheDocument();
     expect(calls).toBe(0);
   });
 
-  it('reopens the seeded completed activity instead of locking it', async () => {
+  it('shows the seeded completed test as done instead of reopening it', async () => {
     renderPlayer(COMPLETED_WITH_QUESTIONS);
 
-    expect(await screen.findByText(/محاولة للتدريب ولن تُرسل/)).toBeInTheDocument();
-    expect(screen.queryByText('أُنجز هذا النشاط')).not.toBeInTheDocument();
+    expect(await screen.findByText('أنهى الطفل هذا الاختبار 👏')).toBeInTheDocument();
+    expect(screen.queryByText(/محاولة للتدريب ولن تُرسل/)).not.toBeInTheDocument();
   });
 
   it('never lets the teacher play the child activity', async () => {

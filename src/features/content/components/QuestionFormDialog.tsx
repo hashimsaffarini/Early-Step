@@ -1,6 +1,7 @@
 import type { ActivityType } from '@/services/api/activityType';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Save, Trash2 } from 'lucide-react';
+import { useId } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import { ApiErrorAlert } from '@/components/shared/ApiErrorAlert';
@@ -8,13 +9,14 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox, FormField, Input, Select, Textarea } from '@/components/ui/Field';
 import { IconButton } from '@/components/ui/IconButton';
 import { Modal } from '@/components/ui/Modal';
+import { cx } from '@/utils/classNames';
 
 import { useCreateQuestion } from '../api/contentQueries';
 import { MIN_OPTIONS, questionSchema, type QuestionFormValues } from '../schemas/contentForms';
 import { QUESTION_TYPE_LABELS, QUESTION_TYPES } from '../types';
 
 import styles from './content.module.css';
-import { ImageField } from './ImageField';
+import { ImageField, LOCAL_IMAGE_NOTE } from './ImageField';
 
 const MAX_OPTIONS = 24;
 
@@ -51,6 +53,7 @@ export function QuestionFormDialog({
   isGameLevel = false,
 }: QuestionFormDialogProps) {
   const createMutation = useCreateQuestion();
+  const formId = useId();
   const {
     register,
     handleSubmit,
@@ -103,10 +106,26 @@ export function QuestionFormDialog({
     <Modal
       isOpen
       onClose={onClose}
-      size="lg"
+      size="xl"
       title={isGameLevel ? 'إضافة مستوى للعبة' : 'إضافة سؤال'}
+      footer={
+        <Button
+          type="submit"
+          form={formId}
+          isLoading={createMutation.isPending}
+          iconStart={<Save aria-hidden="true" />}
+        >
+          حفظ السؤال
+        </Button>
+      }
     >
-      <form className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
+      {/* Client revision 2026-11: larger text, options side by side, the save button always visible. */}
+      <form
+        id={formId}
+        className={cx(styles.form, styles.questionForm)}
+        noValidate
+        onSubmit={(event) => void onSubmit(event)}
+      >
         <ApiErrorAlert error={createMutation.error} />
         <FormField label="نص السؤال" error={errors.text?.message} isRequired>
           {(field) => <Textarea {...field} {...register('text')} rows={2} />}
@@ -129,6 +148,7 @@ export function QuestionFormDialog({
             render={({ field, fieldState }) => (
               <ImageField
                 label="صورة السؤال (اختيارية)"
+                isCompact
                 value={field.value}
                 onChange={field.onChange}
                 error={fieldState.error?.message}
@@ -144,77 +164,80 @@ export function QuestionFormDialog({
               {optionsError}
             </p>
           ) : null}
-          {fields.map((item, index) => {
-            const number = (index + 1).toString();
-            return (
-              <div key={item.id} className={styles.optionRow}>
-                <div className={styles.optionHeader}>
-                  <span>{`الخيار ${number}`}</span>
-                  <IconButton
-                    label={`حذف الخيار ${number}`}
-                    icon={Trash2}
-                    variant="danger"
-                    disabled={fields.length <= MIN_OPTIONS}
-                    onClick={() => {
-                      remove(index);
-                    }}
-                  />
-                </div>
-                <FormField
-                  label={`نص الخيار ${number}`}
-                  error={errors.options?.[index]?.text?.message}
-                >
-                  {(field) => <Input {...field} {...register(`options.${index}.text`)} />}
-                </FormField>
-                <Controller
-                  control={control}
-                  name={`options.${index}.image`}
-                  render={({ field, fieldState }) => (
-                    <ImageField
-                      label={`صورة الخيار ${number} (اختيارية)`}
-                      value={field.value}
-                      onChange={field.onChange}
-                      error={fieldState.error?.message}
+          <div className={styles.optionGrid}>
+            {fields.map((item, index) => {
+              const number = (index + 1).toString();
+              return (
+                <div key={item.id} className={styles.optionRow}>
+                  <div className={styles.optionHeader}>
+                    <span>{`الخيار ${number}`}</span>
+                    <IconButton
+                      label={`حذف الخيار ${number}`}
+                      icon={Trash2}
+                      variant="danger"
+                      disabled={fields.length <= MIN_OPTIONS}
+                      onClick={() => {
+                        remove(index);
+                      }}
                     />
-                  )}
-                />
-                {type === 'SingleChoice' ? (
+                  </div>
+                  <FormField
+                    label={`نص الخيار ${number}`}
+                    error={errors.options?.[index]?.text?.message}
+                  >
+                    {(field) => <Input {...field} {...register(`options.${index}.text`)} />}
+                  </FormField>
                   <Controller
                     control={control}
-                    name={`options.${index}.isCorrect`}
-                    render={({ field }) => (
-                      <label className={styles.optionHeader}>
-                        <input
-                          type="radio"
-                          name="single-correct"
-                          checked={field.value}
-                          onChange={() => {
-                            selectSingleCorrect(index);
-                          }}
-                        />
-                        {`الخيار ${number} هو الإجابة الصحيحة`}
-                      </label>
-                    )}
-                  />
-                ) : null}
-                {type === 'MultiSelect' ? (
-                  <Checkbox label="إجابة صحيحة" {...register(`options.${index}.isCorrect`)} />
-                ) : null}
-                {type === 'Sequence' ? (
-                  <FormField label={`الترتيب الصحيح للخيار ${number}`}>
-                    {(field) => (
-                      <Input
-                        {...field}
-                        {...register(`options.${index}.correctOrder`)}
-                        inputMode="numeric"
-                        dir="ltr"
+                    name={`options.${index}.image`}
+                    render={({ field, fieldState }) => (
+                      <ImageField
+                        label={`صورة الخيار ${number} (اختيارية)`}
+                        isCompact
+                        value={field.value}
+                        onChange={field.onChange}
+                        error={fieldState.error?.message}
                       />
                     )}
-                  </FormField>
-                ) : null}
-              </div>
-            );
-          })}
+                  />
+                  {type === 'SingleChoice' ? (
+                    <Controller
+                      control={control}
+                      name={`options.${index}.isCorrect`}
+                      render={({ field }) => (
+                        <label className={styles.optionHeader}>
+                          <input
+                            type="radio"
+                            name="single-correct"
+                            checked={field.value}
+                            onChange={() => {
+                              selectSingleCorrect(index);
+                            }}
+                          />
+                          {`الخيار ${number} هو الإجابة الصحيحة`}
+                        </label>
+                      )}
+                    />
+                  ) : null}
+                  {type === 'MultiSelect' ? (
+                    <Checkbox label="إجابة صحيحة" {...register(`options.${index}.isCorrect`)} />
+                  ) : null}
+                  {type === 'Sequence' ? (
+                    <FormField label={`الترتيب الصحيح للخيار ${number}`}>
+                      {(field) => (
+                        <Input
+                          {...field}
+                          {...register(`options.${index}.correctOrder`)}
+                          inputMode="numeric"
+                          dir="ltr"
+                        />
+                      )}
+                    </FormField>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -227,15 +250,7 @@ export function QuestionFormDialog({
             إضافة خيار
           </Button>
         </fieldset>
-
-        <Button
-          type="submit"
-          fullWidth
-          isLoading={createMutation.isPending}
-          iconStart={<Save aria-hidden="true" />}
-        >
-          حفظ السؤال
-        </Button>
+        <p className={styles.muted}>{LOCAL_IMAGE_NOTE}</p>
       </form>
     </Modal>
   );

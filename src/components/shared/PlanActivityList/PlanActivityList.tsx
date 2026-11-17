@@ -9,7 +9,7 @@ import type { PlanActivity } from '@/services/api/childPlan';
 import { cx } from '@/utils/classNames';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
-import { availabilityHint, playLabel, statusLabel } from './activityWording';
+import { availabilityHint, canPlay, playLabel, statusLabel } from './activityWording';
 import styles from './PlanActivityList.module.css';
 
 const TYPE_LABEL = { test: 'اختبار', game: 'لعبة' } as const;
@@ -25,8 +25,8 @@ export interface PlanActivityListProps {
   /** Extra content under a completed activity (the specialist's answer details). */
   renderDetails?: ((activity: PlanActivity) => ReactNode) | undefined;
   /**
-   * Parent only: link to play an activity. Completed activities stay openable (games replay,
-   * tests reopen as practice — client revision 2026-11); the Teacher gets no play link.
+   * Parent only: link to play an activity. Completed games stay replayable; a completed test has
+   * no link (client revision 2026-11); the Teacher gets no play link.
    */
   playTo?: ((activity: PlanActivity) => string) | undefined;
 }
@@ -117,7 +117,7 @@ export function PlanActivityList({
               ) : null}
             </div>
             <div className={styles.actions}>
-              {playTo ? (
+              {playTo && canPlay(activity) ? (
                 <Link
                   to={playTo(activity)}
                   className={getButtonClassName({

@@ -19,7 +19,15 @@ export interface ImageFieldProps {
   existingPath?: string | null | undefined;
   error?: string | undefined;
   hint?: string;
+  /**
+   * Smaller preview and no per-field storage note (the form shows that note once) — used where a
+   * form repeats the picker (question options, client revision 2026-11).
+   */
+  isCompact?: boolean;
 }
+
+export const LOCAL_IMAGE_NOTE =
+  'تظهر الصورة محلياً على هذا المتصفح، وتبقى بعد إعادة التحميل إذا كان التخزين المحلي متاحاً. لا تنتقل تلقائياً إلى أجهزة أخرى.';
 
 /** A neutral placeholder in the preview box (no broken-image icon). */
 function PreviewPlaceholder({ text }: { text: string }) {
@@ -44,6 +52,7 @@ export function ImageField({
   error,
   hint,
   mediaKey,
+  isCompact = false,
 }: ImageFieldProps) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -94,7 +103,7 @@ export function ImageField({
   }
 
   return (
-    <div className={styles.imageFieldWrap}>
+    <div className={styles.imageFieldWrap} data-compact={isCompact || undefined}>
       <span className={styles.fieldLabel} id={`${id}-label`}>
         {label}
       </span>
@@ -138,10 +147,7 @@ export function ImageField({
           </p>
         </div>
       </div>
-      <p className={styles.muted}>
-        تظهر الصورة محلياً على هذا المتصفح، وتبقى بعد إعادة التحميل إذا كان التخزين المحلي متاحاً.
-        لا تنتقل تلقائياً إلى أجهزة أخرى.
-      </p>
+      {isCompact ? null : <p className={styles.muted}>{LOCAL_IMAGE_NOTE}</p>}
       {hint ? (
         <p id={hintId} className={styles.muted}>
           {hint}

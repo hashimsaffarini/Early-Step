@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { formatDisplayDate } from '@/utils/dateFormat';
 
 import type { PlanActivityListProps } from './PlanActivityList';
-import { availabilityHint, playLabel, statusLabel } from './activityWording';
+import { availabilityHint, canPlay, playLabel, statusLabel } from './activityWording';
 import styles from './PlanActivityTable.module.css';
 
 type Filter = 'all' | 'test' | 'game' | 'completed';
@@ -109,7 +109,7 @@ export function PlanActivityTable({
                   <td>{activity.completedAt ? formatDisplayDate(activity.completedAt) : '—'}</td>
                   <td>
                     <div className={styles.actions}>
-                      {playTo ? (
+                      {playTo && canPlay(activity) ? (
                         <Link
                           to={playTo(activity)}
                           className={getButtonClassName({ size: 'sm' })}

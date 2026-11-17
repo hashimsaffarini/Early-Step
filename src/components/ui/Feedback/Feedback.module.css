@@ -38,6 +38,16 @@
   color: var(--color-text-secondary);
 }
 
+.progressLg .progressLabelRow {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-black);
+  color: var(--color-text-primary);
+}
+
+.progressLg .track {
+  block-size: 0.875rem;
+}
+
 .track {
   block-size: 0.625rem;
   overflow: hidden;

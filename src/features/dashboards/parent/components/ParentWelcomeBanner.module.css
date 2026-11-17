@@ -10,23 +10,3 @@
   color: var(--color-accent);
 }
 
-.illustration {
-  display: none;
-  flex-shrink: 0;
-  place-items: center;
-  inline-size: 7rem;
-  block-size: 7rem;
-  border-radius: var(--radius-xl);
-  background: var(--color-glass);
-}
-
-@media (min-width: 48rem) {
-  .illustration {
-    display: grid;
-  }
-}
-
-.illustration svg {
-  inline-size: 3.5rem;
-  block-size: 3.5rem;
-}

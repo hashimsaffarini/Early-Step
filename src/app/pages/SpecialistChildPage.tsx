@@ -15,7 +15,6 @@ import {
   AssessmentPlanGate,
   AssessmentStatusCard,
   ChildHero,
-  childHeroProgress,
   PlanProgressCard,
 } from '@/components/shared/ChildDashboard';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -30,6 +29,7 @@ import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
 import { useChildrenForRole } from '@/hooks/api/childResources';
 import { useRoleArea } from '@/hooks/useRoleArea';
 import { summarizePlan } from '@/services/api/planSummary';
+import { useSession } from '@/services/session';
 
 import styles from './ChildDashboardPage.module.css';
 
@@ -56,6 +56,8 @@ export function SpecialistChildPage() {
   const children = useChildrenForRole('Specialist');
   const child = children.data?.find((item) => item.id === childId);
   const plan = useSpecialistPlan(childId, Boolean(child));
+  // The specialist/children list is the signed-in specialist's own children.
+  const session = useSession();
   const assessment = useAssessmentStatus(child ? child.id : undefined);
   // The plan (and its figures) appears once the assessment is completed (or is not readable).
   const isPlanOpen = assessment.state === 'complete' || assessment.state === 'unavailable';
@@ -98,9 +100,9 @@ export function SpecialistChildPage() {
           eyebrow="متابعة الطفل والخطة التدريبية"
           facts={childFacts(child, {
             withParent: true,
+            specialistName: plan.data?.specialistName ?? session?.user.name ?? null,
             teacherName: plan.data?.teacherName ?? null,
           })}
-          progress={childHeroProgress(summary)}
         />
         <Tabs
           className={styles.fileTabs}

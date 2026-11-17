@@ -27,6 +27,7 @@ import {
  * with `{ message }`; those are kept for start/answer/complete.
  */
 const NOT_AVAILABLE = 'الطفل غير موجود أو لا يوجد تقييم أولي متاح.';
+const ALREADY_COMPLETED = 'لا يوجد تقييم أولي متاح حالياً.';
 const CANNOT_ANSWER = 'لا يمكن إرسال الإجابة.';
 const CANNOT_COMPLETE = 'لا يمكن إنهاء التقييم. تأكد من الإجابة على جميع الأسئلة.';
 
@@ -63,6 +64,11 @@ export const assessmentsHandlers: HttpHandler[] = [
     if (user instanceof Response) return user;
     const child = findMockChild(String(params.childId));
     if (child?.parentId !== user.id) return HttpResponse.json({ message: NOT_AVAILABLE });
+    // Live: the assessment is one-time — after completion `start` answers 404 with this text.
+    const isCompleted = [...mockAssessmentSessions.values()].some(
+      (item) => item.childId === child.id && item.completed,
+    );
+    if (isCompleted) return notFound(ALREADY_COMPLETED);
     const assessmentId = mockId();
     // The categories in the assessment (admin membership), with their questions.
     const sections = mockCategories

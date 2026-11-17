@@ -43,6 +43,12 @@ describe('AdminUserDetailPage', () => {
       expect(card('يوسف')).toHaveTextContent('نتيجة التقييم الأولي: 50%');
     });
     expect(await within(card('ريم')).findByText('لم يكتمل التقييم الأولي')).toBeInTheDocument();
+    // Client revision 2026-11: a completed result opens in full for the Admin.
+    expect(within(card('يوسف')).getByRole('link', { name: 'عرض نتيجة التقييم' })).toHaveAttribute(
+      'href',
+      '/admin/children/c0000000-0000-4000-8000-000000000001/assessment',
+    );
+    expect(within(card('ريم')).queryByRole('link', { name: 'عرض نتيجة التقييم' })).toBeNull();
   });
 
   it('assigns a specialist to one child with the + action (one-child request)', async () => {
