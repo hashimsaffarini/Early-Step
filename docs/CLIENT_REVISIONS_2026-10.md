@@ -290,3 +290,26 @@ requests #9–#13.
 
 Known limits: the plan list has no `slug` (#9), so live games cannot be told apart yet and the
 library shows the generic game picture; correct answers are absent from activity results (#12).
+
+## CLIENT REVISION BATCH (2026-11-14)
+
+Branch `feature/website-updates`. ADR-031; backend requests #14–#15.
+
+| Request                                           | Status                | Implementation                                                                            |
+| ------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------- |
+| Remove the sprout icon from the Parent banner     | DONE                  | `ParentWelcomeBanner` (no aside)                                                          |
+| Completed initial assessment looked like an error | DONE                  | `AssessmentPage`: «أكمل … التقييم المبدئي 🎉» + back link (live 404 rule)                 |
+| No retry for completed plan tests                 | DONE                  | `activityWording.canPlay`; player shows «أنهى الطفل هذا الاختبار»; games still replay     |
+| Teacher page: elements across the page            | DONE                  | Full-width header, then one full-width progress card; no second bar                       |
+| Teacher note error                                | BLOCKED (backend #14) | Request matches Swagger; server rule                                                      |
+| Specialist header: remove the progress box        | DONE                  | `SpecialistChildPage` hero without `progress`                                             |
+| Larger result titles above progress bars          | DONE                  | `ProgressBar size="lg"` in `AssessmentResultView`                                         |
+| No levels on the game start screen                | DONE                  | `RealGameSession`: level from age only, no picker / badge                                 |
+| Smaller memory cards                              | DONE                  | `MemoryPairs.module.css`: max 7.5rem, centred, up to four per row                         |
+| One include control per category                  | DONE                  | `AssessmentCategoryBrowser`: checkbox only                                                |
+| Question dialog: larger font, less scrolling      | DONE                  | `QuestionFormDialog`: `xl` modal, options two per row, compact image pickers, pinned save |
+| «موهبة» → «صعوبات التعلم»                         | DONE                  | Landing CTA «جاهز لاكتشاف صعوبات التعلم لدى طفلك؟»                                        |
+| Teacher and specialist names on child files       | PARTIAL (backend #15) | Specialist page: both; Teacher page: teacher; Parent page: specialist from the report     |
+| Admin sees initial-assessment results             | DONE                  | `/admin/children/:id/assessment` + «عرض نتيجة التقييم» on the parent's page               |
+| Parent sees the child's report                    | DONE                  | Sidebar «التقارير», list / detail, «تقرير الأخصائي» panel                                 |
+| Change password                                   | DONE                  | Sidebar «تغيير كلمة المرور» → `POST Auth/change-password`                                 |

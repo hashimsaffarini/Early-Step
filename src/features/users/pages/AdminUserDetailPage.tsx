@@ -3,11 +3,12 @@ import {
   BriefcaseMedical,
   CalendarDays,
   ClipboardCheck,
+  Eye,
   UserX,
   Users,
 } from 'lucide-react';
 import { useId, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useLocation, useParams } from 'react-router';
 
 import { ChildCard, type ChildCardDetail } from '@/components/shared/ChildCard';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -18,7 +19,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button, getButtonClassName } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { ADMIN_PATHS } from '@/constants/routes';
+import { ADMIN_PATHS, getAreaPaths } from '@/constants/routes';
 import { useAssessmentStatus } from '@/hooks/api/assessmentStatus';
 import type { ChildSummary } from '@/services/api/childrenLists';
 import { HTTP_STATUS } from '@/services/http/httpStatus';
@@ -53,6 +54,7 @@ function childDetails(child: ChildSummary): ChildCardDetail[] {
  */
 function AssessmentResultLine({ childId }: { childId: string }) {
   const status = useAssessmentStatus(childId);
+  const { pathname } = useLocation();
   let text: ReactNode;
   switch (status.state) {
     case 'loading':
@@ -76,10 +78,23 @@ function AssessmentResultLine({ childId }: { childId: string }) {
       break;
   }
   return (
-    <p className={styles.assessmentLine} data-state={status.state}>
-      <ClipboardCheck aria-hidden="true" />
-      {text}
-    </p>
+    <div className={styles.assessmentResult}>
+      <p className={styles.assessmentLine} data-state={status.state}>
+        <ClipboardCheck aria-hidden="true" />
+        {text}
+      </p>
+      {/* Client revision 2026-11: the Admin opens the full result (categories and answers). */}
+      {status.state === 'complete' ? (
+        <Link
+          to={getAreaPaths('Admin').childAssessment(childId)}
+          state={{ from: pathname }}
+          className={getButtonClassName({ variant: 'soft', size: 'sm' })}
+        >
+          <Eye aria-hidden="true" />
+          عرض نتيجة التقييم
+        </Link>
+      ) : null}
+    </div>
   );
 }
 

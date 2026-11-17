@@ -13,7 +13,7 @@ export interface ModalProps {
   onClose: () => void;
   title: string;
   description?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   footer?: ReactNode;
   children?: ReactNode;
 }

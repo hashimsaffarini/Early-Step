@@ -227,7 +227,7 @@ describe('real games — session (start screen, end screen, replay)', () => {
       <MemoryRouter>
         <RealGameSession
           game={REAL_GAMES['target-catch']}
-          initialDifficulty="medium"
+          difficulty="easy"
           exitTo="/parent/children/c-1"
           random={fixed}
         />
@@ -235,17 +235,17 @@ describe('real games — session (start screen, end screen, replay)', () => {
     );
   }
 
-  it('shows a start screen with the game, its instruction and the age-based difficulty', () => {
+  it('shows a start screen with the game and its instruction — no level picker', () => {
     renderSession();
     expect(screen.getByRole('heading', { name: 'اصطد الهدف' })).toBeInTheDocument();
     expect(screen.getByText(REAL_GAMES['target-catch'].instruction)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'متوسط' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('group', { name: 'مستوى الصعوبة' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^(سهل|متوسط|صعب)$/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'ابدأ اللعب' })).toBeInTheDocument();
   });
 
   it('ends with a real session summary and is always replayable — no stars or coins', async () => {
     renderSession();
-    await userEvent.click(screen.getByRole('button', { name: 'سهل' }));
     await userEvent.click(screen.getByRole('button', { name: 'ابدأ اللعب' }));
     const goal = CATCH_LEVELS.easy.goal;
     for (let caught = 0; caught < goal; caught += 1) {

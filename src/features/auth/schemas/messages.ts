@@ -5,6 +5,8 @@ export const AUTH_MESSAGES = {
   passwordRequired: 'كلمة المرور مطلوبة',
   passwordWeak: 'كلمة المرور لا تستوفي جميع الشروط',
   confirmRequired: 'يرجى تأكيد كلمة المرور',
+  currentPasswordRequired: 'كلمة المرور الحالية مطلوبة',
+  samePassword: 'يجب أن تختلف كلمة المرور الجديدة عن الحالية',
   passwordsMismatch: 'كلمتا المرور غير متطابقتين',
   nameRequired: 'الاسم الكامل مطلوب',
   nameTooShort: 'يجب أن يحتوي الاسم على حرفين على الأقل',

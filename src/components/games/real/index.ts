@@ -9,7 +9,6 @@ export {
 } from './registry';
 export {
   DIFFICULTIES,
-  DIFFICULTY_LABELS,
   REAL_GAME_SLUGS,
   type Difficulty,
   type RealGameDefinition,

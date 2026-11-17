@@ -384,11 +384,19 @@ describe('Plan game player — the five real games (client revision 2026-11)', (
 
     expect(await screen.findByRole('heading', { level: 2, name })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'ابدأ اللعب' })).toBeInTheDocument();
-    // Nour is 5 in the mock list → «متوسط».
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'متوسط' })).toHaveAttribute('aria-pressed', 'true');
-    });
+    // No level picker (client revision 2026-11): the size follows the child's age.
+    expect(screen.queryByRole('button', { name: /^(سهل|متوسط|صعب)$/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'التالي' })).not.toBeInTheDocument();
+  });
+
+  it("sizes the game from the child's age (Nour is 5 → medium: four memory pairs)", async () => {
+    serveGame({ slug: 'memory-pairs', questions: [] });
+    renderPlayer();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'ابدأ اللعب' }));
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: /^بطاقة \d+ مقلوبة$/ })).toHaveLength(8);
+    });
   });
 
   it('opens a real game even when the server sends questions for its slug', async () => {
@@ -421,11 +429,10 @@ describe('Plan game player — the five real games (client revision 2026-11)', (
     );
     renderPlayer();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'سهل' }));
-    await userEvent.click(screen.getByRole('button', { name: 'ابدأ اللعب' }));
-    // The engine always keeps at least one target («قطة» on easy) in the air.
-    for (let caught = 0; caught < 3; caught += 1) {
-      const [target] = await screen.findAllByRole('button', { name: 'بالون: قطة' });
+    await userEvent.click(await screen.findByRole('button', { name: 'ابدأ اللعب' }));
+    // The engine always keeps at least one target («حرف أ» on medium — Nour is 5) in the air.
+    for (let caught = 0; caught < 5; caught += 1) {
+      const [target] = await screen.findAllByRole('button', { name: 'بالون: حرف أ' });
       if (!target) throw new Error('no target balloon');
       await userEvent.click(target);
     }

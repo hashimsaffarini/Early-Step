@@ -71,6 +71,19 @@ describe('Specialist child file — client revision 2026-11', () => {
     expect(statValue(stats, 'متوسط النتيجة')).toBe('75%');
   });
 
+  it('names the specialist and the teacher in the header, without a second progress bar', async () => {
+    renderPage();
+    await heading('يوسف');
+    const facts = screen.getByRole('list', { name: 'بيانات الطفل' });
+
+    expect(await within(facts).findByText('الأخصائي: أ. ليلى حسن')).toBeInTheDocument();
+    expect(within(facts).getByText('المعلم: أ. سارة خالد')).toBeInTheDocument();
+    // Client revision 2026-11: the header has no «نسبة إنجاز الخطة التدريبية» bar.
+    expect(
+      screen.queryByRole('progressbar', { name: 'نسبة إنجاز الخطة التدريبية' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows the initial assessment as completed and view-only, with real category scores', async () => {
     renderPage();
     await heading('يوسف');
@@ -95,11 +108,9 @@ describe('Specialist child file — client revision 2026-11', () => {
     await openPlan();
     const table = await screen.findByRole('table', { name: 'أنشطة الخطة التدريبية' });
     expect(within(table).getByText('عرض إجابات الطفل')).toBeInTheDocument();
-    // Availability wording: a completed test can be reopened by the child (practice only).
+    // Availability wording: a completed test is done — no retry hint (client revision 2026-11).
     expect(within(table).getByText('مكتمل')).toBeInTheDocument();
-    expect(
-      within(table).getByText('يمكن للطفل إعادة فتحه للتدريب دون تغيير النتيجة'),
-    ).toBeInTheDocument();
+    expect(within(table).queryByText(/إعادة فتحه للتدريب/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'إضافة نشاط' })).toBeInTheDocument();
     expect(screen.getByText('المعلم المسؤول: أ. سارة خالد')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^ابدأ/ })).not.toBeInTheDocument();

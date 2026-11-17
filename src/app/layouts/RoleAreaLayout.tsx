@@ -1,5 +1,5 @@
 import { getNavigation } from '@/app/layouts/areaNavigation';
-import { LogoutButton } from '@/app/layouts/LogoutButton';
+import { AccountActions } from '@/app/layouts/AccountActions';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ROLE_LABELS } from '@/constants/roleLabels';
 import { useUnreadMessagesCount } from '@/hooks/api/useUnreadMessagesCount';
@@ -25,7 +25,7 @@ export function RoleAreaLayout({ role }: RoleAreaLayoutProps) {
       navItems={getNavigation(role, unreadMessages)}
       user={{ name: session?.user.name ?? '', roleLabel: ROLE_LABELS[role] }}
       showBrand={role !== 'Parent'}
-      sidebarFooter={<LogoutButton />}
+      sidebarFooter={<AccountActions />}
     />
   );
 }

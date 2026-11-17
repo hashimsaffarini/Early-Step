@@ -12,25 +12,21 @@
   text-align: center;
 }
 
+/* Client revision 2026-11: compact cards, centred — three per row on phones, up to four wider. */
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(5rem, 6.5rem));
+  justify-content: center;
   gap: var(--space-3);
   margin: 0 auto;
   padding: 0;
-  inline-size: min(100%, 40rem);
+  inline-size: min(100%, 33rem);
   list-style: none;
 }
 
-.grid[data-count='8'],
-.grid[data-count='12'] {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 @media (min-width: 40rem) {
-  .grid[data-count='8'],
-  .grid[data-count='12'] {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(5.5rem, 7.5rem));
   }
 }
 
@@ -38,7 +34,7 @@
   position: relative;
   display: block;
   inline-size: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 4 / 5;
   min-block-size: 6rem;
   padding: 0;
   border: 0;
@@ -85,7 +81,7 @@
 .back {
   background: var(--gradient-brand);
   color: var(--color-text-on-dark);
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-2xl);
 }
 
 .front {
@@ -100,7 +96,7 @@
 }
 
 .emoji {
-  font-size: var(--font-size-4xl);
+  font-size: var(--font-size-3xl);
   line-height: 1.1;
   overflow-wrap: anywhere;
   text-align: center;

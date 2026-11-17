@@ -116,6 +116,35 @@ and is not part of this list.
 - **Request:** allow the assigned Teacher to read it (read-only), if the product wants teachers to
   review answers.
 
+## Client revision batch 2026-11-14
+
+### 14. A Teacher cannot save a note: "لا توجد خطة تدريبية لهذا الطفل مرتبطة بهذا المعلم."
+
+- **Now (reported by the client, 2026-11-14):** the assigned Teacher opens the child (the plan is
+  readable: `GET TrainingPlan/children/{childId}/activities` works for them) but
+  `POST Teacher/children/{childId}/notes` answers with this message. The client confirmed in the
+  database that the child is linked to that teacher.
+- **Frontend check:** the request matches Swagger exactly — the child id in the path (the same id the
+  plan read uses) and the JSON body `CreateTrainingPlanFeedbackRequest { content }`. There is no
+  other field to send. Not reproducible here: there is still no Teacher demo account.
+- **Likely cause (server):** the note endpoint looks up the plan by `TeacherId`, which is set on the
+  child (`specialist/assign-teacher`) but apparently not on the existing plan — e.g. a plan created
+  before the teacher was assigned. Workaround to try: assign the teacher again from the
+  specialist's child page after the plan exists.
+- **Request:** resolve the teacher from the child's assignment (the same rule the plan read uses),
+  or keep `TrainingPlan.TeacherId` in sync when a teacher is (re)assigned.
+
+### 15. Staff names for the Parent and the Teacher
+
+- **Now (live 2026-11-14):** `Parent/GetMyChildren` → `{ id, fullName, age, gender, parentId }`,
+  `Parent/{childId}` adds only counts; `specialist/children` has no teacher name. The app shows the
+  names it really has: the Specialist page from the plan (`specialistName`, `teacherName`), the
+  Teacher page the signed-in teacher, the Parent page the specialist named on the child's report
+  (only once a report exists). The Parent never sees the teacher's name; the Teacher never sees the
+  specialist's.
+- **Request:** add `specialistName` and `teacherName` to `Parent/GetMyChildren` (or `Parent/{id}`)
+  and `specialistName` to `Teacher/children` — the app shows them automatically (`childFacts`).
+
 ## Accounts / data
 
 - **Content:** the shared initial assessment currently has **no categories** (it had two on

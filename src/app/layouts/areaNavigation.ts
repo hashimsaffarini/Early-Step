@@ -26,7 +26,7 @@ const CHILDREN_LABEL: Record<Exclude<AreaRole, 'Admin'>, string> = {
 
 /**
  * Sidebar order: dashboard, children, (Admin management pages), (Specialist reports), messages.
- * Client revisions 2026-10: reports only for the Specialist (latest request), no children entry
+ * Reports for the Specialist and the Parent (client revision 2026-11), no children entry
  * for the Admin (the Admin reaches children
  * through «إسناد الأخصائيين» and the users pages). The static practice tests/games are listed only
  * in development mock mode (they are not backend data).
@@ -53,8 +53,10 @@ function buildAreaNav(role: AreaRole, unreadMessages: number): NavLinkItem[] {
           { to: paths.games, label: 'الألعاب', icon: Gamepad2 },
         ]
       : []),
-    // Latest client request (2026-10): the Specialist writes reports again.
-    ...(role === 'Specialist' ? [{ to: paths.reports, label: 'التقارير', icon: FileText }] : []),
+    // The Specialist writes reports (2026-10); the Parent reads them again (2026-11).
+    ...(role === 'Specialist' || role === 'Parent'
+      ? [{ to: paths.reports, label: 'التقارير', icon: FileText }]
+      : []),
     { to: paths.messages, label: 'الرسائل', icon: MessageCircle, badgeCount: unreadMessages },
   ];
 }

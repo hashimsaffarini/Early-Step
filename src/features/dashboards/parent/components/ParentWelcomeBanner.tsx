@@ -1,4 +1,4 @@
-import { Sprout, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 import { PageBanner } from '@/components/shared/PageBanner';
 
@@ -16,8 +16,8 @@ export interface ParentWelcomeBannerProps {
 }
 
 /**
- * Replit dashboard banner: date chip, greeting, parent name, subtitle and a decorative icon
- * (client revision 2026-10: no Early Step logo in the Parent area).
+ * Replit dashboard banner: date chip, greeting, parent name and subtitle
+ * (client revision 2026-10: no Early Step logo in the Parent area; 2026-11: no decorative icon).
  */
 export function ParentWelcomeBanner({ parentName, now = new Date() }: ParentWelcomeBannerProps) {
   return (
@@ -32,11 +32,6 @@ export function ParentWelcomeBanner({ parentName, now = new Date() }: ParentWelc
       overline={getGreeting(now)}
       title={parentName}
       subtitle={SUBTITLE}
-      aside={
-        <span className={styles.illustration} aria-hidden="true">
-          <Sprout />
-        </span>
-      }
     />
   );
 }

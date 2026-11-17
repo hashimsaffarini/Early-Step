@@ -50,7 +50,13 @@ function CategoryRow({
       : `${category.correctAnswers.toString()} من ${category.totalQuestions.toString()} إجابات صحيحة`;
   return (
     <li className={styles.list}>
-      <ProgressBar label={category.name} value={category.percentage} max={100} showLabel />
+      <ProgressBar
+        label={category.name}
+        value={category.percentage}
+        max={100}
+        showLabel
+        size="lg"
+      />
       {counts ? <p className={styles.muted}>{counts}</p> : null}
       {category.questions.length > 0 && isExpanded ? (
         <ul className={styles.list} aria-label={`أسئلة ${category.name}`}>
@@ -92,6 +98,7 @@ export function AssessmentResultView({
         value={result.overallScore}
         max={100}
         showLabel
+        size="lg"
       />
       {result.categories.length > 0 ? (
         <ul className={styles.list} aria-label="النتيجة حسب التصنيف">

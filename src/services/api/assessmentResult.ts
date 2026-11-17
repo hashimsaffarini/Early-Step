@@ -32,6 +32,8 @@ const resultQuestionSchema = z.looseObject({
 
 export const assessmentResultSchema = z.looseObject({
   childId: z.string().nullish(),
+  childName: z.string().nullish(),
+  parentName: z.string().nullish(),
   assessmentId: z.string().nullish(),
   overallScore: z.number(),
   categories: z
@@ -76,6 +78,9 @@ export interface AssessmentResultCategory {
 
 export interface AssessmentResult {
   assessmentId: string | null;
+  /** Sent with the result; the Admin (no children-list endpoint) names the child from it. */
+  childName: string | null;
+  parentName: string | null;
   overallScore: number;
   categories: AssessmentResultCategory[];
 }
@@ -91,6 +96,8 @@ function mapOption(dto: z.infer<typeof resultOptionSchema>): AssessmentResultOpt
 export function mapAssessmentResult(dto: z.infer<typeof assessmentResultSchema>): AssessmentResult {
   return {
     assessmentId: dto.assessmentId ?? null,
+    childName: dto.childName?.trim() ? dto.childName.trim() : null,
+    parentName: dto.parentName?.trim() ? dto.parentName.trim() : null,
     overallScore: dto.overallScore,
     categories: (dto.categories ?? []).map((category) => {
       return {

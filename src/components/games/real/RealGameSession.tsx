@@ -3,22 +3,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 
 import { Button, getButtonClassName } from '@/components/ui/Button';
-import { cx } from '@/utils/classNames';
 
 import { RealGameBoard } from './RealGameBoard';
-import {
-  DIFFICULTIES,
-  DIFFICULTY_LABELS,
-  type Difficulty,
-  type RealGameDefinition,
-  type SessionFigure,
-} from './types';
+import type { Difficulty, RealGameDefinition, SessionFigure } from './types';
 
 import styles from './RealGameSession.module.css';
 
 export interface RealGameSessionProps {
   game: RealGameDefinition;
-  initialDifficulty: Difficulty;
+  /** From the child's age (client revision 2026-11: no level choice on screen). */
+  difficulty: Difficulty;
   /** «العودة للخطة». */
   exitTo: string;
   exitLabel?: string;
@@ -31,19 +25,18 @@ type Phase =
   | { kind: 'end'; summary: readonly SessionFigure[] };
 
 /**
- * A real game session: a short start screen (picture, name, one-line instruction, difficulty and
- * «ابدأ اللعب»), the game itself, then a completion screen with the session's own figures and
+ * A real game session: a short start screen (picture, name, one-line instruction and «ابدأ اللعب»
+ * — no level picker: the content size follows the child's age), the game itself, then a completion screen with the session's own figures and
  * «العب مرة أخرى». Games are always replayable. The figures are session values only: they are not
  * sent to the server (no backend contract stores a real-game result — BACKEND_REQUESTS).
  */
 export function RealGameSession({
   game,
-  initialDifficulty,
+  difficulty,
   exitTo,
   exitLabel = 'العودة للخطة',
   random,
 }: RealGameSessionProps) {
-  const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [phase, setPhase] = useState<Phase>({ kind: 'start' });
   const run = useRef(0);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -71,21 +64,6 @@ export function RealGameSession({
           {game.name}
         </h2>
         <p className={styles.instruction}>{game.instruction}</p>
-        <div className={styles.levels} role="group" aria-label="مستوى الصعوبة">
-          {DIFFICULTIES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={cx(styles.level, option === difficulty && styles.levelOn)}
-              aria-pressed={option === difficulty}
-              onClick={() => {
-                setDifficulty(option);
-              }}
-            >
-              {DIFFICULTY_LABELS[option]}
-            </button>
-          ))}
-        </div>
         <Button
           size="lg"
           className={styles.start}
@@ -138,7 +116,6 @@ export function RealGameSession({
         <h2 id="game-play-title" ref={headingRef} tabIndex={-1} className={styles.playTitle}>
           {game.name}
         </h2>
-        <span className={styles.badge}>{DIFFICULTY_LABELS[difficulty]}</span>
       </header>
       <RealGameBoard
         key={phase.run}

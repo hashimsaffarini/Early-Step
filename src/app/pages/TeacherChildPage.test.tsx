@@ -44,12 +44,16 @@ describe('TeacherChildPage — plan-focused view (client revisions 2026-10 / 202
     expect(within(facts).getByText('العمر: 7 سنوات')).toBeInTheDocument();
     expect(within(facts).getByText('الجنس: ولد')).toBeInTheDocument();
     expect(within(facts).getByText('ولي الأمر: محمد أحمد')).toBeInTheDocument();
-    // 2. Progress and figures derived from the real plan rows.
+    // The teacher is named in the header (the signed-in teacher follows this child).
+    expect(within(facts).getByText(/^المعلم: /)).toBeInTheDocument();
+    // 2. One progress block across the page (2026-11): no second bar in the header.
     expect(
-      await screen.findByRole('progressbar', { name: 'نسبة إنجاز الخطة التدريبية' }),
-    ).toHaveAttribute('aria-valuetext', '1 من 2 أنشطة منجزة');
-    // Redesigned progress (2026-11): ring with the %, «X من Y نشاطاً مكتمل» and figure chips.
-    expect(screen.getByRole('progressbar', { name: 'تقدّم الخطة التدريبية' })).toHaveAttribute(
+      screen.queryByRole('progressbar', { name: 'نسبة إنجاز الخطة التدريبية' }),
+    ).not.toBeInTheDocument();
+    // Ring with the %, «X من Y نشاطاً مكتمل» and figure chips.
+    expect(
+      await screen.findByRole('progressbar', { name: 'تقدّم الخطة التدريبية' }),
+    ).toHaveAttribute(
       'aria-valuenow',
       '50',
     );

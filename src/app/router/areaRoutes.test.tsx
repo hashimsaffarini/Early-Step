@@ -156,8 +156,8 @@ describe('role area routing', () => {
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'));
     const paths = getAreaPaths('Parent');
-    // Client revision 2026-10: no reports entry for the parent.
-    expect(hrefs).toEqual([paths.dashboard, paths.children, paths.messages]);
+    // Client revision 2026-11: the parent reads the child's report again.
+    expect(hrefs).toEqual([paths.dashboard, paths.children, paths.reports, paths.messages]);
     expect(within(desktopNav).queryByText('قريباً')).not.toBeInTheDocument();
   });
 
@@ -181,7 +181,7 @@ describe('role area routing', () => {
     },
   );
 
-  it.each(['Parent', 'Teacher', 'Admin'] as const)(
+  it.each(['Teacher', 'Admin'] as const)(
     'lists no reports in the %s sidebar',
     async (role) => {
       renderAt(getAreaPaths(role).dashboard);
@@ -219,15 +219,34 @@ describe('role area routing', () => {
     expect(within(desktopNav).getByRole('link', { name: 'إسناد الأخصائيين' })).toBeInTheDocument();
   });
 
-  it.each(['Parent', 'Teacher'] as const)(
-    'sends the old %s report links back to the dashboard',
-    async (role) => {
-      const router = renderAt(`${getAreaPaths(role).reports}/r-1`);
+  it('sends the old Teacher report links back to the dashboard', async () => {
+    const router = renderAt(`${getAreaPaths('Teacher').reports}/r-1`);
 
-      await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
-      expect(router.state.location.pathname).toBe(getAreaPaths(role).dashboard);
-    },
-  );
+    await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
+    expect(router.state.location.pathname).toBe(getAreaPaths('Teacher').dashboard);
+  });
+
+  it("opens the Parent's read-only reports again (client revision 2026-11)", async () => {
+    const router = renderAt(getAreaPaths('Parent').reports);
+    const [desktopNav] = await screen.findAllByRole('navigation', { name: 'القائمة الرئيسية' });
+    if (!desktopNav) throw new Error('navigation not found');
+
+    expect(within(desktopNav).getByRole('link', { name: 'التقارير' })).toHaveAttribute(
+      'href',
+      getAreaPaths('Parent').reports,
+    );
+    expect(router.state.location.pathname).toBe(getAreaPaths('Parent').reports);
+    expect(screen.queryByRole('link', { name: /تقرير جديد|إنشاء تقرير/ })).not.toBeInTheDocument();
+  });
+
+  it('offers «تغيير كلمة المرور» next to logout in every area', async () => {
+    renderAt(getAreaPaths('Parent').dashboard);
+    const [password] = await screen.findAllByRole('button', { name: 'تغيير كلمة المرور' });
+    if (!password) throw new Error('change-password button not found');
+    await userEvent.click(password);
+
+    expect(await screen.findByRole('dialog', { name: 'تغيير كلمة المرور' })).toBeInTheDocument();
+  });
 
   it.each([
     ['Teacher', '/teacher'],

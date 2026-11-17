@@ -145,7 +145,7 @@ describe('ChildProfilePage — parent dashboard (client revision 2026-10)', () =
     );
   });
 
-  it('keeps completed games replayable and completed tests reopenable', async () => {
+  it('keeps completed games replayable and closes completed tests', async () => {
     server.use(
       http.get(apiUrl('TrainingPlan/children/:childId/activities'), ({ request }) => {
         const type = new URL(request.url).searchParams.get('type');
@@ -177,9 +177,8 @@ describe('ChildProfilePage — parent dashboard (client revision 2026-10)', () =
     ).toBeInTheDocument();
     const tests = screen.getByRole('list', { name: 'أنشطة الخطة التدريبية' });
     expect(within(tests).getByText('مكتمل')).toBeInTheDocument();
-    expect(
-      within(tests).getByRole('link', { name: 'إعادة المحاولة: اختبار الحروف' }),
-    ).toBeInTheDocument();
+    // A completed test has no retry (client revision 2026-11).
+    expect(within(tests).queryByRole('link', { name: /اختبار الحروف/ })).not.toBeInTheDocument();
   });
 
   it('offers the parent to start the assessment (the result is staff-only: 403 for the parent)', async () => {
@@ -192,20 +191,33 @@ describe('ChildProfilePage — parent dashboard (client revision 2026-10)', () =
     ).toHaveAttribute('href', getAreaPaths('Parent').assessment(YOUSEF));
   });
 
-  it('has no reports, no delete action and no tabs for the parent', async () => {
-    let reportCalls = 0;
-    server.events.on('request:start', ({ request }) => {
-      if (request.url.includes('Reports')) reportCalls += 1;
-    });
+  it("shows the specialist's report read-only, and no delete action or tabs (client revision 2026-11)", async () => {
     renderProfile('Parent', YOUSEF);
     await heading('يوسف');
-    await screen.findByRole('list', { name: 'ملخص الخطة التدريبية' });
 
+    const report = await screen.findByRole('region', { name: 'تقرير الأخصائي' });
+    expect(await within(report).findByText('تقرير متابعة')).toBeInTheDocument();
+    expect(within(report).getByRole('link', { name: 'عرض التقرير' })).toBeInTheDocument();
+    expect(within(report).queryByRole('link', { name: /تعديل|إضافة/ })).not.toBeInTheDocument();
+    // The report names the child's specialist in the header.
+    const facts = screen.getByRole('list', { name: 'بيانات الطفل' });
+    expect(within(facts).getByText('الأخصائي: أ. ليلى حسن')).toBeInTheDocument();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
-    expect(screen.queryByText(/التقرير|التقارير/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /حذف/ })).not.toBeInTheDocument();
-    expect(reportCalls).toBe(0);
-    server.events.removeAllListeners();
+  });
+
+  it('says when the specialist has not written a report yet', async () => {
+    server.use(
+      http.get(apiUrl('Reports/child/:childId'), () =>
+        HttpResponse.json({ message: ' لا يوجد تقرير .' }, { status: 404 }),
+      ),
+    );
+    renderProfile('Parent', YOUSEF);
+
+    const report = await screen.findByRole('region', { name: 'تقرير الأخصائي' });
+    expect(
+      await within(report).findByText('لم يكتب الأخصائي تقريراً لهذا الطفل بعد.'),
+    ).toBeInTheDocument();
   });
 
   it('edits the child through PATCH and shows the new data', async () => {

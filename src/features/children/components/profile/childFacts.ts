@@ -9,8 +9,13 @@ import { childAgeYears } from '../childDisplay';
 export interface ChildFactOptions {
   /** The parent sees their own name nowhere: only staff pages show it. */
   withParent?: boolean;
-  /** A teacher name from a richer source (the specialist plan), when the list has none. */
+  /**
+   * Names from another real source when the list has none (client revision 2026-11: every child
+   * file names its specialist and teacher): the specialist plan, the child's report, or the
+   * signed-in staff member's own name on their own child page.
+   */
   teacherName?: string | null;
+  specialistName?: string | null;
 }
 
 /** The child's real facts for the dashboard header — a field the server did not send is left out. */
@@ -22,9 +27,8 @@ export function childFacts(child: ChildSummary, options: ChildFactOptions = {}):
   if (options.withParent && child.parentName) {
     facts.push({ icon: UserRound, label: `ولي الأمر: ${child.parentName}` });
   }
-  if (child.specialistName) {
-    facts.push({ icon: BriefcaseMedical, label: `الأخصائي: ${child.specialistName}` });
-  }
+  const specialist = child.specialistName ?? options.specialistName ?? null;
+  if (specialist) facts.push({ icon: BriefcaseMedical, label: `الأخصائي: ${specialist}` });
   const teacher = child.teacherName ?? options.teacherName ?? null;
   if (teacher) facts.push({ icon: GraduationCap, label: `المعلم: ${teacher}` });
   return facts;

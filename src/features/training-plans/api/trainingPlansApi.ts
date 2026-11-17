@@ -29,6 +29,7 @@ export interface SpecialistPlan {
   status: string | null;
   /** Server-computed % of completed activities. */
   progress: number | null;
+  specialistName: string | null;
   teacherId: string | null;
   teacherName: string | null;
   activities: PlanActivity[];
@@ -53,6 +54,7 @@ const NO_PLAN: SpecialistPlan = {
   hasPlan: false,
   status: null,
   progress: null,
+  specialistName: null,
   teacherId: null,
   teacherName: null,
   activities: [],
@@ -64,6 +66,7 @@ export function parseSpecialistPlan(data: unknown): SpecialistPlan {
     hasPlan: true,
     status: plan.status ?? null,
     progress: plan.progress ?? null,
+    specialistName: plan.specialistName ?? null,
     teacherId: plan.teacherId ?? null,
     teacherName: plan.teacherName ?? null,
     activities: plan.activities.map(mapPlanActivity),

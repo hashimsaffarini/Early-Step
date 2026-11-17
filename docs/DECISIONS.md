@@ -711,3 +711,29 @@ the UI labels this as local history rather than claiming a global backend member
   initial-assessment card or route. The plan gate still follows the server status.
 - **Admin.** New games are created only from the five real games (visual radio cards); an activity
   saved with a legacy template keeps that card when edited.
+
+## ADR-031 — Client revision 2026-11-14: one-time tests, staff names, Parent reports, password
+
+**Date:** 2026-11-14 · **Status:** Accepted (client screenshots batch)
+
+- **Initial assessment already completed.** Live, `start` answers 404 "لا يوجد تقييم أولي متاح
+  حالياً." after completion (the Parent cannot read the result — #10). When the categories read lists
+  categories, that exact answer is shown as «أكمل … التقييم المبدئي» (not a red error); with no
+  categories the server message is kept. Nothing is stored on the device. The MSW mock follows the
+  live rule.
+- **Tests are one-time in the plan.** Supersedes ADR-030's "tests reopen as practice": a completed
+  test has no link and its player says it is done; games stay replayable (practice, never
+  resubmitted).
+- **No level picker.** Real games keep easy / medium / hard content, chosen only from the child's
+  age; the start screen and the play header no longer show levels.
+- **Staff names** come only from real sources (`childFacts` options): plan names for the
+  Specialist, the signed-in teacher for the Teacher, the report's specialist for the Parent;
+  missing ones are backend request #15.
+- **Parent reports restored** read-only: sidebar «التقارير», list and detail routes (download from the
+  detail page) and a «تقرير الأخصائي» panel on the child page (`ChildReportSummary`, shared).
+- **Admin assessment results**: `/admin/children/:childId/assessment` (the Specialist page, named
+  from the result's `childName` / `parentName`), linked from each completed child on the parent's
+  user page.
+- **Change password** for every role: sidebar «تغيير كلمة المرور» → `ChangePasswordDialog`
+  (`POST Auth/change-password`, Swagger body), strength rules shared with registration.
+- **Teacher notes error** is a server rule (#14); no frontend workaround.

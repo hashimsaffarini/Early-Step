@@ -1,5 +1,5 @@
 import { mediaKeys } from '@/services/media/localMedia';
-import { ArrowLeft, Eye, FileQuestion, RotateCcw } from 'lucide-react';
+import { ArrowLeft, CircleCheck, Eye, FileQuestion, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
@@ -250,8 +250,9 @@ function toGameQuestions(questions: readonly PlanQuestion[]): GameQuestion[] {
  *   never submitted (no backend contract stores their result — BACKEND_REQUESTS);
  * - other games open their legacy template engine (unknown slug with questions → visual search);
  * - tests use the generic player;
- * - an activity that already has a saved result reopens as a practice run that is not submitted
- *   (one result per activity on the server; a second submit → 409);
+ * - a game that already has a saved result reopens as a practice run that is not submitted
+ *   (one result per activity on the server; a second submit → 409); a completed test is done and
+ *   has no retry (client revision 2026-11);
  * - the Teacher reviews results on the child page and does not play the child's activities.
  */
 export function PlanActivityPlayerPage() {
@@ -335,7 +336,7 @@ export function PlanActivityPlayerPage() {
         <PlayerShell {...shell} emoji={realGame.emoji} width="wide">
           <RealGameSession
             game={realGame}
-            initialDifficulty={difficultyForAge(childAge)}
+            difficulty={difficultyForAge(childAge)}
             exitTo={exitTo}
             exitLabel="العودة إلى ملف الطفل"
           />
@@ -368,6 +369,18 @@ export function PlanActivityPlayerPage() {
     );
   }
   const isPractice = completedOnLoad ?? activity.isCompleted;
+  if (isPractice && activity.type !== 'game') {
+    return (
+      <PlayerShell {...shell}>
+        <EmptyState
+          icon={<CircleCheck />}
+          title="أنهى الطفل هذا الاختبار 👏"
+          description="حُفظت نتيجة هذا الاختبار، ويراجعها الأخصائي. الاختبار يُجرى مرة واحدة في الخطة التدريبية."
+          action={backLink}
+        />
+      </PlayerShell>
+    );
+  }
   const practiceNotice = isPractice ? (
     <p className={styles.practiceNotice} role="note">
       حُفظت نتيجة هذا النشاط من قبل. هذه محاولة للتدريب ولن تُرسل مرة أخرى.

@@ -925,3 +925,52 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+
+/* Question dialog (client revision 2026-11): larger, clearer text and less scrolling. */
+.questionForm {
+  gap: var(--space-4);
+  font-size: var(--font-size-md);
+}
+
+.questionForm label,
+.questionForm .fieldLabel,
+.questionForm .legend {
+  font-size: var(--font-size-md);
+}
+
+.questionForm input,
+.questionForm select,
+.questionForm textarea {
+  font-size: var(--font-size-md);
+}
+
+.optionGrid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (min-width: 48rem) {
+  .optionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.imageFieldWrap[data-compact] .previewBox {
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+}
+
+.imageFieldWrap[data-compact] .imageField {
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.imageFieldWrap[data-compact] .imageActions {
+  min-inline-size: 0;
+  gap: var(--space-1);
+}
+
+/* The compact box shows only the icon: the status line next to it already says "no image". */
+.imageFieldWrap[data-compact] .previewEmpty > span {
+  display: none;
+}

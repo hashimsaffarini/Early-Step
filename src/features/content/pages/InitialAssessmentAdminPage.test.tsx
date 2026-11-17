@@ -93,8 +93,12 @@ describe('InitialAssessmentAdminPage (category → questions, client revision 20
     await hierarchy();
 
     const all = screen.getByRole('list', { name: 'كل التصنيفات' });
+    // One control per category: the checkbox (client revision 2026-11 removed the extra button).
+    expect(
+      within(all).queryByRole('button', { name: 'إضافة الأرقام والحساب إلى التقييم' }),
+    ).not.toBeInTheDocument();
     await userEvent.click(
-      within(all).getByRole('button', { name: 'إضافة الأرقام والحساب إلى التقييم' }),
+      within(all).getByRole('checkbox', { name: 'تضمين الأرقام والحساب في التقييم' }),
     );
     expect(
       await within(await hierarchy()).findByRole('heading', { name: 'التصنيف: الأرقام والحساب' }),
@@ -102,7 +106,7 @@ describe('InitialAssessmentAdminPage (category → questions, client revision 20
     expect(within(all).getAllByText('ضمن التقييم')).toHaveLength(2);
 
     await userEvent.click(
-      within(all).getByRole('button', { name: 'إزالة الأرقام والحساب من التقييم' }),
+      within(all).getByRole('checkbox', { name: 'تضمين الأرقام والحساب في التقييم' }),
     );
     await waitFor(() => {
       expect(screen.queryByText('التصنيف: الأرقام والحساب')).not.toBeInTheDocument();
